@@ -1,0 +1,15 @@
+Package: reservoir
+Title: Characteristics and Simulations for Water Reservoirs
+Version: 2015.8.9000
+Authors@R: c(
+    person("Stanislav", "Horacek", email = "stanislav.horacek@gmail.com", role = c("aut", "cre")),
+    person("Roman", "Kozin", role = "aut"))
+Description: Tools to calculate characteristics of water reservoirs
+    and to perform simulations for them.
+License: GPL (>= 2)
+Imports:
+    data.table
+Suggests:
+    testthat, bilan
+Depends:
+    R (>= 2.15)
