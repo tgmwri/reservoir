@@ -4,7 +4,7 @@ test_that("data are loaded from Bilan object", {
     library(bilan)
     bil = bil.new("m")
     bil.read.file(bil, "rivendell.dat", c("P", "R", "T"))
-    riv = as.reservoir(bil, 14.4, observed = TRUE)
+    riv = as.wateres(bil, 14.4, observed = TRUE)
     expect_equivalent(riv$Q[1:12], c(0.07799990666, 0.06500006200, 0.16799987866, 0.71100096451,
         0.15399985999, 0.10699987461, 0.06800014001, 0.05699987866, 0.06999987461, 0.48499990666,
         0.25200004823, 0.23600001867))
@@ -14,7 +14,7 @@ context("characteristics calculated by summary function")
 
 test_that("characteristics are calculated correctly", {
     riv = read.table("rivendell.txt", header = TRUE)
-    riv = as.reservoir(riv, 14.4)
+    riv = as.wateres(riv, 14.4)
     chars = summary(riv, Qn_coeff = c(0.1, 1, 0.05))
     expect_equivalent(chars["Vpot"], 14.4)
     expect_equivalent(chars["Qn_max"], 0.1446833785)

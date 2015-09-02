@@ -1,4 +1,4 @@
-Package: reservoir
+Package: wateres
 Title: Characteristics and Simulations for Water Reservoirs
 Version: 2015.8.9000
 Authors@R: c(

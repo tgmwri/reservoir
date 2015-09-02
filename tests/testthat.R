@@ -1,4 +1,4 @@
 library(testthat)
-library(reservoir)
+library(wateres)
 
-test_check("reservoir")
+test_check("wateres")

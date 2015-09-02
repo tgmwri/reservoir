@@ -1,4 +1,4 @@
-# reservoir
+# wateres
 
 An R package focused on calculation of characteristics and performing
 simulations for water reservoirs.
@@ -7,5 +7,5 @@ simulations for water reservoirs.
 
 ```
 library(devtools)
-install_github("tgmwri/reservoir")
+install_github("tgmwri/wateres")
 ```

@@ -2,18 +2,18 @@
 #'
 #' Tools to calculate characteristics of water reservoirs and to perform simulations for them.
 #'
-#' A reservoir has to be created by \code{\link{as.reservoir}} by using time series of dates
+#' A reservoir has to be created by \code{\link{as.wateres}} by using time series of dates
 #' and corresponding flows. After that, characteristics for the reservoir can be calculated.
 #'
 #' @docType package
-#' @name reservoir
+#' @name wateres
 #' @import data.table
 #' @examples
 #' reser = data.frame(
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.reservoir(reser, Vpot = 11.1)
+#' reser = as.wateres(reser, Vpot = 11.1)
 #' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
 NULL
 
@@ -27,7 +27,7 @@ days_in_month <- function(date) {
 
 #' Water reservoir creation
 #'
-#' Creates a reservoir object from provided time series.
+#' Creates a wateres object from provided time series.
 #'
 #' @param dframe A name of file containing table with data (including header) or directly data frame or data table.
 #'   The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column).
@@ -35,7 +35,7 @@ days_in_month <- function(date) {
 #'   In that case, catchment area needs to be specified within the Bilan object.
 #' @param Vpot Potential storage of the reservoir in millions of m3.
 #' @param observed Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).
-#' @return A reservoir object which is also of data.frame and data.table classes.
+#' @return A wateres object which is also of data.frame and data.table classes.
 #' @details An error occurs if \dQuote{Q} or \dQuote{DTM} column is missing or \code{dframe} is of another class
 #'   than \code{data.frame} or \code{data.table}.
 #' @export
@@ -44,8 +44,8 @@ days_in_month <- function(date) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.reservoir(reser, Vpot = 11.1)
-as.reservoir <- function(dframe, Vpot, observed = FALSE) {
+#' reser = as.wateres(reser, Vpot = 11.1)
+as.wateres <- function(dframe, Vpot, observed = FALSE) {
     if ("bilan" %in% class(dframe)) {
         if (requireNamespace("bilan", quietly = TRUE)) {
             catch_area = bilan::bil.get.area(dframe)
@@ -72,7 +72,7 @@ as.reservoir <- function(dframe, Vpot, observed = FALSE) {
     dframe = dframe[, required_cols]
     dframe$DTM = as.Date(dframe$DTM)
     dframe$Q = as.numeric(dframe$Q)
-    class(dframe) = c("reservoir", "data.table", "data.frame")
+    class(dframe) = c("wateres", "data.table", "data.frame")
     attr(dframe, "Vpot") = Vpot
     return(dframe)
 }
@@ -97,16 +97,16 @@ indices <- function(reser, Qn) {
     return(c(alpha = alpha, m = m))
 }
 
-#' Reservoir summary
+#' Water reservoir summary
 #'
 #' Calculates and shows characteristics of the reservoir.
 #'
-#' @param object A reservoir object.
+#' @param object A wateres object.
 #' @param ... Further arguments are not used.
 #' @param Qn_coeff Begin, end and step value of coefficients used to calculate designed yields to be tested.
 #'   The designed yields are equal to the mean annual flow multiplied by the coefficient.
 #' @return A vector of reservoir characteristics:
-#'   \item{Vpot}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.reservoir}})}
+#'   \item{Vpot}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.wateres}})}
 #'   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
 #'   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
 #'   \item{m}{resilience index - a measure of flow variability calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
@@ -118,9 +118,9 @@ indices <- function(reser, Qn) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.reservoir(reser, Vpot = 11.1)
+#' reser = as.wateres(reser, Vpot = 11.1)
 #' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
-summary.reservoir <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
+summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
     Qn = seq(Qn_coeff[1], Qn_coeff[2], by = Qn_coeff[3]) * mean(object$Q)
 
     Vz = sapply(1:length(Qn), function(i) { max_deficit(object$Q, Qn[i]) })
