@@ -8,8 +8,9 @@ Description: Tools to calculate characteristics of water reservoirs
     and to perform simulations for them.
 License: GPL (>= 2)
 Imports:
-    data.table
+    data.table, Rcpp
 Suggests:
     testthat, bilan
 Depends:
     R (>= 2.15)
+LinkingTo: Rcpp

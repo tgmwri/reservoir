@@ -8,14 +8,21 @@
 #' @docType package
 #' @name wateres
 #' @import data.table
+#' @importFrom Rcpp sourceCpp
+#' @useDynLib wateres
 #' @examples
 #' reser = data.frame(
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 11.1)
+#' reser = as.wateres(reser, Vpot = 14.4)
 #' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
+#' sry(reser, reliab = 0.5, yield = 0.14)
 NULL
+
+.onUnload <- function (libpath) {
+  library.dynam.unload("wateres", libpath)
+}
 
 days_in_month <- function(date) {
     mon = format(date, format = "%m")
@@ -44,7 +51,7 @@ days_in_month <- function(date) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 11.1)
+#' reser = as.wateres(reser, Vpot = 14.4)
 as.wateres <- function(dframe, Vpot, observed = FALSE) {
     if ("bilan" %in% class(dframe)) {
         if (requireNamespace("bilan", quietly = TRUE)) {
@@ -71,6 +78,7 @@ as.wateres <- function(dframe, Vpot, observed = FALSE) {
     }
     dframe = dframe[, required_cols]
     dframe$DTM = as.Date(dframe$DTM)
+    dframe$.days = sapply(dframe$DTM, days_in_month)
     dframe$Q = as.numeric(dframe$Q)
     class(dframe) = c("wateres", "data.table", "data.frame")
     attr(dframe, "Vpot") = Vpot
@@ -118,7 +126,7 @@ indices <- function(reser, Qn) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 11.1)
+#' reser = as.wateres(reser, Vpot = 14.4)
 #' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
 summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
     Qn = seq(Qn_coeff[1], Qn_coeff[2], by = Qn_coeff[3]) * mean(object$Q)
@@ -130,4 +138,57 @@ summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
         stop("Qn_max for potential volume cannot be interpolated. Increase the range given by Qn_coeff.")
 
     print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, indices(object, Qn_max)))
+}
+
+calc_reliability <- function(x, reser, yield_req, reliab_req, empirical = TRUE) {
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield_req, x)
+
+    if (empirical)
+        coeff = c(m = -0.3, n = 0.4)
+    else
+        coeff = c(m = 0, n = 0)
+    reliab = (sum(resul$yield >= yield_req) + coeff["m"]) / (length(resul$yield) + coeff["n"])
+    names(reliab) = NULL
+    return(abs(reliab - reliab_req))
+}
+
+#' @rdname sry.wateres
+#' @export
+sry <- function(reser, reliability, yield, empirical_rel, upper_limit) UseMethod("sry")
+
+#' Calculation of storage
+#'
+#' Calculates water reservoir storage for given reliability and yield.
+#'
+#' @param reser A wateres object.
+#' @param reliability A reliability value, cannot be less than zero or greater than maximum realiability value
+#'   (depending on data and usage of empirical reliability).
+#' @param yield A required yield in m3.s-1, constant for all months.
+#' @param empirical_rel Whether empirical probability (by (m - 0.3) / (n + 0.4) formula) will be used for calculation
+#'   of reliability. If enabled, maximum reliability value will be less than 1.
+#' @param upper_limit An upper limit for optimization of storage given as multiple of potential volume of the reservoir.
+#' @return A list consisting of:
+#'   \item{storage}{optimized storage value}
+#'   \item{reliability}{reliability value for the optimized storage}
+#'   \item{yield}{yield value equal to the \code{yield} argument}
+#' @details To optimize the value of storage, the \code{\link{optimize}} function is applied. If optimization fails, try
+#'   to change its upper limit given as the \code{upper_limit} argument.
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, Vpot = 1)
+#' sry(reser, reliab = 0.5, yield = 0.14)
+sry.wateres <- function(reser, reliability, yield, empirical_rel = TRUE, upper_limit = 1) {
+    max_reliab = calc_reliability(1, reser, 0, 0, empirical_rel)
+    if (reliability > max_reliab || reliability < 0)
+        stop("Invalid value of reliability.")
+
+    # optim or nlminb does not work (probably due to discrete values of reliability?)
+    resul_optim = optimize(
+        calc_reliability, c(0, upper_limit * attr(reser, "Vpot")), reser = reser, yield_req = yield, reliab_req = reliability, empirical = empirical_rel)
+
+    return(list(storage = resul_optim$minimum, reliability = resul_optim$objective + reliability, yield = yield))
 }

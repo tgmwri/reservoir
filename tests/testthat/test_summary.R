@@ -21,3 +21,22 @@ test_that("characteristics are calculated correctly", {
     expect_equivalent(chars["alpha"], 0.9196508835)
     expect_equivalent(chars["m"], 0.3204723019)
 })
+
+context("storage-reliability-yield relationship")
+
+test_that("storage for reliability and yield is optimized", {
+    riv = read.table("rivendell.txt", header = TRUE)
+    riv = as.wateres(riv, 14.4)
+    sry = sry(riv, reliab = 0.5, yield = 0.14)
+    expect_equivalent(sry$storage, 0.59823188717)
+    expect_equivalent(sry$reliability, 0.501136019388)
+    expect_equivalent(sry$yield, 0.14)
+})
+
+test_that("invalid reliability is rejected", {
+    riv = read.table("rivendell.txt", header = TRUE)
+    riv = as.wateres(riv, 14.4)
+    expect_error(sry(riv, reliab = -0.5, yield = 0.14))
+    expect_error(sry(riv, reliab = 1, yield = 0.14))
+})
+
