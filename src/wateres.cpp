@@ -22,6 +22,7 @@ void convert_m3(vector<double> &values, const vector<unsigned> &days, bool to_vo
   * @param Rdays number of days for months of time series
   * @param Ryield_req required yield (reservoir outflow) in m3.s-1
   * @param Rvolume reservoir potential volume in millions of m3
+  * @return list consisting of storage (in m3) and yield (m3.s-1)
   */
 RcppExport SEXP calc_storage(SEXP Rinflow, SEXP Rdays, SEXP Ryield_req, SEXP Rvolume)
 {
@@ -43,9 +44,10 @@ RcppExport SEXP calc_storage(SEXP Rinflow, SEXP Rdays, SEXP Ryield_req, SEXP Rvo
   vector<double> yield(time_steps, 0), storage(time_steps + 1, 0);
   storage[0] = volume; //reservoir considered full at the beginnig
   for (ts = 0; ts < time_steps; ts++) {
-    yield[ts] = storage[ts] < yield_req_vol[ts] ? storage[ts] : yield_req_vol[ts];
+    yield[ts] = yield_req_vol[ts];
     storage[ts + 1] = storage[ts] + deltaQ[ts];
     if (storage[ts + 1] < 0) {
+      yield[ts] = yield[ts] + storage[ts + 1];
       storage[ts + 1] = 0;
     }
     else if (storage[ts + 1] > volume) {
