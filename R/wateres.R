@@ -140,8 +140,13 @@ summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
     print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, indices(object, Qn_max)))
 }
 
-calc_reliability <- function(x, reser, yield_req, reliab_req, empirical = TRUE) {
-    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield_req, x)
+calc_reliability <- function(x, reser, storage_req, reliab_req, yield_req, empirical = TRUE) {
+    if (missing(storage_req))
+        storage_req = x
+    else if (missing(yield_req))
+        yield_req = x
+
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield_req, storage_req)
 
     if (empirical)
         coeff = c(m = -0.3, n = 0.4)
@@ -154,24 +159,27 @@ calc_reliability <- function(x, reser, yield_req, reliab_req, empirical = TRUE) 
 
 #' @rdname sry.wateres
 #' @export
-sry <- function(reser, reliability, yield, empirical_rel, upper_limit) UseMethod("sry")
+sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) UseMethod("sry")
 
-#' Calculation of storage
+#' Calculation of storage, reliability and yield
 #'
-#' Calculates water reservoir storage for given reliability and yield.
+#' Calculates one of the water reservoir storage, time-based reliability and yield (release) variable while the
+#' two remaining values are provided.
 #'
 #' @param reser A wateres object.
-#' @param reliability A reliability value, cannot be less than zero or greater than maximum realiability value
-#'   (depending on data and usage of empirical reliability).
-#' @param yield A required yield in m3.s-1, constant for all months.
+#' @param storage A water reservoir storage value in m3. (If missing, it will be optimized using reliability and yield.)
+#' @param reliability A reliability value, cannot be less than zero or greater than maximum reliability value
+#'   (depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)
+#' @param yield A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)
 #' @param empirical_rel Whether empirical probability (by (m - 0.3) / (n + 0.4) formula) will be used for calculation
 #'   of reliability. If enabled, maximum reliability value will be less than 1.
-#' @param upper_limit An upper limit for optimization of storage given as multiple of potential volume of the reservoir.
+#' @param upper_limit An upper limit for optimization of storage or yield given as multiple of potential volume of the reservoir
+#'   (for storage) or as multiple of mean monthly flow (for yield).
 #' @return A list consisting of:
-#'   \item{storage}{optimized storage value}
-#'   \item{reliability}{reliability value for the optimized storage}
-#'   \item{yield}{yield value equal to the \code{yield} argument}
-#' @details To optimize the value of storage, the \code{\link{optimize}} function is applied. If optimization fails, try
+#'   \item{storage}{storage value, optimized or equal to the \code{storage} argument}
+#'   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
+#'   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
+#' @details To optimize the value of storage or yield, the \code{\link{optimize}} function is applied. If optimization fails, try
 #'   to change its upper limit given as the \code{upper_limit} argument.
 #' @export
 #' @examples
@@ -181,14 +189,27 @@ sry <- function(reser, reliability, yield, empirical_rel, upper_limit) UseMethod
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, Vpot = 1)
 #' sry(reser, reliab = 0.5, yield = 0.14)
-sry.wateres <- function(reser, reliability, yield, empirical_rel = TRUE, upper_limit = 1) {
-    max_reliab = calc_reliability(1, reser, 0, 0, empirical_rel)
-    if (reliability > max_reliab || reliability < 0)
-        stop("Invalid value of reliability.")
-
-    # optim or nlminb does not work (probably due to discrete values of reliability?)
-    resul_optim = optimize(
-        calc_reliability, c(0, upper_limit * attr(reser, "Vpot")), reser = reser, yield_req = yield, reliab_req = reliability, empirical = empirical_rel)
-
-    return(list(storage = resul_optim$minimum, reliability = resul_optim$objective + reliability, yield = yield))
+#' sry(reser, storage = 0.041, yield = 0.14)
+#' sry(reser, storage = 0.041, reliab = 0.5)
+sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 1) {
+    if (!missing(reliability)) {
+        max_reliab = calc_reliability(1, reser, reliab_req = 0, yield_req = 0, empirical_rel)
+        if (reliability > max_reliab || reliability < 0)
+            stop("Invalid value of reliability.")
+    }
+    if (!missing(reliability) && !missing(yield)) {
+        # optim or nlminb does not work (probably due to discrete values of reliability?)
+        resul_optim = optimize(
+            calc_reliability, c(0, upper_limit * attr(reser, "Vpot")), reser = reser, reliab_req = reliability, yield_req = yield, empirical = empirical_rel)
+        return(list(storage = resul_optim$minimum, reliability = resul_optim$objective + reliability, yield = yield))
+    }
+    else if (!missing(storage) && !missing(yield)) {
+        reliab = calc_reliability(storage, reser, reliab_req = 0, yield_req = yield, empirical = empirical_rel)
+        return(list(storage = storage, reliability = reliab, yield = yield))
+    }
+    else {
+        resul_optim = optimize(
+            calc_reliability, c(0, upper_limit * mean(reser$Q)), reser = reser, reliab_req = reliability, storage_req = storage, empirical = empirical_rel)
+        return(list(storage = storage, reliability = resul_optim$objective + reliability, yield = resul_optim$minimum))
+    }
 }

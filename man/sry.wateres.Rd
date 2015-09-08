@@ -3,37 +3,41 @@
 \name{sry}
 \alias{sry}
 \alias{sry.wateres}
-\title{Calculation of storage}
+\title{Calculation of storage, reliability and yield}
 \usage{
-sry(reser, reliability, yield, empirical_rel, upper_limit)
+sry(reser, storage, reliability, yield, empirical_rel, upper_limit)
 
-\method{sry}{wateres}(reser, reliability, yield, empirical_rel = TRUE,
-  upper_limit = 1)
+\method{sry}{wateres}(reser, storage, reliability, yield,
+  empirical_rel = TRUE, upper_limit = 1)
 }
 \arguments{
 \item{reser}{A wateres object.}
 
-\item{reliability}{A reliability value, cannot be less than zero or greater than maximum realiability value
-(depending on data and usage of empirical reliability).}
+\item{storage}{A water reservoir storage value in m3. (If missing, it will be optimized using reliability and yield.)}
 
-\item{yield}{A required yield in m3.s-1, constant for all months.}
+\item{reliability}{A reliability value, cannot be less than zero or greater than maximum reliability value
+(depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)}
+
+\item{yield}{A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)}
 
 \item{empirical_rel}{Whether empirical probability (by (m - 0.3) / (n + 0.4) formula) will be used for calculation
 of reliability. If enabled, maximum reliability value will be less than 1.}
 
-\item{upper_limit}{An upper limit for optimization of storage given as multiple of potential volume of the reservoir.}
+\item{upper_limit}{An upper limit for optimization of storage or yield given as multiple of potential volume of the reservoir
+(for storage) or as multiple of mean monthly flow (for yield).}
 }
 \value{
 A list consisting of:
-  \item{storage}{optimized storage value}
-  \item{reliability}{reliability value for the optimized storage}
-  \item{yield}{yield value equal to the \code{yield} argument}
+  \item{storage}{storage value, optimized or equal to the \code{storage} argument}
+  \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
+  \item{yield}{yield value, optimized or equal to the \code{yield} argument}
 }
 \description{
-Calculates water reservoir storage for given reliability and yield.
+Calculates one of the water reservoir storage, time-based reliability and yield (release) variable while the
+two remaining values are provided.
 }
 \details{
-To optimize the value of storage, the \code{\link{optimize}} function is applied. If optimization fails, try
+To optimize the value of storage or yield, the \code{\link{optimize}} function is applied. If optimization fails, try
   to change its upper limit given as the \code{upper_limit} argument.
 }
 \examples{
@@ -43,5 +47,7 @@ reser = data.frame(
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 reser = as.wateres(reser, Vpot = 1)
 sry(reser, reliab = 0.5, yield = 0.14)
+sry(reser, storage = 0.041, yield = 0.14)
+sry(reser, storage = 0.041, reliab = 0.5)
 }
 
