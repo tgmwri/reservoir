@@ -13,7 +13,9 @@ sry(reser, storage, reliability, yield, empirical_rel, upper_limit)
 \arguments{
 \item{reser}{A wateres object.}
 
-\item{storage}{A water reservoir storage value in millions of m3. (If missing, it will be optimized using reliability and yield.)}
+\item{storage}{A water reservoir storage value in millions of m3. (If missing together with reliability or yield, the default value
+value equal to the potential volume of \code{reser} will be used. If only storage is missing, it will be optimized using reliability
+and yield.)}
 
 \item{reliability}{A reliability value, cannot be less than zero or greater than maximum reliability value
 (depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)}
@@ -28,7 +30,7 @@ of reliability. If enabled, maximum reliability value will be less than 1.}
 }
 \value{
 A list consisting of:
-  \item{storage}{storage value, optimized or equal to the \code{storage} argument}
+  \item{storage}{storage value, optimized, equal to the \code{storage} argument or default (potential volume of \code{reser})}
   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
 }
@@ -48,6 +50,7 @@ reser = data.frame(
 reser = as.wateres(reser, Vpot = 1)
 sry(reser, reliab = 0.5, yield = 0.14)
 sry(reser, storage = 0.041, yield = 0.14)
+sry(reser, yield = 0.14)
 sry(reser, storage = 0.041, reliab = 0.5)
 }
 

@@ -173,7 +173,9 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) 
 #' two remaining values are provided.
 #'
 #' @param reser A wateres object.
-#' @param storage A water reservoir storage value in millions of m3. (If missing, it will be optimized using reliability and yield.)
+#' @param storage A water reservoir storage value in millions of m3. (If missing together with reliability or yield, the default value
+#'   value equal to the potential volume of \code{reser} will be used. If only storage is missing, it will be optimized using reliability
+#'   and yield.)
 #' @param reliability A reliability value, cannot be less than zero or greater than maximum reliability value
 #'   (depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)
 #' @param yield A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)
@@ -182,7 +184,7 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) 
 #' @param upper_limit An upper limit for optimization of storage or yield given as multiple of potential volume of the reservoir
 #'   (for storage) or as multiple of mean monthly flow (for yield).
 #' @return A list consisting of:
-#'   \item{storage}{storage value, optimized or equal to the \code{storage} argument}
+#'   \item{storage}{storage value, optimized, equal to the \code{storage} argument or default (potential volume of \code{reser})}
 #'   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
 #'   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
 #' @details To optimize the value of storage or yield, the \code{\link{optimize}} function is applied. If optimization fails, try
@@ -196,6 +198,7 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) 
 #' reser = as.wateres(reser, Vpot = 1)
 #' sry(reser, reliab = 0.5, yield = 0.14)
 #' sry(reser, storage = 0.041, yield = 0.14)
+#' sry(reser, yield = 0.14)
 #' sry(reser, storage = 0.041, reliab = 0.5)
 sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 1) {
     if (!missing(reliability)) {
@@ -203,6 +206,8 @@ sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE
         if (reliability > max_reliab || reliability < 0)
             stop("Invalid value of reliability.")
     }
+    if (missing(storage) && (missing(reliability) || missing(yield)))
+        storage = attr(reser, "Vpot")
     if (missing(storage)) {
         # optim or nlminb does not work (probably due to discrete values of reliability?)
         resul_optim = optimize(

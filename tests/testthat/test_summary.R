@@ -46,15 +46,18 @@ test_that("invalid reliability is rejected", {
 })
 
 test_that("reliability for storage and yield is calculated", {
-    riv = as.wateres("rivendell.txt", 14.4)
     sry = sry(riv, storage = 0.041, yield = 0.14)
     expect_equivalent(sry$storage, 0.041)
     expect_equivalent(sry$reliability, 0.499621326871)
     expect_equivalent(sry$yield, 0.14)
+    # default storage value
+    sry = sry(riv, yield = 0.14)
+    expect_equivalent(sry$storage, 14.4)
+    expect_equivalent(sry$reliability, 0.999469857619)
+    expect_equivalent(sry$yield, 0.14)
 })
 
 test_that("yield for storage and reliability is optimized", {
-    riv = as.wateres("rivendell.txt", 14.4)
     sry = sry(riv, storage = 0.041, reliab = 0.5)
     expect_equivalent(sry$storage, 0.041)
     expect_equivalent(sry$reliability, 0.500378673129)
