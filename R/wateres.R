@@ -173,7 +173,7 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) 
 #' two remaining values are provided.
 #'
 #' @param reser A wateres object.
-#' @param storage A water reservoir storage value in m3. (If missing, it will be optimized using reliability and yield.)
+#' @param storage A water reservoir storage value in millions of m3. (If missing, it will be optimized using reliability and yield.)
 #' @param reliability A reliability value, cannot be less than zero or greater than maximum reliability value
 #'   (depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)
 #' @param yield A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)

@@ -13,7 +13,7 @@ sry(reser, storage, reliability, yield, empirical_rel, upper_limit)
 \arguments{
 \item{reser}{A wateres object.}
 
-\item{storage}{A water reservoir storage value in m3. (If missing, it will be optimized using reliability and yield.)}
+\item{storage}{A water reservoir storage value in millions of m3. (If missing, it will be optimized using reliability and yield.)}
 
 \item{reliability}{A reliability value, cannot be less than zero or greater than maximum reliability value
 (depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)}
