@@ -27,12 +27,17 @@ context("storage-reliability-yield relationship")
 test_that("storage for reliability and yield is optimized", {
     sry = sry(riv, reliab = 0.5, yield = 0.14)
     expect_equivalent(sry$storage, 0.0410853830921)
-    expect_equivalent(sry$reliability, 0.500378673129)
+    expect_equivalent(sry$reliability, 0.499621326871)
     expect_equivalent(sry$yield, 0.14)
     sry = sry(riv, reliab = 0.5, yield = 0.14, empirical_rel = FALSE)
     expect_equivalent(sry$storage, 0.0413683875684)
     expect_equivalent(sry$reliability, 0.5)
     expect_equivalent(sry$yield, 0.14)
+    # reliability > 1 if absoluteness of difference not reflected
+    sry = sry(riv, reliab = 0.7, yield = 0.7)
+    expect_equivalent(sry$storage, 13.5975849471)
+    expect_equivalent(sry$reliability, 0.0134050287792)
+    expect_equivalent(sry$yield, 0.7)
 })
 
 test_that("invalid reliability is rejected", {

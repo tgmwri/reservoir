@@ -140,12 +140,7 @@ summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
     print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, indices(object, Qn_max)))
 }
 
-calc_reliability <- function(x, reser, storage_req, reliab_req, yield_req, empirical = TRUE) {
-    if (missing(storage_req))
-        storage_req = x
-    else if (missing(yield_req))
-        yield_req = x
-
+calc_reliability <- function(reser, storage_req, yield_req, empirical) {
     resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield_req, storage_req)
 
     if (empirical)
@@ -154,6 +149,17 @@ calc_reliability <- function(x, reser, storage_req, reliab_req, yield_req, empir
         coeff = c(m = 0, n = 0)
     reliab = (sum(resul$yield >= yield_req) + coeff["m"]) / (length(resul$yield) + coeff["n"])
     names(reliab) = NULL
+    return(reliab)
+}
+
+# absolute difference between calculated and required reliability used for optimization
+calc_diff_reliability <- function(x, reser, storage_req, reliab_req, yield_req, empirical) {
+    if (missing(storage_req))
+        storage_req = x
+    else if (missing(yield_req))
+        yield_req = x
+
+    reliab = calc_reliability(reser, storage_req, yield_req, empirical)
     return(abs(reliab - reliab_req))
 }
 
@@ -193,23 +199,21 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) 
 #' sry(reser, storage = 0.041, reliab = 0.5)
 sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 1) {
     if (!missing(reliability)) {
-        max_reliab = calc_reliability(1, reser, reliab_req = 0, yield_req = 0, empirical_rel)
+        max_reliab = calc_reliability(reser, 1, 0, empirical_rel)
         if (reliability > max_reliab || reliability < 0)
             stop("Invalid value of reliability.")
     }
-    if (!missing(reliability) && !missing(yield)) {
+    if (missing(storage)) {
         # optim or nlminb does not work (probably due to discrete values of reliability?)
         resul_optim = optimize(
-            calc_reliability, c(0, upper_limit * attr(reser, "Vpot")), reser = reser, reliab_req = reliability, yield_req = yield, empirical = empirical_rel)
-        return(list(storage = resul_optim$minimum, reliability = resul_optim$objective + reliability, yield = yield))
+            calc_diff_reliability, c(0, upper_limit * attr(reser, "Vpot")), reser = reser, reliab_req = reliability, yield_req = yield, empirical = empirical_rel)
+        storage = resul_optim$minimum
     }
-    else if (!missing(storage) && !missing(yield)) {
-        reliab = calc_reliability(storage, reser, reliab_req = 0, yield_req = yield, empirical = empirical_rel)
-        return(list(storage = storage, reliability = reliab, yield = yield))
-    }
-    else {
+    else if (missing(yield)) {
         resul_optim = optimize(
-            calc_reliability, c(0, upper_limit * mean(reser$Q)), reser = reser, reliab_req = reliability, storage_req = storage, empirical = empirical_rel)
-        return(list(storage = storage, reliability = resul_optim$objective + reliability, yield = resul_optim$minimum))
+            calc_diff_reliability, c(0, upper_limit * mean(reser$Q)), reser = reser, reliab_req = reliability, storage_req = storage, empirical = empirical_rel)
+        yield = resul_optim$minimum
     }
+    reliability = calc_reliability(reser, storage, yield, empirical_rel)
+    return(list(storage = storage, reliability = reliability, yield = yield))
 }
