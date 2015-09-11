@@ -5,10 +5,11 @@
 \alias{sry.wateres}
 \title{Calculation of storage, reliability and yield}
 \usage{
-sry(reser, storage, reliability, yield, empirical_rel, upper_limit)
+sry(reser, storage, reliability, yield, empirical_rel, upper_limit,
+  throw_exceed)
 
 \method{sry}{wateres}(reser, storage, reliability, yield,
-  empirical_rel = TRUE, upper_limit = 1)
+  empirical_rel = TRUE, upper_limit = 1, throw_exceed = FALSE)
 }
 \arguments{
 \item{reser}{A wateres object.}
@@ -27,6 +28,9 @@ of reliability. If enabled, maximum reliability value will be less than 1.}
 
 \item{upper_limit}{An upper limit for optimization of storage or yield given as multiple of potential volume of the reservoir
 (for storage) or as multiple of mean monthly flow (for yield).}
+
+\item{throw_exceed}{Whether volume exceeding storage will be thrown or added to yield. This will affect calculated yield series,
+however resulting storage, reliability or yield value is not likely to be influenced.}
 }
 \value{
 A list consisting of:

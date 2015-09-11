@@ -140,32 +140,32 @@ summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
     print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, indices(object, Qn_max)))
 }
 
-calc_reliability <- function(reser, storage_req, yield_req, empirical) {
-    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield_req, storage_req)
+calc_reliability <- function(reser, storage_req, yield_req, empirical, throw_exceed) {
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield_req, storage_req, throw_exceed)
 
     if (empirical)
         coeff = c(m = -0.3, n = 0.4)
     else
         coeff = c(m = 0, n = 0)
-    reliab = (sum(resul$yield >= yield_req) + coeff["m"]) / (length(resul$yield) + coeff["n"])
+    reliab = (sum(resul$yield + .Machine$double.eps ^ 0.5 > yield_req) + coeff["m"]) / (length(resul$yield) + coeff["n"])
     names(reliab) = NULL
     return(reliab)
 }
 
 # absolute difference between calculated and required reliability used for optimization
-calc_diff_reliability <- function(x, reser, storage_req, reliab_req, yield_req, empirical) {
+calc_diff_reliability <- function(x, reser, storage_req, reliab_req, yield_req, empirical, throw_exceed) {
     if (missing(storage_req))
         storage_req = x
     else if (missing(yield_req))
         yield_req = x
 
-    reliab = calc_reliability(reser, storage_req, yield_req, empirical)
+    reliab = calc_reliability(reser, storage_req, yield_req, empirical, throw_exceed)
     return(abs(reliab - reliab_req))
 }
 
 #' @rdname sry.wateres
 #' @export
-sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) UseMethod("sry")
+sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, throw_exceed) UseMethod("sry")
 
 #' Calculation of storage, reliability and yield
 #'
@@ -183,6 +183,8 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) 
 #'   of reliability. If enabled, maximum reliability value will be less than 1.
 #' @param upper_limit An upper limit for optimization of storage or yield given as multiple of potential volume of the reservoir
 #'   (for storage) or as multiple of mean monthly flow (for yield).
+#' @param throw_exceed Whether volume exceeding storage will be thrown or added to yield. This will affect calculated yield series,
+#'   however resulting storage, reliability or yield value is not likely to be influenced.
 #' @return A list consisting of:
 #'   \item{storage}{storage value, optimized, equal to the \code{storage} argument or default (potential volume of \code{reser})}
 #'   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
@@ -200,9 +202,9 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit) 
 #' sry(reser, storage = 0.041, yield = 0.14)
 #' sry(reser, yield = 0.14)
 #' sry(reser, storage = 0.041, reliab = 0.5)
-sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 1) {
+sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 1, throw_exceed = FALSE) {
     if (!missing(reliability)) {
-        max_reliab = calc_reliability(reser, 1, 0, empirical_rel)
+        max_reliab = calc_reliability(reser, 1, 0, empirical_rel, throw_exceed)
         if (reliability > max_reliab || reliability < 0)
             stop("Invalid value of reliability.")
     }
@@ -211,14 +213,16 @@ sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE
     if (missing(storage)) {
         # optim or nlminb does not work (probably due to discrete values of reliability?)
         resul_optim = optimize(
-            calc_diff_reliability, c(0, upper_limit * attr(reser, "Vpot")), reser = reser, reliab_req = reliability, yield_req = yield, empirical = empirical_rel)
+            calc_diff_reliability, c(0, upper_limit * attr(reser, "Vpot")), reser = reser, reliab_req = reliability, yield_req = yield,
+            empirical = empirical_rel, throw_exceed = throw_exceed)
         storage = resul_optim$minimum
     }
     else if (missing(yield)) {
         resul_optim = optimize(
-            calc_diff_reliability, c(0, upper_limit * mean(reser$Q)), reser = reser, reliab_req = reliability, storage_req = storage, empirical = empirical_rel)
+            calc_diff_reliability, c(0, upper_limit * mean(reser$Q)), reser = reser, reliab_req = reliability, storage_req = storage,
+            empirical = empirical_rel, throw_exceed = throw_exceed)
         yield = resul_optim$minimum
     }
-    reliability = calc_reliability(reser, storage, yield, empirical_rel)
+    reliability = calc_reliability(reser, storage, yield, empirical_rel, throw_exceed)
     return(list(storage = storage, reliability = reliability, yield = yield))
 }
