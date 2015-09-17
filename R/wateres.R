@@ -174,7 +174,7 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, 
 #'
 #' @param reser A wateres object.
 #' @param storage A water reservoir storage value in millions of m3. (If missing together with reliability or yield, the default value
-#'   value equal to the potential volume of \code{reser} will be used. If only storage is missing, it will be optimized using reliability
+#'   equal to the potential volume of \code{reser} will be used. If only storage is missing, it will be optimized using reliability
 #'   and yield.)
 #' @param reliability A reliability value, cannot be less than zero or greater than maximum reliability value
 #'   (depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)
