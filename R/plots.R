@@ -31,10 +31,10 @@ prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "Vpot"
     for (var in c("storage", "yield")) {
         var_mon = reser[, get(var), by = month(DTM)]
         setnames(var_mon, 2, var)
-        var_quant[[var]] = tapply(var_mon[[var]], var_mon$month, quantile, probs)
+        var_quant[[var]] = tapply(var_mon[[var]], var_mon$month, quantile, 1 - probs)
     }
 
-    prob_names = names(var_quant$storage[[1]])
+    prob_names = paste0(probs * 100, "%")
     quantiles = as.data.table(matrix(NA, 12, 1 + 2 * length(probs)))
     quantiles = quantiles[, names(quantiles) := lapply(.SD, as.numeric)]
     setnames(quantiles, 1:ncol(quantiles), c("month", paste0("storage_", prob_names), paste0("yield_", prob_names)))

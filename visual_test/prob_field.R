@@ -3,7 +3,7 @@ vcontext("probability fields")
 library(ggplot2)
 
 riv = as.wateres("tests/testthat/rivendell.txt", 14.4)
-prob_field = prob_field(riv, c(0.9, 0.95, 0.99), 0.14)
+prob_field = prob_field(riv, c(0.1, 0.9, 0.99), 0.14)
 plot(prob_field, "storage")
 save_vtest("storage probability field")
 
