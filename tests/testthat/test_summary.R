@@ -72,17 +72,17 @@ context("storage-reliability-yield relationship")
 
 test_that("storage for reliability and yield is optimized", {
     sry = sry(riv, reliab = 0.5, yield = 0.14)
-    expect_equivalent(sry$storage, 0.0410853830921)
+    expect_equivalent(sry$storage, 0.0401792228222)
     expect_equivalent(sry$reliability, 0.499621326871)
     expect_equivalent(sry$yield, 0.14)
     sry = sry(riv, reliab = 0.5, yield = 0.14, empirical_rel = FALSE)
-    expect_equivalent(sry$storage, 0.0413683875684)
+    expect_equivalent(sry$storage, 0.0401773452759)
     expect_equivalent(sry$reliability, 0.5)
     expect_equivalent(sry$yield, 0.14)
-    # reliability > 1 if absoluteness of difference not reflected
-    sry = sry(riv, reliab = 0.7, yield = 0.7)
-    expect_equivalent(sry$storage, 13.5975849471)
-    expect_equivalent(sry$reliability, 0.0134050287792)
+    # increase of upper limit of storage needed
+    sry = sry(riv, reliab = 0.7, yield = 0.7, upper = 100)
+    expect_equivalent(sry$storage, 1318.80657971)
+    expect_equivalent(sry$reliability, 0.700318085429)
     expect_equivalent(sry$yield, 0.7)
 })
 
@@ -107,14 +107,14 @@ test_that("yield for storage and reliability is optimized", {
     sry = sry(riv, storage = 0.041, reliab = 0.5)
     expect_equivalent(sry$storage, 0.041)
     expect_equivalent(sry$reliability, 0.500378673129)
-    expect_equivalent(sry$yield, 0.13934106881)
+    expect_equivalent(sry$yield, 0.139881646821)
 })
 
 test_that("yield is optimized with the option to throw exceeding volume", {
     sry1 = sry(riv, storage = 0.041, reliab = 0.88)
     sry2 = sry(riv, storage = 0.041, reliab = 0.88, throw_exceed = TRUE)
     expect_equivalent(sry1$storage, 0.041)
-    expect_equivalent(sry1$reliability, 0.882838533778)
-    expect_equivalent(sry1$yield, 0.0608845435905)
+    expect_equivalent(sry1$reliability, 0.880566495002)
+    expect_equivalent(sry1$yield, 0.0618148688114)
     expect_equivalent(sry1, sry2)
 })

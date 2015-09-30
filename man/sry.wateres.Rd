@@ -9,7 +9,7 @@ sry(reser, storage, reliability, yield, empirical_rel, upper_limit,
   throw_exceed)
 
 \method{sry}{wateres}(reser, storage, reliability, yield,
-  empirical_rel = TRUE, upper_limit = 1, throw_exceed = FALSE)
+  empirical_rel = TRUE, upper_limit = 5, throw_exceed = FALSE)
 }
 \arguments{
 \item{reser}{A wateres object.}
@@ -43,16 +43,20 @@ Calculates one of the water reservoir storage, time-based reliability and yield 
 two remaining values are provided.
 }
 \details{
-To optimize the value of storage or yield, the \code{\link{optimize}} function is applied. If optimization fails, try
-  to change its upper limit given as the \code{upper_limit} argument.
+To optimize the value of storage or yield, a simple bisection algorithm is applied. If the optimization fails because
+  the required reliability is not contained within the provided interval, try to change its upper limit given as the \code{upper_limit}
+  argument.
+
+  As the required reliability represents a range of storage or yield values, the smallest value of storage (or the greatest value
+  of yield) is returned, considering some tolerance value of the optimization algorithm.
 }
 \examples{
 reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-reser = as.wateres(reser, Vpot = 1)
-sry(reser, reliab = 0.5, yield = 0.14)
+reser = as.wateres(reser, Vpot = 14.4)
+sry(reser, reliab = 0.9, yield = 0.14)
 sry(reser, storage = 0.041, yield = 0.14)
 sry(reser, yield = 0.14)
 sry(reser, storage = 0.041, reliab = 0.5)

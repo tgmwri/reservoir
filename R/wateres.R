@@ -17,7 +17,7 @@
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, Vpot = 14.4)
 #' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
-#' sry(reser, reliab = 0.5, yield = 0.14)
+#' sry(reser, reliab = 0.9, yield = 0.14)
 NULL
 
 .onUnload <- function (libpath) {
@@ -140,6 +140,37 @@ summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
     print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, indices(object, Qn_max)))
 }
 
+# bisection for monotonic function
+bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
+    lower = min(interval)
+    upper = max(interval)
+    flower = func(lower, ...)
+    fupper = func(upper, ...)
+    if (flower * fupper > 0 || (flower == fupper && flower == 0)) {
+        stop("Required reliability is not contained within the given interval.")
+    }
+    else {
+        for (i in 1:max_iter) {
+            if (upper - lower < tolerance)
+                break
+            mid = (lower + upper) / 2
+            fmid = func(mid, ...)
+            if (flower * fmid <= 0 && !(flower == 0 && fupper == 0)) {
+                upper = mid
+                fupper = fmid
+            }
+            else {
+                lower = mid
+                flower = fmid
+            }
+        }
+        if (abs(flower) < abs(fupper))
+            return(c(lower, flower))
+        else
+            return(c(upper, fupper))
+    }
+}
+
 calc_reliability <- function(reser, storage_req, yield_req, empirical, throw_exceed) {
     resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield_req, storage_req, throw_exceed)
 
@@ -160,7 +191,14 @@ calc_diff_reliability <- function(x, reser, storage_req, reliab_req, yield_req, 
         yield_req = x
 
     reliab = calc_reliability(reser, storage_req, yield_req, empirical, throw_exceed)
-    return(abs(reliab - reliab_req))
+    return(reliab - reliab_req)
+}
+
+is_reliab_equal <- function(value, resul_value, reser, yield_req, empirical, throw_exceed) {
+    if (calc_reliability(reser, value, yield_req, empirical, throw_exceed) == resul_value)
+        return(0.5)
+    else
+        return(-1)
 }
 
 #' @rdname sry.wateres
@@ -189,20 +227,24 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, 
 #'   \item{storage}{storage value, optimized, equal to the \code{storage} argument or default (potential volume of \code{reser})}
 #'   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
 #'   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
-#' @details To optimize the value of storage or yield, the \code{\link{optimize}} function is applied. If optimization fails, try
-#'   to change its upper limit given as the \code{upper_limit} argument.
+#' @details To optimize the value of storage or yield, a simple bisection algorithm is applied. If the optimization fails because
+#'   the required reliability is not contained within the provided interval, try to change its upper limit given as the \code{upper_limit}
+#'   argument.
+#'
+#'   As the required reliability represents a range of storage or yield values, the smallest value of storage (or the greatest value
+#'   of yield) is returned, considering some tolerance value of the optimization algorithm.
 #' @export
 #' @examples
 #' reser = data.frame(
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 1)
-#' sry(reser, reliab = 0.5, yield = 0.14)
+#' reser = as.wateres(reser, Vpot = 14.4)
+#' sry(reser, reliab = 0.9, yield = 0.14)
 #' sry(reser, storage = 0.041, yield = 0.14)
 #' sry(reser, yield = 0.14)
 #' sry(reser, storage = 0.041, reliab = 0.5)
-sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 1, throw_exceed = FALSE) {
+sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 5, throw_exceed = FALSE) {
     if (!missing(reliability)) {
         max_reliab = calc_reliability(reser, 1, 0, empirical_rel, throw_exceed)
         if (reliability > max_reliab || reliability < 0)
@@ -210,18 +252,33 @@ sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE
     }
     if (missing(storage) && (missing(reliability) || missing(yield)))
         storage = attr(reser, "Vpot")
-    if (missing(storage)) {
-        # optim or nlminb does not work (probably due to discrete values of reliability?)
-        resul_optim = optimize(
-            calc_diff_reliability, c(0, upper_limit * attr(reser, "Vpot")), reser = reser, reliab_req = reliability, yield_req = yield,
-            empirical = empirical_rel, throw_exceed = throw_exceed)
-        storage = resul_optim$minimum
-    }
-    else if (missing(yield)) {
-        resul_optim = optimize(
-            calc_diff_reliability, c(0, upper_limit * mean(reser$Q)), reser = reser, reliab_req = reliability, storage_req = storage,
-            empirical = empirical_rel, throw_exceed = throw_exceed)
-        yield = resul_optim$minimum
+    if (missing(storage) || missing(yield)) {
+        upper_limit = ifelse(missing(storage), upper_limit * attr(reser, "Vpot"), upper_limit * mean(reser$Q))
+        if (missing(storage)) {
+            resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, yield_req = yield,
+                empirical = empirical_rel, throw_exceed = throw_exceed)
+            reliab_neighbour = calc_reliability(reser, resul[1] + 1e-5, yield, empirical_rel, throw_exceed)
+            missing = "storage"
+        }
+        else {
+            resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, storage_req = storage,
+                empirical = empirical_rel, throw_exceed = throw_exceed)
+            reliab_neighbour = calc_reliability(reser, storage, resul[1] - 1e-5, empirical_rel, throw_exceed)
+            missing = "yield"
+        }
+        reliab_found = resul[2] + reliability
+        # the greatest storage or the smallest yield for the same reliability found -> find the smallest or the greatest one
+        if (reliab_found != reliab_neighbour) {
+            if (missing == "storage") {
+                resul = bisection(is_reliab_equal, c(0, resul[1]), resul_value = reliab_found, reser = reser, yield_req = yield,
+                    empirical = empirical_rel, throw_exceed = throw_exceed)
+            }
+            else {
+                resul = bisection(is_reliab_equal, c(resul[1], upper_limit), resul_value = reliab_found, reser = reser, storage_req = storage,
+                    empirical = empirical_rel, throw_exceed = throw_exceed)
+            }
+        }
+        assign(missing, resul[1])
     }
     reliability = calc_reliability(reser, storage, yield, empirical_rel, throw_exceed)
     return(list(storage = storage, reliability = reliability, yield = yield))

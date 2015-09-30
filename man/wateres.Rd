@@ -19,6 +19,6 @@ reser = data.frame(
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 reser = as.wateres(reser, Vpot = 14.4)
 summary(reser, Qn_coeff = c(0.1, 5, 0.1))
-sry(reser, reliab = 0.5, yield = 0.14)
+sry(reser, reliab = 0.9, yield = 0.14)
 }
 
