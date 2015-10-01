@@ -58,6 +58,13 @@ check_plot_pkgs <- function() {
     }
 }
 
+save_plot_file <- function(p, filename, width, height, ...) {
+    if (!is.null(filename))
+        ggplot2::ggsave(filename = filename, width = width, height = height, ...)
+    else
+        print(p)
+}
+
 #' Plot of probability field
 #'
 #' Plots monthly values of storage or yield stored in a given \code{wateres_prob_field} object, by using the \code{ggplot2} package.
@@ -98,9 +105,68 @@ plot.wateres_prob_field <- function(x, type = "storage", filename = NULL, width 
     p = p + ggplot2::scale_colour_discrete(name = "probability", labels = x$probs)
     p = p + ggplot2::theme(legend.position = "bottom")
 
-    if (!is.null(filename))
-        ggplot2::ggsave(filename = filename, width = width, height = height, ...)
-    else
-        print(p)
+    save_plot_file(p, filename, width, height, ...)
+    return(p)
+}
+
+#' @rdname alpha_beta.wateres
+#' @export
+alpha_beta <- function(reser, yield_coeff) UseMethod("alpha_beta")
+
+#' Calculation of alpha and beta characteristics
+#'
+#' Calculates pairs of alpha (level of development) and beta (ratio of storage and volume of yield) characteristics of the reservoir.
+#'
+#' @param reser A wateres object.
+#' @param yield_coeff A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied.
+#' @return A \code{wateres_alpha_beta} object which is a data.table consisting of:
+#'   \item{alpha}{level of development, given as the \code{yield_coeff} argument}
+#'   \item{beta}{ratio of storage representing 100\% reliability and volume of yield}
+#' @seealso \code{\link{plot.wateres_alpha_beta}} for plotting the results
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, Vpot = 14.4)
+#' alpha_beta = alpha_beta(reser)
+alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05)) {
+    alpha = seq(yield_coeff[1], yield_coeff[2], by = yield_coeff[3])
+    yields = alpha * mean(reser$Q)
+    Vz = sapply(1:length(yields), function(i) { max_deficit(reser$Q, yields[i]) })
+    beta = sapply(1:length(yields), function(i) { Vz[i] * 1e6 / (yields[i] * 3600 * 24 * 365) })
+
+    resul = data.table(alpha = alpha, beta = beta)
+    class(resul) = c("wateres_alpha_beta", class(resul))
+    return(resul)
+}
+
+#' Plot of alpha and beta characteristics
+#'
+#' Plots characteristics in a given \code{wateres_alpha_beta} object, by using the \code{ggplot2} package.
+#'
+#' @param x A \code{wateres_alpha_beta} object.
+#' @param filename A file name where the plot will be saved. If not specified, the plot will be printed to the current device.
+#' @param width Plot width in inches (or a unit specified by the \code{units} argument).
+#' @param height Plot height in inches (or a unit specified by the \code{units} argument).
+#' @param ... Further arguments passed to the \code{\link[ggplot2:ggsave]{ggsave}} function saving the plot to a file.
+#' @return A \code{ggplot} object.
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, Vpot = 14.4)
+#' alpha_beta = alpha_beta(reser)
+#' plot(alpha_beta)
+plot.wateres_alpha_beta <- function(x, filename = NULL, width = 8, height = 6, ...) {
+    check_plot_pkgs()
+
+    p = ggplot2::ggplot(x, ggplot2::aes(x = beta, y = alpha)) + ggplot2::geom_line(colour = "#F8766D")
+    p = p + ggplot2::scale_x_continuous("beta [\u2013]") + ggplot2::scale_y_continuous("alpha [\u2013]")
+
+    save_plot_file(p, filename, width, height, ...)
     return(p)
 }

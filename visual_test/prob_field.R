@@ -10,4 +10,8 @@ save_vtest("storage probability field")
 plot(prob_field, "yield")
 save_vtest("yield probability field")
 
+alpha_beta = alpha_beta(riv)
+plot(alpha_beta)
+save_vtest("alpha beta plot")
+
 end_vcontext()
