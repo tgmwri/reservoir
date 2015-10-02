@@ -15,9 +15,13 @@
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4)
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+#' reser = set_evaporation(reser, altitude = 529)
 #' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
 #' sry(reser, reliab = 0.9, yield = 0.14)
+#' prob_field = prob_field(reser, c(0.1, 0.9, 0.99), 0.14)
+#' plot(prob_field, "storage")
+#' plot(alpha_beta(reser))
 NULL
 
 .onUnload <- function (libpath) {
@@ -41,6 +45,7 @@ days_in_month <- function(date) {
 #'   Alternatively, this can be a Bilan object where the dates and modelled or observed runoffs are read from.
 #'   In that case, catchment area needs to be specified within the Bilan object.
 #' @param Vpot Potential storage of the reservoir in millions of m3.
+#' @param area Flooded area of the reservoir for the potential storage in km2.
 #' @param observed Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).
 #' @return A wateres object which is also of data.frame and data.table classes.
 #' @details An error occurs if \dQuote{Q} or \dQuote{DTM} column is missing or \code{dframe} is of another class
@@ -51,8 +56,8 @@ days_in_month <- function(date) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4)
-as.wateres <- function(dframe, Vpot, observed = FALSE) {
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
     if ("bilan" %in% class(dframe)) {
         if (requireNamespace("bilan", quietly = TRUE)) {
             catch_area = bilan::bil.get.area(dframe)
@@ -82,6 +87,7 @@ as.wateres <- function(dframe, Vpot, observed = FALSE) {
     dframe$Q = as.numeric(dframe$Q)
     class(dframe) = c("wateres", "data.table", "data.frame")
     attr(dframe, "Vpot") = Vpot
+    attr(dframe, "area") = area
     return(dframe)
 }
 
@@ -126,7 +132,7 @@ indices <- function(reser, Qn) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4)
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
 summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
     Qn = seq(Qn_coeff[1], Qn_coeff[2], by = Qn_coeff[3]) * mean(object$Q)
@@ -172,7 +178,11 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
 }
 
 calc_reliability <- function(reser, storage_req, yield_req, empirical, throw_exceed) {
-    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield_req, storage_req, throw_exceed)
+    if (!"E" %in% names(reser))
+        tmp_E = rep(0, nrow(reser))
+    else
+        tmp_E = reser$E
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp_E, yield_req, storage_req, attr(reser, "area"), throw_exceed)
 
     if (empirical)
         coeff = c(m = -0.3, n = 0.4)
@@ -239,7 +249,7 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, 
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4)
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' sry(reser, reliab = 0.9, yield = 0.14)
 #' sry(reser, storage = 0.041, yield = 0.14)
 #' sry(reser, yield = 0.14)

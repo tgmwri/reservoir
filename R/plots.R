@@ -21,10 +21,14 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4)
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "Vpot"), throw_exceed = FALSE) {
-    calc_resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, yield, storage, throw_exceed)
+    if (!"E" %in% names(reser))
+        tmp_E = rep(0, nrow(reser))
+    else
+        tmp_E = reser$E
+    calc_resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp_E, yield, storage, attr(reser, "area"), throw_exceed)
 
     reser = cbind(reser, storage = calc_resul$storage[2:length(calc_resul$storage)], yield = calc_resul$yield)
     var_quant = list()
@@ -82,7 +86,7 @@ save_plot_file <- function(p, filename, width, height, ...) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4)
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 #' plot(prob_field, "storage")
 plot.wateres_prob_field <- function(x, type = "storage", filename = NULL, width = 8, height = 6, ...) {
@@ -129,7 +133,7 @@ alpha_beta <- function(reser, yield_coeff) UseMethod("alpha_beta")
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4)
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' alpha_beta = alpha_beta(reser)
 alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05)) {
     alpha = seq(yield_coeff[1], yield_coeff[2], by = yield_coeff[3])
@@ -158,7 +162,7 @@ alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05)) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4)
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' alpha_beta = alpha_beta(reser)
 #' plot(alpha_beta)
 plot.wateres_alpha_beta <- function(x, filename = NULL, width = 8, height = 6, ...) {

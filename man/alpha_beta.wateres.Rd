@@ -12,7 +12,7 @@ alpha_beta(reser, yield_coeff)
 \arguments{
 \item{reser}{A wateres object.}
 
-\item{yield_coeff}{A vector of alpha values, i.e. coefficients to multiply mean annual flow.}
+\item{yield_coeff}{A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied.}
 }
 \value{
 A \code{wateres_alpha_beta} object which is a data.table consisting of:
@@ -27,7 +27,7 @@ reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-reser = as.wateres(reser, Vpot = 14.4)
+reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 alpha_beta = alpha_beta(reser)
 }
 \seealso{

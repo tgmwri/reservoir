@@ -7,6 +7,7 @@ Authors@R: c(
 Description: Tools to calculate characteristics of water reservoirs
     and to perform simulations for them.
 License: GPL (>= 2)
+Encoding: UTF-8
 Imports:
     data.table, Rcpp
 Suggests:

@@ -1,6 +1,6 @@
 context("data for plots")
 
-riv = as.wateres("rivendell.txt", 14.4)
+riv = as.wateres("rivendell.txt", 14.4, 0.754)
 
 test_that("probability fields are calculated", {
     prob_field = prob_field(riv, c(0.1, 0.9, 0.99), 0.14)
