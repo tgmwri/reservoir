@@ -161,7 +161,7 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
                 break
             mid = (lower + upper) / 2
             fmid = func(mid, ...)
-            if (flower * fmid <= 0 && !(flower == 0 && fupper == 0)) {
+            if (flower * fmid <= 0 && !(flower == 0 && fmid == 0)) {
                 upper = mid
                 fupper = fmid
             }

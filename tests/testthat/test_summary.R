@@ -83,6 +83,10 @@ test_that("yield for storage and reliability is optimized", {
     expect_equivalent(sry$storage, 0.041)
     expect_equivalent(sry$reliability, 0.500378673129)
     expect_equivalent(sry$yield, 0.139881646821)
+    sry = sry(riv, storage = 14.4, reliab = 1, empirical_rel = FALSE)
+    expect_equivalent(sry$storage, 14.4)
+    expect_equivalent(sry$reliability, 1)
+    expect_equivalent(sry$yield, 0.14501888252)
 })
 
 test_that("yield is optimized with the option to throw exceeding volume", {
