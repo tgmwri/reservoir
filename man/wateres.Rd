@@ -19,7 +19,7 @@ reser = data.frame(
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 reser = set_evaporation(reser, altitude = 529)
-summary(reser, Qn_coeff = c(0.1, 5, 0.1))
+summary(reser)
 sry(reser, reliab = 0.9, yield = 0.14)
 prob_field = prob_field(reser, c(0.1, 0.9, 0.99), 0.14)
 plot(prob_field, "storage")

@@ -17,9 +17,9 @@ riv = as.wateres("rivendell.txt", 14.4, 0.754)
 test_that("characteristics are calculated correctly", {
     chars = summary(riv, Qn_coeff = c(0.1, 1, 0.05))
     expect_equivalent(chars["Vpot"], 14.4)
-    expect_equivalent(chars["Qn_max"], 0.1446833785)
-    expect_equivalent(chars["alpha"], 0.9196508835)
-    expect_equivalent(chars["m"], 0.3204723019)
+    expect_equivalent(chars["Qn_max"], 0.145018882520)
+    expect_equivalent(chars["alpha"], 0.921783447266)
+    expect_equivalent(chars["m"], 0.311966575415)
 })
 
 context("storage, yield and evaporation time series")

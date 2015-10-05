@@ -17,7 +17,7 @@
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' reser = set_evaporation(reser, altitude = 529)
-#' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
+#' summary(reser)
 #' sry(reser, reliab = 0.9, yield = 0.14)
 #' prob_field = prob_field(reser, c(0.1, 0.9, 0.99), 0.14)
 #' plot(prob_field, "storage")
@@ -91,41 +91,21 @@ as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
     return(dframe)
 }
 
-# calculates changes in reservoir storage from monthly discharges Q [m3/s]
-# Qn is a designed yield value
-max_deficit <- function(Q, Qn) {
-    deltaQ = Q - Qn
-    n = length(deltaQ)
-    storage = vector("numeric", n)
-    for (j in 1:(n - 1)) {
-        storage[j + 1] = min(0, storage[j] + deltaQ[j + 1])
-    }
-    return(-min(storage) * 30.5 * 3600 * 24 / 1e6)
-}
-
-indices <- function(reser, Qn) {
-    Qa = mean(reser$Q)
-    alpha = Qn / Qa
-    Qyears = reser[, list(Q = mean(Q)), by = year(DTM)]
-    m = (1 - alpha) / (sd(Qyears$Q) / Qa)
-    return(c(alpha = alpha, m = m))
-}
-
 #' Water reservoir summary
 #'
 #' Calculates and shows characteristics of the reservoir.
 #'
 #' @param object A wateres object.
 #' @param ... Further arguments are not used.
-#' @param Qn_coeff Begin, end and step value of coefficients used to calculate designed yields to be tested.
-#'   The designed yields are equal to the mean annual flow multiplied by the coefficient.
+#' @param upper_limit An upper limit of yield (as multiple of the mean annual flow) for optimization as in the \code{\link{sry.wateres}} function.
 #' @return A vector of reservoir characteristics:
 #'   \item{Vpot}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.wateres}})}
 #'   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
 #'   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
 #'   \item{m}{resilience index - a measure of flow variability calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
-#' @details An error occurs if potential storage \code{Vpot} is out of the range given by \code{Qn_coeff} so that
-#'   value of Qn_max cannot be interpolated.
+#' @details The maximum yield is calculated by using the \code{\link{sry.wateres}} function for potential storage and reliability 1.
+#'
+#'   An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability.
 #' @export
 #' @examples
 #' reser = data.frame(
@@ -133,17 +113,14 @@ indices <- function(reser, Qn) {
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
-#' summary(reser, Qn_coeff = c(0.1, 5, 0.1))
-summary.wateres <- function(object, ..., Qn_coeff = c(0.1, 1.2, 0.05)) {
-    Qn = seq(Qn_coeff[1], Qn_coeff[2], by = Qn_coeff[3]) * mean(object$Q)
-
-    Vz = sapply(1:length(Qn), function(i) { max_deficit(object$Q, Qn[i]) })
-
-    Qn_max = approx(Vz, Qn, xout = attr(object, "Vpot"))$y
-    if (is.na(Qn_max))
-        stop("Qn_max for potential volume cannot be interpolated. Increase the range given by Qn_coeff.")
-
-    print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, indices(object, Qn_max)))
+#' summary(reser)
+summary.wateres <- function(object, ..., upper_limit = 5) {
+    Qn_max = sry(object, reliability = 1, empirical_rel = FALSE, upper_limit = upper_limit)$yield
+    Qa = mean(object$Q)
+    alpha = Qn_max / Qa
+    Qyears = object[, list(Q = mean(Q)), by = year(DTM)]
+    m = (1 - alpha) / (sd(Qyears$Q) / Qa)
+    print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, alpha = alpha, m = m))
 }
 
 # bisection for monotonic function
@@ -152,7 +129,9 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
     upper = max(interval)
     flower = func(lower, ...)
     fupper = func(upper, ...)
-    if (flower * fupper > 0 || (flower == fupper && flower == 0)) {
+    if (flower == fupper && flower == 0)
+        return(c(lower, 0))
+    else if (flower * fupper > 0) {
         stop("Required reliability is not contained within the given interval.")
     }
     else {

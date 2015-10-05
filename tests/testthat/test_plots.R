@@ -8,7 +8,7 @@ test_that("probability fields are calculated", {
 })
 
 test_that("alphas and betas are calculated", {
-    alpha_beta = alpha_beta(riv)
+    alpha_beta = alpha_beta(riv, upper = 10)
     expect_equivalent(alpha_beta, readRDS("alpha_beta.rds"))
 })
 

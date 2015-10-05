@@ -4,15 +4,14 @@
 \alias{summary.wateres}
 \title{Water reservoir summary}
 \usage{
-\method{summary}{wateres}(object, ..., Qn_coeff = c(0.1, 1.2, 0.05))
+\method{summary}{wateres}(object, ..., upper_limit = 5)
 }
 \arguments{
 \item{object}{A wateres object.}
 
 \item{...}{Further arguments are not used.}
 
-\item{Qn_coeff}{Begin, end and step value of coefficients used to calculate designed yields to be tested.
-The designed yields are equal to the mean annual flow multiplied by the coefficient.}
+\item{upper_limit}{An upper limit of yield (as multiple of the mean annual flow) for optimization as in the \code{\link{sry.wateres}} function.}
 }
 \value{
 A vector of reservoir characteristics:
@@ -25,8 +24,9 @@ A vector of reservoir characteristics:
 Calculates and shows characteristics of the reservoir.
 }
 \details{
-An error occurs if potential storage \code{Vpot} is out of the range given by \code{Qn_coeff} so that
-  value of Qn_max cannot be interpolated.
+The maximum yield is calculated by using the \code{\link{sry.wateres}} function for potential storage and reliability 1.
+
+  An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability.
 }
 \examples{
 reser = data.frame(
@@ -34,6 +34,6 @@ reser = data.frame(
           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
-summary(reser, Qn_coeff = c(0.1, 5, 0.1))
+summary(reser)
 }
 

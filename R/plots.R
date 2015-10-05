@@ -115,7 +115,7 @@ plot.wateres_prob_field <- function(x, type = "storage", filename = NULL, width 
 
 #' @rdname alpha_beta.wateres
 #' @export
-alpha_beta <- function(reser, yield_coeff) UseMethod("alpha_beta")
+alpha_beta <- function(reser, yield_coeff, upper_limit) UseMethod("alpha_beta")
 
 #' Calculation of alpha and beta characteristics
 #'
@@ -123,9 +123,11 @@ alpha_beta <- function(reser, yield_coeff) UseMethod("alpha_beta")
 #'
 #' @param reser A wateres object.
 #' @param yield_coeff A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied.
+#' @param upper_limit An upper limit of storage (as multiple of the potential storage) for optimization as in the \code{\link{sry.wateres}} function.
 #' @return A \code{wateres_alpha_beta} object which is a data.table consisting of:
 #'   \item{alpha}{level of development, given as the \code{yield_coeff} argument}
 #'   \item{beta}{ratio of storage representing 100\% reliability and volume of yield}
+#' @details An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability.
 #' @seealso \code{\link{plot.wateres_alpha_beta}} for plotting the results
 #' @export
 #' @examples
@@ -135,10 +137,10 @@ alpha_beta <- function(reser, yield_coeff) UseMethod("alpha_beta")
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' alpha_beta = alpha_beta(reser)
-alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05)) {
+alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05), upper_limit = 5) {
     alpha = seq(yield_coeff[1], yield_coeff[2], by = yield_coeff[3])
     yields = alpha * mean(reser$Q)
-    Vz = sapply(1:length(yields), function(i) { max_deficit(reser$Q, yields[i]) })
+    Vz = sapply(1:length(yields), function(i) { sry(reser, reliability = 1, yield = yields[i], empirical_rel = FALSE, upper_limit = upper_limit)$storage })
     beta = sapply(1:length(yields), function(i) { Vz[i] * 1e6 / (yields[i] * 3600 * 24 * 365) })
 
     resul = data.table(alpha = alpha, beta = beta)
