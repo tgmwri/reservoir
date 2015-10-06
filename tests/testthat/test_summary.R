@@ -15,11 +15,19 @@ context("characteristics calculated by summary function")
 riv = as.wateres("rivendell.txt", 14.4, 0.754)
 
 test_that("characteristics are calculated correctly", {
-    chars = summary(riv, Qn_coeff = c(0.1, 1, 0.05))
+    chars = summary(riv)
     expect_equivalent(chars["Vpot"], 14.4)
     expect_equivalent(chars["Qn_max"], 0.145018882520)
     expect_equivalent(chars["alpha"], 0.921783447266)
     expect_equivalent(chars["m"], 0.311966575415)
+})
+
+test_that("characteristics are calculated for given reliability", {
+    chars = summary(riv, reliability = 0.95)
+    expect_equivalent(chars["Vpot"], 14.4)
+    expect_equivalent(chars["Qn_max"], 0.1557741525525)
+    expect_equivalent(chars["alpha"], 0.9901471645571)
+    expect_equivalent(chars["m"], 0.0392980158775)
 })
 
 context("storage, yield, evaporation and withdrawal time series")

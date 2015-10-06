@@ -97,15 +97,18 @@ as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
 #'
 #' @param object A wateres object.
 #' @param ... Further arguments are not used.
-#' @param upper_limit An upper limit of yield (as multiple of the mean annual flow) for optimization as in the \code{\link{sry.wateres}} function.
+#' @param reliability A reliability value passed to the \code{\link{sry.wateres}} function.
+#' @param empirical_rel Whether empirical probability will be used for reliability, passed to the \code{\link{sry.wateres}} function.
+#' @param upper_limit An upper limit of yield (as multiple of the mean annual flow) for optimization passed to the \code{\link{sry.wateres}} function.
 #' @return A vector of reservoir characteristics:
 #'   \item{Vpot}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.wateres}})}
 #'   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
 #'   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
-#'   \item{m}{resilience index - a measure of flow variability calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
+#'   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
 #' @details The maximum yield is calculated by using the \code{\link{sry.wateres}} function for potential storage and reliability 1.
 #'
-#'   An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability.
+#'   An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability or if an invalid reliability is given.
+#' @seealso \code{\link{sry.wateres}} used for optimization of the yield for given reliability
 #' @export
 #' @examples
 #' reser = data.frame(
@@ -113,9 +116,10 @@ as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
-#' summary(reser)
-summary.wateres <- function(object, ..., upper_limit = 5) {
-    Qn_max = sry(object, reliability = 1, empirical_rel = FALSE, upper_limit = upper_limit)$yield
+#' summary(reser, reliability = 1)
+#' summary(reser, reliability = 0.95)
+summary.wateres <- function(object, ..., reliability = 1, empirical_rel = FALSE, upper_limit = 5) {
+    Qn_max = sry(object, reliability = reliability, empirical_rel = empirical_rel, upper_limit = upper_limit)$yield
     Qa = mean(object$Q)
     alpha = Qn_max / Qa
     Qyears = object[, list(Q = mean(Q)), by = year(DTM)]
@@ -191,8 +195,13 @@ calc_diff_reliability <- function(x, reser, storage_req, reliab_req, yield_req, 
     return(reliab - reliab_req)
 }
 
-is_reliab_equal <- function(value, resul_value, reser, yield_req, empirical, throw_exceed) {
-    if (calc_reliability(reser, value, yield_req, empirical, throw_exceed) == resul_value)
+is_reliab_equal <- function(value, resul_value, reser, storage_req, yield_req, empirical, throw_exceed) {
+    if (missing(storage_req))
+        reliab = calc_reliability(reser, value, yield_req, empirical, throw_exceed)
+    else
+        reliab = calc_reliability(reser, storage_req, value, empirical, throw_exceed)
+
+    if (reliab == resul_value)
         return(0.5)
     else
         return(-1)

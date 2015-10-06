@@ -4,21 +4,26 @@
 \alias{summary.wateres}
 \title{Water reservoir summary}
 \usage{
-\method{summary}{wateres}(object, ..., upper_limit = 5)
+\method{summary}{wateres}(object, ..., reliability = 1,
+  empirical_rel = FALSE, upper_limit = 5)
 }
 \arguments{
 \item{object}{A wateres object.}
 
 \item{...}{Further arguments are not used.}
 
-\item{upper_limit}{An upper limit of yield (as multiple of the mean annual flow) for optimization as in the \code{\link{sry.wateres}} function.}
+\item{reliability}{A reliability value passed to the \code{\link{sry.wateres}} function.}
+
+\item{empirical_rel}{Whether empirical probability will be used for reliability, passed to the \code{\link{sry.wateres}} function.}
+
+\item{upper_limit}{An upper limit of yield (as multiple of the mean annual flow) for optimization passed to the \code{\link{sry.wateres}} function.}
 }
 \value{
 A vector of reservoir characteristics:
   \item{Vpot}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.wateres}})}
   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
-  \item{m}{resilience index - a measure of flow variability calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
+  \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
 }
 \description{
 Calculates and shows characteristics of the reservoir.
@@ -26,7 +31,7 @@ Calculates and shows characteristics of the reservoir.
 \details{
 The maximum yield is calculated by using the \code{\link{sry.wateres}} function for potential storage and reliability 1.
 
-  An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability.
+  An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability or if an invalid reliability is given.
 }
 \examples{
 reser = data.frame(
@@ -34,6 +39,10 @@ reser = data.frame(
           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
-summary(reser)
+summary(reser, reliability = 1)
+summary(reser, reliability = 0.95)
+}
+\seealso{
+\code{\link{sry.wateres}} used for optimization of \code{Qn_max} for given reliability
 }
 
