@@ -22,17 +22,32 @@ test_that("characteristics are calculated correctly", {
     expect_equivalent(chars["m"], 0.311966575415)
 })
 
-context("storage, yield and evaporation time series")
+context("storage, yield, evaporation and withdrawal time series")
 
-test_that("storage, yield and evaporation time series are calculated", {
-    tmp_E = rep(0, nrow(riv))
-    resul = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, tmp_E, 0.06, 0.041, attr(riv, "area"), FALSE)
-    resul_throw = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, tmp_E, 0.06, 0.041, attr(riv, "area"), TRUE)
+test_that("storage, yield, evaporation and withdrawal time series are calculated", {
+    tmp = get_reser_variables(riv)
+    resul = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, tmp$E, tmp$W, 0.06, 0.041, attr(riv, "area"), FALSE)
+    resul_throw = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, tmp$E, tmp$W, 0.06, 0.041, attr(riv, "area"), TRUE)
     expect_equivalent(resul, readRDS("series.rds"))
     expect_equivalent(resul_throw, readRDS("series_throw.rds"))
     riv = set_evaporation(riv, altitude = 529)
-    resul_evaporation = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, riv$E, 0.14, 14.4, attr(riv, "area"), FALSE)
-    expect_equivalent(resul_throw, readRDS("series_throw.rds"))
+    resul_evaporation = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, riv$E, tmp$W, 0.14, 14.4, attr(riv, "area"), FALSE)
+    expect_equivalent(resul_evaporation, readRDS("series_evaporation.rds"))
+    riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
+    resul_with = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, riv$E, riv$W, 0.14, 14.4, attr(riv, "area"), FALSE)
+    expect_equivalent(resul_with, readRDS("series_withdrawal.rds"))
+})
+
+test_that("withdrawal without evaporation is calculated", {
+    reser = data.frame(
+        Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+            0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+        DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+    reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+    reser = set_withdrawal(reser, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, rep(0, nrow(reser)), reser$W, 0.14, 0.021, attr(riv, "area"), FALSE)
+    expect_equivalent(resul$withdrawal,
+        c(0, 0, 35000, 33000, 30000, 0, 0, 0, 0, 22000, 24000, 32000, 23000, 31000, 35000, 33000, 30000, 42000, 0, 0, 0, 22000, 24000, 0))
 })
 
 context("storage-reliability-yield relationship")
@@ -75,6 +90,13 @@ test_that("reliability for storage and yield is calculated", {
     sry = sry(riv, storage = 0.041, yield = 0.14)
     expect_equivalent(sry$storage, 0.041)
     expect_equivalent(sry$reliability, 0.433732202363)
+    expect_equivalent(sry$yield, 0.14)
+
+    # withdrawal applied
+    riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
+    sry = sry(riv, storage = 0.041, yield = 0.14)
+    expect_equivalent(sry$storage, 0.041)
+    expect_equivalent(sry$reliability, 0.430702817328)
     expect_equivalent(sry$yield, 0.14)
 })
 

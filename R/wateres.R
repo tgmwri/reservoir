@@ -156,12 +156,20 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
     }
 }
 
+get_reser_variables <- function(reser) {
+    tmp = list()
+    for (var in c("E", "W")) {
+        if (!var %in% names(reser))
+            tmp[[var]] = rep(0, nrow(reser))
+        else
+            tmp[[var]] = reser[[var]]
+    }
+    return(tmp)
+}
+
 calc_reliability <- function(reser, storage_req, yield_req, empirical, throw_exceed) {
-    if (!"E" %in% names(reser))
-        tmp_E = rep(0, nrow(reser))
-    else
-        tmp_E = reser$E
-    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp_E, yield_req, storage_req, attr(reser, "area"), throw_exceed)
+    tmp = get_reser_variables(reser)
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp$E, tmp$W, yield_req, storage_req, attr(reser, "area"), throw_exceed)
 
     if (empirical)
         coeff = c(m = -0.3, n = 0.4)

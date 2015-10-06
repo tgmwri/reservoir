@@ -24,11 +24,8 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 #' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 #' prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "Vpot"), throw_exceed = FALSE) {
-    if (!"E" %in% names(reser))
-        tmp_E = rep(0, nrow(reser))
-    else
-        tmp_E = reser$E
-    calc_resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp_E, yield, storage, attr(reser, "area"), throw_exceed)
+    tmp = get_reser_variables(reser)
+    calc_resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp$E, tmp$W, yield, storage, attr(reser, "area"), throw_exceed)
 
     reser = cbind(reser, storage = calc_resul$storage[2:length(calc_resul$storage)], yield = calc_resul$yield)
     var_quant = list()
