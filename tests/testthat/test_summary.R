@@ -20,6 +20,7 @@ test_that("characteristics are calculated correctly", {
     expect_equivalent(chars["Qn_max"], 0.145018882520)
     expect_equivalent(chars["alpha"], 0.921783447266)
     expect_equivalent(chars["m"], 0.311966575415)
+    expect_true(is.na(chars["resilience"]))
 })
 
 test_that("characteristics are calculated for given reliability", {
@@ -28,6 +29,7 @@ test_that("characteristics are calculated for given reliability", {
     expect_equivalent(chars["Qn_max"], 0.1557741525525)
     expect_equivalent(chars["alpha"], 0.9901471645571)
     expect_equivalent(chars["m"], 0.0392980158775)
+    expect_equivalent(chars["resilience"], 0.272727272727)
 })
 
 context("storage, yield, evaporation and withdrawal time series")

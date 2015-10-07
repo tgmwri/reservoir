@@ -105,6 +105,7 @@ as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
 #'   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
 #'   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
 #'   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
+#'   \item{resilience}{resilience calcualated of number of continuous sequences of failures / total number of time steps with failures, NA for no failure}
 #' @details The maximum yield is calculated by using the \code{\link{sry.wateres}} function for potential storage and reliability 1.
 #'
 #'   An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability or if an invalid reliability is given.
@@ -121,12 +122,22 @@ as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
 #' summary(reser, reliability = 1)
 #' summary(reser, reliability = 0.95)
 summary.wateres <- function(object, ..., reliability = 1, empirical_rel = FALSE, upper_limit = 5) {
-    Qn_max = sry(object, reliability = reliability, empirical_rel = empirical_rel, upper_limit = upper_limit)$yield
+    resul = sry(object, reliability = reliability, empirical_rel = empirical_rel, upper_limit = upper_limit, get_series = TRUE)
+    Qn_max = resul$yield
     Qa = mean(object$Q)
     alpha = Qn_max / Qa
     Qyears = object[, list(Q = mean(Q)), by = year(DTM)]
     m = (1 - alpha) / (sd(Qyears$Q) / Qa)
-    print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, alpha = alpha, m = m))
+
+    failures = !(resul$series$yield + .Machine$double.eps ^ 0.5 > Qn_max)
+    failures_duration = sum(failures)
+    if (failures_duration == 0)
+        resilience = NA
+    else {
+        failures_count = length(which(diff(failures) == 1)) + failures[1] # to count failure started in step 1
+        resilience = failures_count / failures_duration
+    }
+    print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, alpha = alpha, m = m, resilience = resilience))
 }
 
 # bisection for monotonic function

@@ -24,6 +24,7 @@ A vector of reservoir characteristics:
   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
+  \item{resilience}{resilience calcualated of number of continuous sequences of failures / total number of time steps of failures, NA for no failure}
 }
 \description{
 Calculates and shows characteristics of the reservoir.
