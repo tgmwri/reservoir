@@ -33,16 +33,15 @@ test_that("characteristics are calculated for given reliability", {
 context("storage, yield, evaporation and withdrawal time series")
 
 test_that("storage, yield, evaporation and withdrawal time series are calculated", {
-    tmp = get_reser_variables(riv)
-    resul = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, tmp$E, tmp$W, 0.06, 0.041, attr(riv, "area"), FALSE)
-    resul_throw = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, tmp$E, tmp$W, 0.06, 0.041, attr(riv, "area"), TRUE)
+    resul = calc_series(riv, 0.041, 0.06, FALSE)
+    resul_throw = calc_series(riv, 0.041, 0.06, TRUE)
     expect_equivalent(resul, readRDS("series.rds"))
     expect_equivalent(resul_throw, readRDS("series_throw.rds"))
     riv = set_evaporation(riv, altitude = 529)
-    resul_evaporation = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, riv$E, tmp$W, 0.14, 14.4, attr(riv, "area"), FALSE)
+    resul_evaporation = calc_series(riv, 14.4, 0.14, FALSE)
     expect_equivalent(resul_evaporation, readRDS("series_evaporation.rds"))
     riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
-    resul_with = .Call("calc_storage", PACKAGE = "wateres", riv$Q, riv$.days, riv$E, riv$W, 0.14, 14.4, attr(riv, "area"), FALSE)
+    resul_with = calc_series(riv, 14.4, 0.14, FALSE)
     expect_equivalent(resul_with, readRDS("series_withdrawal.rds"))
 })
 
@@ -53,7 +52,7 @@ test_that("withdrawal without evaporation is calculated", {
         DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
     reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
     reser = set_withdrawal(reser, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
-    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, rep(0, nrow(reser)), reser$W, 0.14, 0.021, attr(riv, "area"), FALSE)
+    resul = calc_series(reser, 0.021, 0.14, FALSE)
     expect_equivalent(resul$withdrawal,
         c(0, 0, 35000, 33000, 30000, 0, 0, 0, 0, 22000, 24000, 32000, 23000, 31000, 35000, 33000, 30000, 42000, 0, 0, 0, 22000, 24000, 0))
 })

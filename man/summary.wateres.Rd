@@ -42,7 +42,11 @@ reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
 summary(reser, reliability = 1)
 summary(reser, reliability = 0.95)
 }
+\references{
+Thomas A. McMahon, Adebayo J. Adeloye, Sen-Lin Zhou (2006): Understanding performance measures of reservoirs,
+  Journal of Hydrology 324, 359–382.
+}
 \seealso{
-\code{\link{sry.wateres}} used for optimization of \code{Qn_max} for given reliability
+\code{\link{sry.wateres}} used for optimization of the yield for given reliability
 }
 

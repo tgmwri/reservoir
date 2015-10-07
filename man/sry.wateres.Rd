@@ -6,10 +6,11 @@
 \title{Calculation of storage, reliability and yield}
 \usage{
 sry(reser, storage, reliability, yield, empirical_rel, upper_limit,
-  throw_exceed)
+  throw_exceed, get_series)
 
 \method{sry}{wateres}(reser, storage, reliability, yield,
-  empirical_rel = TRUE, upper_limit = 5, throw_exceed = FALSE)
+  empirical_rel = TRUE, upper_limit = 5, throw_exceed = FALSE,
+  get_series = FALSE)
 }
 \arguments{
 \item{reser}{A wateres object.}
@@ -31,12 +32,16 @@ of reliability. If enabled, maximum reliability value will be less than 1.}
 
 \item{throw_exceed}{Whether volume exceeding storage will be thrown or added to yield. This will affect calculated yield series,
 however resulting storage, reliability or yield value is not likely to be influenced.}
+
+\item{get_series}{Whether time series of reservoir balance variables will be returned.}
 }
 \value{
 A list consisting of:
   \item{storage}{storage value, optimized, equal to the \code{storage} argument or default (potential volume of \code{reser})}
   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
+  \item{series}{only if \code{get_series} is enabled, a list consisting of reservoir storage (m3), yield (m3.s-1), evaporation (m3)
+    and withdrawal (m3) time series}
 }
 \description{
 Calculates one of the water reservoir storage, time-based reliability and yield (release) variable while the

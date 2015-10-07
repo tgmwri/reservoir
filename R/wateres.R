@@ -109,6 +109,8 @@ as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
 #'
 #'   An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability or if an invalid reliability is given.
 #' @seealso \code{\link{sry.wateres}} used for optimization of the yield for given reliability
+#' @references Thomas A. McMahon, Adebayo J. Adeloye, Sen-Lin Zhou (2006): Understanding performance measures of reservoirs,
+#'   Journal of Hydrology 324, 359–382.
 #' @export
 #' @examples
 #' reser = data.frame(
@@ -171,37 +173,41 @@ get_reser_variables <- function(reser) {
     return(tmp)
 }
 
-calc_reliability <- function(reser, storage_req, yield_req, empirical, throw_exceed) {
+calc_series <- function(reser, storage_req, yield_req, throw_exceed) {
     tmp = get_reser_variables(reser)
     resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp$E, tmp$W, yield_req, storage_req, attr(reser, "area"), throw_exceed)
+    return(resul)
+}
 
+calc_reliability <- function(series, yield_req, empirical) {
     if (empirical)
         coeff = c(m = -0.3, n = 0.4)
     else
         coeff = c(m = 0, n = 0)
-    reliab = (sum(resul$yield + .Machine$double.eps ^ 0.5 > yield_req) + coeff["m"]) / (length(resul$yield) + coeff["n"])
+    reliab = (sum(series$yield + .Machine$double.eps ^ 0.5 > yield_req) + coeff["m"]) / (length(series$yield) + coeff["n"])
     names(reliab) = NULL
     return(reliab)
 }
 
-# absolute difference between calculated and required reliability used for optimization
+# difference between calculated and required reliability used for optimization
 calc_diff_reliability <- function(x, reser, storage_req, reliab_req, yield_req, empirical, throw_exceed) {
     if (missing(storage_req))
         storage_req = x
     else if (missing(yield_req))
         yield_req = x
 
-    reliab = calc_reliability(reser, storage_req, yield_req, empirical, throw_exceed)
+    series = calc_series(reser, storage_req, yield_req, throw_exceed)
+    reliab = calc_reliability(series, yield_req, empirical)
     return(reliab - reliab_req)
 }
 
 is_reliab_equal <- function(value, resul_value, reser, storage_req, yield_req, empirical, throw_exceed) {
     if (missing(storage_req))
-        reliab = calc_reliability(reser, value, yield_req, empirical, throw_exceed)
+        storage_req = value
     else
-        reliab = calc_reliability(reser, storage_req, value, empirical, throw_exceed)
-
-    if (reliab == resul_value)
+        yield_req = value
+    series = calc_series(reser, storage_req, yield_req, throw_exceed)
+    if (calc_reliability(series, yield_req, empirical) == resul_value)
         return(0.5)
     else
         return(-1)
@@ -209,7 +215,7 @@ is_reliab_equal <- function(value, resul_value, reser, storage_req, yield_req, e
 
 #' @rdname sry.wateres
 #' @export
-sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, throw_exceed) UseMethod("sry")
+sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, throw_exceed, get_series) UseMethod("sry")
 
 #' Calculation of storage, reliability and yield
 #'
@@ -229,10 +235,13 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, 
 #'   (for storage) or as multiple of mean monthly flow (for yield).
 #' @param throw_exceed Whether volume exceeding storage will be thrown or added to yield. This will affect calculated yield series,
 #'   however resulting storage, reliability or yield value is not likely to be influenced.
+#' @param get_series Whether time series of reservoir balance variables will be returned.
 #' @return A list consisting of:
 #'   \item{storage}{storage value, optimized, equal to the \code{storage} argument or default (potential volume of \code{reser})}
 #'   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
 #'   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
+#'   \item{series}{only if \code{get_series} is enabled, a list consisting of reservoir storage (m3), yield (m3.s-1), evaporation (m3)
+#'     and withdrawal (m3) time series}
 #' @details To optimize the value of storage or yield, a simple bisection algorithm is applied. If the optimization fails because
 #'   the required reliability is not contained within the provided interval, try to change its upper limit given as the \code{upper_limit}
 #'   argument.
@@ -250,9 +259,10 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, 
 #' sry(reser, storage = 0.041, yield = 0.14)
 #' sry(reser, yield = 0.14)
 #' sry(reser, storage = 0.041, reliab = 0.5)
-sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 5, throw_exceed = FALSE) {
+sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 5, throw_exceed = FALSE, get_series = FALSE) {
     if (!missing(reliability)) {
-        max_reliab = calc_reliability(reser, 1, 0, empirical_rel, throw_exceed)
+        max_series = calc_series(reser, 1, 0, throw_exceed)
+        max_reliab = calc_reliability(max_series, 0, empirical_rel)
         if (reliability > max_reliab || reliability < 0)
             stop("Invalid value of reliability.")
     }
@@ -263,13 +273,15 @@ sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE
         if (missing(storage)) {
             resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, yield_req = yield,
                 empirical = empirical_rel, throw_exceed = throw_exceed)
-            reliab_neighbour = calc_reliability(reser, resul[1] + 1e-5, yield, empirical_rel, throw_exceed)
+            series_neighbour = calc_series(reser, resul[1] + 1e-5, yield, throw_exceed)
+            reliab_neighbour = calc_reliability(series_neighbour, yield, empirical_rel)
             missing = "storage"
         }
         else {
             resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, storage_req = storage,
                 empirical = empirical_rel, throw_exceed = throw_exceed)
-            reliab_neighbour = calc_reliability(reser, storage, resul[1] - 1e-5, empirical_rel, throw_exceed)
+            series_neighbour = calc_series(reser, storage, resul[1] - 1e-5, throw_exceed)
+            reliab_neighbour = calc_reliability(series_neighbour, resul[1] - 1e-5, throw_exceed)
             missing = "yield"
         }
         reliab_found = resul[2] + reliability
@@ -286,6 +298,10 @@ sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE
         }
         assign(missing, resul[1])
     }
-    reliability = calc_reliability(reser, storage, yield, empirical_rel, throw_exceed)
-    return(list(storage = storage, reliability = reliability, yield = yield))
+    series = calc_series(reser, storage, yield, throw_exceed)
+    reliability = calc_reliability(series, yield, empirical_rel)
+    resul = list(storage = storage, reliability = reliability, yield = yield)
+    if (get_series)
+        resul$series = series
+    return(resul)
 }
