@@ -17,6 +17,23 @@ void convert_m3(vector<double> &values, const vector<unsigned> &days, bool to_vo
   }
 }
 
+/**
+  * - converts m3.s-1 to m3 per month or other way round
+  * @param Rvalues time series of values
+  * @param Rdays number of days for months of time series, must be an integer
+  * @param Rto_volume whether to convert to m3 per month
+  * @return vector of converted values
+  */
+RcppExport SEXP convert_m3(SEXP Rvalues, SEXP Rdays, SEXP Rto_volume)
+{
+  vector<double> values = as<vector<double> >(Rvalues);
+  vector<unsigned> days = as<vector<unsigned> >(Rdays);
+  bool to_volume = as<bool>(Rto_volume);
+
+  convert_m3(values, days, to_volume);
+  return wrap(values);
+}
+
 //value in mm, area in km2
 double convert_mm_to_m3s1(double value, unsigned days, double area)
 {

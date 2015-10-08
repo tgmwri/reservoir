@@ -105,7 +105,9 @@ as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
 #'   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
 #'   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
 #'   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
-#'   \item{resilience}{resilience calcualated of number of continuous sequences of failures / total number of time steps with failures, NA for no failure}
+#'   \item{resilience}{resilience calculated as number of continuous sequences of failures / total number of time steps with failures, NA for no failure}
+#'   \item{vulnerability}{vulnerability (in m3) calculated as mean of monthly deficit volumes that represent maximum deficit of each failure period}
+#'   \item{dimless_vulner}{dimensionless vulnerability, vulnerability value divided by yield value in volume units}
 #' @details The maximum yield is calculated by using the \code{\link{sry.wateres}} function for potential storage and reliability 1.
 #'
 #'   An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability or if an invalid reliability is given.
@@ -131,13 +133,25 @@ summary.wateres <- function(object, ..., reliability = 1, empirical_rel = FALSE,
 
     failures = !(resul$series$yield + .Machine$double.eps ^ 0.5 > Qn_max)
     failures_duration = sum(failures)
-    if (failures_duration == 0)
-        resilience = NA
-    else {
-        failures_count = length(which(diff(failures) == 1)) + failures[1] # to count failure started in step 1
-        resilience = failures_count / failures_duration
+    if (failures_duration == 0) {
+        resilience = vulnerability = dimless_vulner = NA
     }
-    print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, alpha = alpha, m = m, resilience = resilience))
+    else {
+        seq_begins = which(diff(failures) == 1) + 1
+        if (failures[1]) # to count failure started in step 1
+            seq_begins = c(1, seq_begins)
+        seq_ends = which(diff(failures) == -1)
+        if (failures[length(failures)])
+            seq_ends = c(seq_ends, length(failures))
+        failures_count = length(seq_begins)
+        resilience = failures_count / failures_duration
+        deficits = sapply(
+            1:failures_count,
+            function(i) { max(.Call("convert_m3", PACKAGE = "wateres", Qn_max - resul$series$yield[seq_begins[i]:seq_ends[i]], object$.days[seq_begins[i]:seq_ends[i]], TRUE)) } )
+        vulnerability = mean(deficits)
+        dimless_vulner = vulnerability / (.Call("convert_m3", PACKAGE = "wateres", Qn_max, 1, TRUE) * 30.5)
+    }
+    print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, alpha = alpha, m = m, resilience = resilience, vulnerability = vulnerability, dimless_vulner = dimless_vulner))
 }
 
 # bisection for monotonic function

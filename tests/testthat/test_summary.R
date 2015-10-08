@@ -21,6 +21,8 @@ test_that("characteristics are calculated correctly", {
     expect_equivalent(chars["alpha"], 0.921783447266)
     expect_equivalent(chars["m"], 0.311966575415)
     expect_true(is.na(chars["resilience"]))
+    expect_true(is.na(chars["vulnerability"]))
+    expect_true(is.na(chars["dimless_vulner"]))
 })
 
 test_that("characteristics are calculated for given reliability", {
@@ -30,6 +32,8 @@ test_that("characteristics are calculated for given reliability", {
     expect_equivalent(chars["alpha"], 0.9901471645571)
     expect_equivalent(chars["m"], 0.0392980158775)
     expect_equivalent(chars["resilience"], 0.272727272727)
+    expect_equivalent(chars["vulnerability"], 252139.72249)
+    expect_equivalent(chars["dimless_vulner"], 0.614231792124)
 })
 
 context("storage, yield, evaporation and withdrawal time series")
@@ -47,16 +51,22 @@ test_that("storage, yield, evaporation and withdrawal time series are calculated
     expect_equivalent(resul_with, readRDS("series_withdrawal.rds"))
 })
 
+reser = data.frame(
+    Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+        0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+    DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+
 test_that("withdrawal without evaporation is calculated", {
-    reser = data.frame(
-        Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
-            0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
-        DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-    reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
     reser = set_withdrawal(reser, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
     resul = calc_series(reser, 0.021, 0.14, FALSE)
     expect_equivalent(resul$withdrawal,
         c(0, 0, 35000, 33000, 30000, 0, 0, 0, 0, 22000, 24000, 32000, 23000, 31000, 35000, 33000, 30000, 42000, 0, 0, 0, 22000, 24000, 0))
+})
+
+test_that("summary for short time series is calculated", {
+    chars = summary(reser, reliability = 0.95) # failure in last time step
+    expect_equivalent(chars, c(14.4, 0.453715758324, 2.15755462646, -28.4899573928, 1, 963407.750510, 0.805772962576))
 })
 
 context("storage-reliability-yield relationship")
