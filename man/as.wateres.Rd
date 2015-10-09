@@ -4,7 +4,7 @@
 \alias{as.wateres}
 \title{Water reservoir creation}
 \usage{
-as.wateres(dframe, Vpot, area, observed = FALSE)
+as.wateres(dframe, Vpot, area, eas = NULL, observed = FALSE)
 }
 \arguments{
 \item{dframe}{A name of file containing table with data (including header) or directly data frame or data table.
@@ -15,6 +15,10 @@ In that case, catchment area needs to be specified within the Bilan object.}
 \item{Vpot}{Potential storage of the reservoir in millions of m3.}
 
 \item{area}{Flooded area of the reservoir for the potential storage in km2.}
+
+\item{eas}{Elevation-area-storage relationship given as a data frame or data table with the three columns representing
+elevation (m.a.s.l.), area (km2) and storage (mil. m3). If values of this three variables are not sorted and their orders
+differ, this argument will be ignored.}
 
 \item{observed}{Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).}
 }
@@ -33,6 +37,9 @@ reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+eas = data.frame(
+    elevation = c(496, 502, 511, 520, 529), area = c(0, 0.058, 0.18, 0.424, 0.754),
+    storage = c(0.000, 0.161, 1.864, 6.362, 14.400))
+reser = as.wateres(reser, Vpot = 14.4, area = 0.754, eas = eas)
 }
 

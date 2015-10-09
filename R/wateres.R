@@ -46,6 +46,9 @@ days_in_month <- function(date) {
 #'   In that case, catchment area needs to be specified within the Bilan object.
 #' @param Vpot Potential storage of the reservoir in millions of m3.
 #' @param area Flooded area of the reservoir for the potential storage in km2.
+#' @param eas Elevation-area-storage relationship given as a data frame or data table with the three columns representing
+#'   elevation (m.a.s.l.), area (km2) and storage (mil. m3). If values of this three variables are not sorted and their orders
+#'   differ, this argument will be ignored.
 #' @param observed Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).
 #' @return A wateres object which is also of data.frame and data.table classes.
 #' @details An error occurs if \dQuote{Q} or \dQuote{DTM} column is missing or \code{dframe} is of another class
@@ -56,8 +59,11 @@ days_in_month <- function(date) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
-as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
+#' eas = data.frame(
+#'     elevation = c(496, 502, 511, 520, 529), area = c(0, 0.058, 0.18, 0.424, 0.754),
+#'     storage = c(0.000, 0.161, 1.864, 6.362, 14.400))
+#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754, eas = eas)
+as.wateres <- function(dframe, Vpot, area, eas = NULL, observed = FALSE) {
     if ("bilan" %in% class(dframe)) {
         if (requireNamespace("bilan", quietly = TRUE)) {
             catch_area = bilan::bil.get.area(dframe)
@@ -88,6 +94,20 @@ as.wateres <- function(dframe, Vpot, area, observed = FALSE) {
     class(dframe) = c("wateres", "data.table", "data.frame")
     attr(dframe, "Vpot") = Vpot
     attr(dframe, "area") = area
+    if (!is.null(eas)) {
+        if (ncol(eas) != 3)
+            warning("Incorrect number of columns for elevation-area-storage relationship.")
+        else {
+            ref_order = order(eas[[1]])
+            if (!(identical(ref_order, order(eas[[2]])) && identical(ref_order, order(eas[[3]]))))
+                warning("Elevation-area-storage values are not sorted correctly and will be ignored.")
+            eas = as.data.table(eas)
+            setnames(eas, c("elevation", "area", "storage"))
+            if (!identical(ref_order, 1:length(ref_order)))
+                setorder(eas, elevation, area, storage)
+            attr(dframe, "eas") = eas
+        }
+    }
     return(dframe)
 }
 

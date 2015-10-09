@@ -10,6 +10,22 @@ test_that("data are loaded from Bilan object", {
         0.25200004823, 0.23600001867))
 })
 
+test_that("elevation-area-storage relationship is set", {
+    expect_warning(as.wateres("rivendell.txt", 14.4, 0.754, eas = data.frame(elev = 529)))
+    eas = data.frame(
+        elevation = c(496, 499, 502, 505, 508, 511, 514, 517, 520, 523, 526, 529),
+        area = c(0, 0.005, 0.058, 0.09, 0.133, 0.18, 0.253, 0.347, 0.424, 0.483, 0.538, 0.754),
+        storage = c(0.000, 0.003, 0.161, 0.530, 1.085, 1.864, 2.943, 4.439, 6.362, 8.626, 11.175, 14.400))
+    riv = as.wateres("rivendell.txt", 14.4, 0.754, eas = eas)
+    expect_equivalent(attr(riv, "eas"), eas)
+    eas$storage[2] = 0.2
+    expect_warning(as.wateres("rivendell.txt", 14.4, 0.754, eas = eas))
+    orig_eas = eas
+    eas = eas[c(1, 3:2, 4:nrow(eas)),]
+    riv = as.wateres("rivendell.txt", 14.4, 0.754, eas = eas)
+    expect_equivalent(attr(riv, "eas"), orig_eas)
+})
+
 context("characteristics calculated by summary function")
 
 riv = as.wateres("rivendell.txt", 14.4, 0.754)
