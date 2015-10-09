@@ -10,12 +10,13 @@ test_that("data are loaded from Bilan object", {
         0.25200004823, 0.23600001867))
 })
 
+eas = data.frame(
+    elevation = c(496, 499, 502, 505, 508, 511, 514, 517, 520, 523, 526, 529),
+    area = c(0, 0.005, 0.058, 0.09, 0.133, 0.18, 0.253, 0.347, 0.424, 0.483, 0.538, 0.754),
+    storage = c(0.000, 0.003, 0.161, 0.530, 1.085, 1.864, 2.943, 4.439, 6.362, 8.626, 11.175, 14.400))
+
 test_that("elevation-area-storage relationship is set", {
     expect_warning(as.wateres("rivendell.txt", 14.4, 0.754, eas = data.frame(elev = 529)))
-    eas = data.frame(
-        elevation = c(496, 499, 502, 505, 508, 511, 514, 517, 520, 523, 526, 529),
-        area = c(0, 0.005, 0.058, 0.09, 0.133, 0.18, 0.253, 0.347, 0.424, 0.483, 0.538, 0.754),
-        storage = c(0.000, 0.003, 0.161, 0.530, 1.085, 1.864, 2.943, 4.439, 6.362, 8.626, 11.175, 14.400))
     riv = as.wateres("rivendell.txt", 14.4, 0.754, eas = eas)
     expect_equivalent(attr(riv, "eas"), eas)
     eas$storage[2] = 0.2
@@ -65,6 +66,13 @@ test_that("storage, yield, evaporation and withdrawal time series are calculated
     riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
     resul_with = calc_series(riv, 14.4, 0.14, FALSE)
     expect_equivalent(resul_with, readRDS("series_withdrawal.rds"))
+})
+
+test_that("series with evaporation depending on E-A-S relationship are calculated", {
+    riv = as.wateres("rivendell.txt", 14.4, 0.754, eas = eas)
+    riv = set_evaporation(riv, altitude = 529)
+    resul = calc_series(riv, 14.4, 0.14, FALSE)
+    expect_equivalent(resul, readRDS("series_evaporation_eas.rds"))
 })
 
 reser = data.frame(

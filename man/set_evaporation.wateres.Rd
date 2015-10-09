@@ -24,8 +24,9 @@ A modified \code{wateres} object with evaporation time series added (denoted as 
 Sets or calculates time series of evaporation from the reservoir.
 }
 \details{
-Evaporation is applied when calculating reservoir water balance. Currently, evaporation only for flooded area related to the potential
-  storage is assumed.
+Evaporation is applied when calculating reservoir water balance. If no elevation-area-storage relationship is provided for the reservoir,
+  evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
+  linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
 }
 \examples{
 reser = data.frame(

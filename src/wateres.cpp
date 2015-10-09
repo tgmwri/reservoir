@@ -49,14 +49,38 @@ double convert_mm_to_m3s1(double value, unsigned days, double area)
  */
 wateres::wateres(
   vector<double> evaporation, vector<double> withdrawal, vector<double> yield, vector<double> storage,
-  bool throw_exceed, double volume)
+  vector<unsigned> days, DataFrame eas, bool throw_exceed, double volume, double area)
 {
   this->evaporation = evaporation;
   this->withdrawal = withdrawal;
   this->yield = yield;
   this->storage = storage;
+  this->days = days;
+  this->eas = eas;
   this->throw_exceed = throw_exceed;
   this->volume = volume;
+  this->area = area;
+}
+
+/**
+ * - makes linear interpolation to get flooded area for given storage
+ * - if storage out of given limits, a limit value is returned
+ * @param storage reservoir storage in mil. m3
+ * @return area in km2
+ */
+double wateres::get_area(double storage_req)
+{
+  NumericVector eas_area = eas["area"], eas_storage = eas["storage"];
+  unsigned eas_size = eas_area.size();
+  if (storage_req < eas_storage[0])
+    return eas_area[0];
+  if (storage_req > eas_storage[eas_size - 1])
+    return eas_area[eas_size - 1];
+  for (unsigned as = 1; as < eas_size; as++) {
+    if (storage_req < eas_storage[as] + eas_storage[as] * numeric_limits<double>::epsilon()) {
+      return (eas_area[as] - eas_area[as - 1]) / (eas_storage[as] - eas_storage[as - 1]) * (storage_req - eas_storage[as - 1]) + eas_area[as - 1];
+    }
+  }
 }
 
 /**
@@ -68,6 +92,18 @@ wateres::wateres(
  */
 void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name var)
 {
+  switch (var) {
+    case EVAPORATION:
+      double tmp_area;
+      if (eas.size() == 0)
+        tmp_area = area;
+      else
+        tmp_area = get_area(storage[ts] / 1e6);
+      variable[ts] = convert_mm_to_m3s1(variable[ts], days[ts], tmp_area);
+      break;
+    default:
+      break;
+  }
   storage[ts + 1] -= variable[ts];
   if (storage[ts + 1] < 0) {
     variable[ts] = variable[ts] + storage[ts + 1];
@@ -114,24 +150,24 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
   * @param Ryield_req required yield (reservoir outflow) in m3.s-1
   * @param Rvolume reservoir potential volume in millions of m3
   * @param Rarea area flooded by reservoir in km2
+  * @param Reas elevation-area-storage relationship (in m.a.s.l., km2 and mil. m3)
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
   * @return list consisting of storage (in m3), yield (m3.s-1), evaporation (m3) and withdrawal (m3)
   */
-RcppExport SEXP calc_storage(SEXP Rinflow, SEXP Rdays, SEXP Revaporation, SEXP Rwithdrawal, SEXP Ryield_req, SEXP Rvolume, SEXP Rarea, SEXP Rthrow_exceed)
+RcppExport SEXP calc_storage(
+  SEXP Rinflow, SEXP Rdays, SEXP Revaporation, SEXP Rwithdrawal, SEXP Ryield_req, SEXP Rvolume, SEXP Rarea, SEXP Reas, SEXP Rthrow_exceed)
 {
   vector<double> inflow = as<vector<double> >(Rinflow);
   vector<unsigned> days = as<vector<unsigned> >(Rdays);
   vector<double> evaporation = as<vector<double> >(Revaporation);
   vector<double> withdrawal = as<vector<double> >(Rwithdrawal);
   double yield_req = as<double>(Ryield_req);
+  DataFrame eas = as<DataFrame>(Reas);
   double volume = as<double>(Rvolume);
   double area = as<double>(Rarea);
   bool throw_exceed = as<bool>(Rthrow_exceed);
 
   unsigned time_steps = inflow.size(), ts;
-  for (ts = 0; ts < time_steps; ts++) {
-    evaporation[ts] = convert_mm_to_m3s1(evaporation[ts], days[ts], area);
-  }
   convert_m3(inflow, days, true);
   convert_m3(evaporation, days, true);
   vector<double> yield_req_vol(time_steps, yield_req);
@@ -141,7 +177,7 @@ RcppExport SEXP calc_storage(SEXP Rinflow, SEXP Rdays, SEXP Revaporation, SEXP R
   vector<double> yield(time_steps, 0), storage(time_steps + 1, 0);
   storage[0] = volume; //reservoir considered full at the beginning
 
-  wateres reser(evaporation, withdrawal, yield, storage, throw_exceed, volume);
+  wateres reser(evaporation, withdrawal, yield, storage, days, eas, throw_exceed, volume, area);
   for (ts = 0; ts < time_steps; ts++) {
     reser.yield[ts] = yield_req_vol[ts];
     reser.storage[ts + 1] = reser.storage[ts] + inflow[ts];

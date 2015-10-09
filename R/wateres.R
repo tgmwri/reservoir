@@ -220,7 +220,7 @@ get_reser_variables <- function(reser) {
 
 calc_series <- function(reser, storage_req, yield_req, throw_exceed) {
     tmp = get_reser_variables(reser)
-    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp$E, tmp$W, yield_req, storage_req, attr(reser, "area"), throw_exceed)
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp$E, tmp$W, yield_req, storage_req, attr(reser, "area"), attr(reser, "eas"), throw_exceed)
     return(resul)
 }
 

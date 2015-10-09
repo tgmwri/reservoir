@@ -28,8 +28,9 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #' @param altitude Reservoir altitude (m.a.s.l.) used for calculation of monthly evaporation values according to the Czech Technical Standard
 #'   ČSN 75 2405, where evaporation is a function of altitude for range from 100 to 1200 m.
 #' @return A modified \code{wateres} object with evaporation time series added (denoted as \code{E}).
-#' @details Evaporation is applied when calculating reservoir water balance. Currently, evaporation only for flooded area related to the potential
-#'   storage is assumed.
+#' @details Evaporation is applied when calculating reservoir water balance. If no elevation-area-storage relationship is provided for the reservoir,
+#'   evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
+#'   linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
 #' @references ČSN 72 2405
 #' @export
 #' @examples
