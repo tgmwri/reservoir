@@ -4,7 +4,8 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 
 #' Calculation of probability fields
 #'
-#' Calculates monthly values of storage and yield for given probabilities by using the \code{\link{quantile}} function with the default settings.
+#' Calculates monthly values of storage, yield and level (if possible) for given probabilities by using the \code{\link{quantile}} function
+#'   with the default settings.
 #'
 #' @param reser A wateres object.
 #' @param probs A vector of required probability values.
@@ -12,7 +13,8 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 #' @param storage A water reservoir storage value in millions of m3, the default value is equal to the potential volume of \code{reser}.
 #' @param throw_exceed Whether volume exceeding storage will be thrown or added to yield (see also \code{\link{sry.wateres}}).
 #' @return A \code{wateres_prob_field} object which is a list consisting of:
-#'   \item{quantiles}{data.table containing storage and yield values for months and given probabilities}
+#'   \item{quantiles}{data.table containing storage, yield and level values for months and given probabilities. Level values are available
+#'     only if the elevation-area-storage relationship for the reservoir has been provided (as an argument of \code{\link{as.wateres}}).}
 #'   \item{probs}{given probability values in percent as characters}
 #' @seealso \code{\link{plot.wateres_prob_field}} for plotting the results
 #' @export
@@ -26,6 +28,7 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "Vpot"), throw_exceed = FALSE) {
     calc_resul = calc_series(reser, storage, yield, throw_exceed)
 
+    eas = attr(reser, "eas")
     reser = cbind(reser, storage = calc_resul$storage[2:length(calc_resul$storage)], yield = calc_resul$yield)
     var_quant = list()
     for (var in c("storage", "yield")) {
@@ -45,7 +48,16 @@ prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "Vpot"
         for (mon in 1:12)
             quantiles[month == mon, names(quantiles)[tmp_pos] := as.list(var_quant[[var]][[mon]])]
     }
-
+    if (!is.null(eas)) {
+        for (pname in prob_names) {
+            storage_col = paste0("storage_", pname)
+            level_col = paste0("level_", pname)
+            tmp = vector("numeric", 12)
+            tmp_levels = sapply(quantiles[, get(storage_col)] / 1e6, function(stor) { approx(eas$storage, eas$elevation, stor)$y })
+            quantiles = quantiles[, level := tmp_levels]
+            setnames(quantiles, "level", level_col)
+        }
+    }
     resul = list(quantiles = quantiles, probs = prob_names)
     class(resul) = c("wateres_prob_field", class(resul))
     return(resul)
@@ -67,15 +79,16 @@ save_plot_file <- function(p, filename, width, height, ...) {
 
 #' Plot of probability field
 #'
-#' Plots monthly values of storage or yield stored in a given \code{wateres_prob_field} object, by using the \code{ggplot2} package.
+#' Plots monthly values of storage, yield or level stored in a given \code{wateres_prob_field} object, by using the \code{ggplot2} package.
 #'
 #' @param x A \code{wateres_prob_field} object.
-#' @param type Type of values to be plotted (\dQuote{storage} or \dQuote{yield}).
+#' @param type Type of values to be plotted (\dQuote{storage}, \dQuote{yield} or \dQuote{level}).
 #' @param filename A file name where the plot will be saved. If not specified, the plot will be printed to the current device.
 #' @param width Plot width in inches (or a unit specified by the \code{units} argument).
 #' @param height Plot height in inches (or a unit specified by the \code{units} argument).
 #' @param ... Further arguments passed to the \code{\link[ggplot2:ggsave]{ggsave}} function saving the plot to a file.
 #' @return A \code{ggplot} object.
+#' @details An error occurs if levels are required but they are not contained in the \code{wateres_prob_field} object.
 #' @export
 #' @examples
 #' reser = data.frame(
@@ -88,11 +101,13 @@ save_plot_file <- function(p, filename, width, height, ...) {
 plot.wateres_prob_field <- function(x, type = "storage", filename = NULL, width = 8, height = 6, ...) {
     check_plot_pkgs()
 
-    types = c("storage", "yield")
-    units = c(storage = "mil. m\u00b3", yield = "m\u00b3.s\u207b\u00b9")
+    types = c("storage", "yield", "level")
+    units = c(storage = "mil. m\u00b3", yield = "m\u00b3.s\u207b\u00b9", level = "m.a.s.l.")
     type = types[pmatch(type, types, 1)]
     quant = copy(x$quantiles)
     col_to_remove = names(quant) == gsub(type, "", names(quant), fixed = TRUE)
+    if (type == "level" && all(col_to_remove))
+        stop("The given probability field does not contain levels.")
     col_to_remove[1] = FALSE # month
     quant = quant[, names(quant)[col_to_remove] := NULL]
 

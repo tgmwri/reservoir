@@ -23,11 +23,13 @@ prob_field(reser, probs, yield, storage, throw_exceed)
 }
 \value{
 A \code{wateres_prob_field} object which is a list consisting of:
-  \item{quantiles}{data.table containing storage and yield values for months and given probabilities}
+  \item{quantiles}{data.table containing storage, yield and level values for months and given probabilities. Level values are available
+    only if the elevation-area-storage relationship for the reservoir has been provided (as an argument of \code{\link{as.wateres}}).}
   \item{probs}{given probability values in percent as characters}
 }
 \description{
-Calculates monthly values of storage and yield for given probabilities by using the \code{\link{quantile}} function with the default settings.
+Calculates monthly values of storage, yield and level (if possible) for given probabilities by using the \code{\link{quantile}} function
+  with the default settings.
 }
 \examples{
 reser = data.frame(

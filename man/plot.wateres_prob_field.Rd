@@ -10,7 +10,7 @@
 \arguments{
 \item{x}{A \code{wateres_prob_field} object.}
 
-\item{type}{Type of values to be plotted (\dQuote{storage} or \dQuote{yield}).}
+\item{type}{Type of values to be plotted (\dQuote{storage}, \dQuote{yield} or \dQuote{level}).}
 
 \item{filename}{A file name where the plot will be saved. If not specified, the plot will be printed to the current device.}
 
@@ -24,7 +24,10 @@
 A \code{ggplot} object.
 }
 \description{
-Plots monthly values of storage or yield stored in a given \code{wateres_prob_field} object, by using the \code{ggplot2} package.
+Plots monthly values of storage, yield or level stored in a given \code{wateres_prob_field} object, by using the \code{ggplot2} package.
+}
+\details{
+An error occurs if levels are required but they are not contained in the \code{wateres_prob_field} object.
 }
 \examples{
 reser = data.frame(
