@@ -149,13 +149,15 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
   * @param Rwithdrawal time series of withdrawal in m3
   * @param Ryield_req required yield (reservoir outflow) in m3.s-1
   * @param Rvolume reservoir potential volume in millions of m3
+  * @param Rinitial_storage initial storage in the reservoir in millions of m3
   * @param Rarea area flooded by reservoir in km2
   * @param Reas elevation-area-storage relationship (in m.a.s.l., km2 and mil. m3)
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
   * @return list consisting of storage (in m3), yield (m3.s-1), evaporation (m3) and withdrawal (m3)
   */
 RcppExport SEXP calc_storage(
-  SEXP Rinflow, SEXP Rdays, SEXP Revaporation, SEXP Rwithdrawal, SEXP Ryield_req, SEXP Rvolume, SEXP Rarea, SEXP Reas, SEXP Rthrow_exceed)
+  SEXP Rinflow, SEXP Rdays, SEXP Revaporation, SEXP Rwithdrawal, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage,
+  SEXP Rarea, SEXP Reas, SEXP Rthrow_exceed)
 {
   vector<double> inflow = as<vector<double> >(Rinflow);
   vector<unsigned> days = as<vector<unsigned> >(Rdays);
@@ -163,7 +165,8 @@ RcppExport SEXP calc_storage(
   vector<double> withdrawal = as<vector<double> >(Rwithdrawal);
   double yield_req = as<double>(Ryield_req);
   DataFrame eas = as<DataFrame>(Reas);
-  double volume = as<double>(Rvolume);
+  double volume = as<double>(Rvolume) * 1e6;
+  double initial_storage = as<double>(Rinitial_storage) * 1e6;
   double area = as<double>(Rarea);
   bool throw_exceed = as<bool>(Rthrow_exceed);
 
@@ -172,10 +175,9 @@ RcppExport SEXP calc_storage(
   convert_m3(evaporation, days, true);
   vector<double> yield_req_vol(time_steps, yield_req);
   convert_m3(yield_req_vol, days, true);
-  volume = volume * 1e6;
 
   vector<double> yield(time_steps, 0), storage(time_steps + 1, 0);
-  storage[0] = volume; //reservoir considered full at the beginning
+  storage[0] = initial_storage;
 
   wateres reser(evaporation, withdrawal, yield, storage, days, eas, throw_exceed, volume, area);
   for (ts = 0; ts < time_steps; ts++) {
