@@ -15,7 +15,7 @@
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
 #' reser = set_evaporation(reser, altitude = 529)
 #' summary(reser)
 #' sry(reser, reliab = 0.9, yield = 0.14)
@@ -44,10 +44,10 @@ days_in_month <- function(date) {
 #'   The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column).
 #'   Alternatively, this can be a Bilan object where the dates and modelled or observed runoffs are read from.
 #'   In that case, catchment area needs to be specified within the Bilan object.
-#' @param Vpot Potential storage of the reservoir in millions of m3.
-#' @param area Flooded area of the reservoir for the potential storage in km2.
+#' @param Vpot Potential storage of the reservoir in m3.
+#' @param area Flooded area of the reservoir for the potential storage in m2.
 #' @param eas Elevation-area-storage relationship given as a data frame or data table with the three columns representing
-#'   elevation (m.a.s.l.), area (km2) and storage (mil. m3). If values of this three variables are not sorted and their orders
+#'   elevation (m.a.s.l.), area (m2) and storage (m3). If values of this three variables are not sorted and their orders
 #'   differ, this argument will be ignored.
 #' @param observed Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).
 #' @return A wateres object which is also of data.frame and data.table classes.
@@ -60,9 +60,9 @@ days_in_month <- function(date) {
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' eas = data.frame(
-#'     elevation = c(496, 502, 511, 520, 529), area = c(0, 0.058, 0.18, 0.424, 0.754),
-#'     storage = c(0.000, 0.161, 1.864, 6.362, 14.400))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754, eas = eas)
+#'     elevation = c(496, 502, 511, 520, 529), area = c(0, 58e3, 180e3, 424e3, 754e3),
+#'     storage = c(0, 161e3, 1.864e6, 6.362e6, 14.400e6))
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3, eas = eas)
 as.wateres <- function(dframe, Vpot, area, eas = NULL, observed = FALSE) {
     if ("bilan" %in% class(dframe)) {
         if (requireNamespace("bilan", quietly = TRUE)) {
@@ -121,7 +121,7 @@ as.wateres <- function(dframe, Vpot, area, eas = NULL, observed = FALSE) {
 #' @param empirical_rel Whether empirical probability will be used for reliability, passed to the \code{\link{sry.wateres}} function.
 #' @param upper_limit An upper limit of yield (as multiple of the mean annual flow) for optimization passed to the \code{\link{sry.wateres}} function.
 #' @return A vector of reservoir characteristics:
-#'   \item{Vpot}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.wateres}})}
+#'   \item{Vpot}{potential reservoir storage in m3 (given as a parameter of \code{\link{as.wateres}})}
 #'   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
 #'   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
 #'   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
@@ -140,7 +140,7 @@ as.wateres <- function(dframe, Vpot, area, eas = NULL, observed = FALSE) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
 #' summary(reser, reliability = 1)
 #' summary(reser, reliability = 0.95)
 summary.wateres <- function(object, ..., reliability = 1, empirical_rel = FALSE, upper_limit = 5) {
@@ -188,7 +188,7 @@ fill_time <- function(reser, yield, begins, samples) UseMethod("fill_time")
 #' @param begins A vector of time steps that represent begins of time series to be simulated.
 #' @param samples A number of time steps of begins to be randomly sampled.
 #' @return A data table of filling times:
-#'   \item{begin}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.wateres}})}
+#'   \item{begin}{time steps when simulation of time series begins}
 #'   \item{months}{number of months during that the reservoir changes from empty to full, or \code{NA} if the reservoir is not full and the end
 #'     of the time series is reached}
 #' @details If provided, the \code{begins} argument is used to calculate the time series. Alternatively, the \code{samples} argument is applied.
@@ -198,7 +198,7 @@ fill_time <- function(reser, yield, begins, samples) UseMethod("fill_time")
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 0.4, area = 0.754)
+#' reser = as.wateres(reser, Vpot = 4e5, area = 754e3)
 #' fill = fill_time(reser, yield = 0.01)
 fill_time.wateres <- function(reser, yield, begins = NULL, samples = 10) {
     if (is.null(begins)) {
@@ -210,7 +210,7 @@ fill_time.wateres <- function(reser, yield, begins = NULL, samples = 10) {
         tmp_reser = reser[begins[beg]:nrow(reser), ]
         attributes(tmp_reser) = attributes(reser)
         series = calc_series(tmp_reser, attr(tmp_reser, "Vpot"), yield, FALSE, initial_storage = 0)
-        storage_full = !(series$storage < attr(tmp_reser, "Vpot") * 1e6)
+        storage_full = !(series$storage < attr(tmp_reser, "Vpot"))
         if (all(!storage_full))
             fill_months[beg] = NA
         else
@@ -317,7 +317,7 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, 
 #' two remaining values are provided.
 #'
 #' @param reser A wateres object.
-#' @param storage A water reservoir storage value in millions of m3. (If missing together with reliability or yield, the default value
+#' @param storage A water reservoir storage value in m3. (If missing together with reliability or yield, the default value
 #'   equal to the potential volume of \code{reser} will be used. If only storage is missing, it will be optimized using reliability
 #'   and yield.)
 #' @param reliability A reliability value, cannot be less than zero or greater than maximum reliability value
@@ -348,11 +348,11 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, 
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
 #' sry(reser, reliab = 0.9, yield = 0.14)
-#' sry(reser, storage = 0.041, yield = 0.14)
+#' sry(reser, storage = 41e3, yield = 0.14)
 #' sry(reser, yield = 0.14)
-#' sry(reser, storage = 0.041, reliab = 0.5)
+#' sry(reser, storage = 41e3, reliab = 0.5)
 sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE, upper_limit = 5, throw_exceed = FALSE, get_series = FALSE) {
     if (!missing(reliability)) {
         max_series = calc_series(reser, 1, 0, throw_exceed)

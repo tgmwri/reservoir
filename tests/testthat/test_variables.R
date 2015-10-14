@@ -1,6 +1,6 @@
 context("setting variables")
 
-riv = as.wateres("rivendell.txt", 14.4, 0.754)
+riv = as.wateres("rivendell.txt", 14.4e6, 754e3)
 monthly_evap = c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13)
 monthly_with = c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3
 

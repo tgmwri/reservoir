@@ -23,7 +23,7 @@ dates (an example input file is located in `tests/testthat`) and then
 use its methods to get some characteristics and estimations:
 ```
 library(wateres)
-riv = as.wateres("rivendell.txt", 14.4, 0.754)
+riv = as.wateres("rivendell.txt", 14.4e6, 754e3)
 riv = set_evaporation(riv, altitude = 529)
 chars = summary(riv)
 sry = sry(riv, reliab = 0.5, yield = 0.14)

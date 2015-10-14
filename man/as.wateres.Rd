@@ -12,12 +12,12 @@ The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and date
 Alternatively, this can be a Bilan object where the dates and modelled or observed runoffs are read from.
 In that case, catchment area needs to be specified within the Bilan object.}
 
-\item{Vpot}{Potential storage of the reservoir in millions of m3.}
+\item{Vpot}{Potential storage of the reservoir in m3.}
 
-\item{area}{Flooded area of the reservoir for the potential storage in km2.}
+\item{area}{Flooded area of the reservoir for the potential storage in m2.}
 
 \item{eas}{Elevation-area-storage relationship given as a data frame or data table with the three columns representing
-elevation (m.a.s.l.), area (km2) and storage (mil. m3). If values of this three variables are not sorted and their orders
+elevation (m.a.s.l.), area (m2) and storage (m3). If values of this three variables are not sorted and their orders
 differ, this argument will be ignored.}
 
 \item{observed}{Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).}
@@ -38,8 +38,8 @@ reser = data.frame(
           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 eas = data.frame(
-    elevation = c(496, 502, 511, 520, 529), area = c(0, 0.058, 0.18, 0.424, 0.754),
-    storage = c(0.000, 0.161, 1.864, 6.362, 14.400))
-reser = as.wateres(reser, Vpot = 14.4, area = 0.754, eas = eas)
+    elevation = c(496, 502, 511, 520, 529), area = c(0, 58e3, 180e3, 424e3, 754e3),
+    storage = c(0, 161e3, 1.864e6, 6.362e6, 14.400e6))
+reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3, eas = eas)
 }
 

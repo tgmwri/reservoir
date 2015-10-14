@@ -38,11 +38,11 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
-#' sry(reser, storage = 0.021, yield = 0.14)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
+#' sry(reser, storage = 21e3, yield = 0.14)
 #' reser = set_evaporation(reser, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
 #' reser = set_evaporation(reser, altitude = 529)
-#' sry(reser, storage = 0.021, yield = 0.14)
+#' sry(reser, storage = 21e3, yield = 0.14)
 set_evaporation.wateres <- function(reser, values = NULL, altitude = NULL) {
     if (!is.null(altitude)) {
         E_annual = 4.957651e-5 * altitude ^ 2 - 0.3855958 * altitude + 871.19424
@@ -72,10 +72,10 @@ set_withdrawal <- function(reser, values) UseMethod("set_withdrawal")
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
-#' sry(reser, storage = 0.021, yield = 0.14)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
+#' sry(reser, storage = 21e3, yield = 0.14)
 #' reser = set_withdrawal(reser, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
-#' sry(reser, storage = 0.021, yield = 0.14)
+#' sry(reser, storage = 21e3, yield = 0.14)
 set_withdrawal.wateres <- function(reser, values) {
     if (length(values) == 1)
         values = rep(values, 12)

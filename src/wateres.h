@@ -16,7 +16,7 @@ class wateres
     //! values of water balance variables
     std::vector<double> evaporation, withdrawal, yield, storage;
     std::vector<unsigned> days; //!< number of days for time steps
-    Rcpp::DataFrame eas; //!< elevation-area-storage relationship (m, km2 and mil. m3)
+    Rcpp::DataFrame eas; //!< elevation-area-storage relationship (m, m2 and m3)
 
     void calc_balance_var(std::vector<double> &variable, unsigned ts, var_name var); //!< calculates water balance for given variable and time step
 

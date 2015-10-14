@@ -34,10 +34,10 @@ RcppExport SEXP convert_m3(SEXP Rvalues, SEXP Rdays, SEXP Rto_volume)
   return wrap(values);
 }
 
-//value in mm, area in km2
+//value in mm, area in m2
 double convert_mm_to_m3s1(double value, unsigned days, double area)
 {
-  value *= 1e3 * area;
+  value = value / 1e3 * area;
   vector<double> tmp_value(1, value);
   vector<unsigned> tmp_days(1, days);
   convert_m3(tmp_value, tmp_days, false);
@@ -65,8 +65,8 @@ wateres::wateres(
 /**
  * - makes linear interpolation to get flooded area for given storage
  * - if storage out of given limits, a limit value is returned
- * @param storage reservoir storage in mil. m3
- * @return area in km2
+ * @param storage_req reservoir storage in m3
+ * @return area in m2
  */
 double wateres::get_area(double storage_req)
 {
@@ -98,7 +98,7 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
       if (eas.size() == 0)
         tmp_area = area;
       else
-        tmp_area = get_area(storage[ts] / 1e6);
+        tmp_area = get_area(storage[ts]);
       variable[ts] = convert_mm_to_m3s1(variable[ts], days[ts], tmp_area);
       break;
     default:
@@ -148,10 +148,10 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
   * @param Revaporation time series of evaporation in mm
   * @param Rwithdrawal time series of withdrawal in m3
   * @param Ryield_req required yield (reservoir outflow) in m3.s-1
-  * @param Rvolume reservoir potential volume in millions of m3
-  * @param Rinitial_storage initial storage in the reservoir in millions of m3
-  * @param Rarea area flooded by reservoir in km2
-  * @param Reas elevation-area-storage relationship (in m.a.s.l., km2 and mil. m3)
+  * @param Rvolume reservoir potential volume in m3
+  * @param Rinitial_storage initial storage in the reservoir in m3
+  * @param Rarea area flooded by reservoir in m2
+  * @param Reas elevation-area-storage relationship (in m.a.s.l., m2 and m3)
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
   * @return list consisting of storage (in m3), yield (m3.s-1), evaporation (m3) and withdrawal (m3)
   */
@@ -165,8 +165,8 @@ RcppExport SEXP calc_storage(
   vector<double> withdrawal = as<vector<double> >(Rwithdrawal);
   double yield_req = as<double>(Ryield_req);
   DataFrame eas = as<DataFrame>(Reas);
-  double volume = as<double>(Rvolume) * 1e6;
-  double initial_storage = as<double>(Rinitial_storage) * 1e6;
+  double volume = as<double>(Rvolume);
+  double initial_storage = as<double>(Rinitial_storage);
   double area = as<double>(Rarea);
   bool throw_exceed = as<bool>(Rthrow_exceed);
 

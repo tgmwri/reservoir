@@ -10,7 +10,7 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 #' @param reser A wateres object.
 #' @param probs A vector of required probability values.
 #' @param yield A value of yield to be used for calculation of storages in the reservoir.
-#' @param storage A water reservoir storage value in millions of m3, the default value is equal to the potential volume of \code{reser}.
+#' @param storage A water reservoir storage value in m3, the default value is equal to the potential volume of \code{reser}.
 #' @param throw_exceed Whether volume exceeding storage will be thrown or added to yield (see also \code{\link{sry.wateres}}).
 #' @return A \code{wateres_prob_field} object which is a list consisting of:
 #'   \item{quantiles}{data.table containing storage, yield and level values for months and given probabilities. Level values are available
@@ -23,7 +23,7 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
 #' prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "Vpot"), throw_exceed = FALSE) {
     calc_resul = calc_series(reser, storage, yield, throw_exceed)
@@ -53,7 +53,7 @@ prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "Vpot"
             storage_col = paste0("storage_", pname)
             level_col = paste0("level_", pname)
             tmp = vector("numeric", 12)
-            tmp_levels = sapply(quantiles[, get(storage_col)] / 1e6, function(stor) { approx(eas$storage, eas$elevation, stor)$y })
+            tmp_levels = sapply(quantiles[, get(storage_col)], function(stor) { approx(eas$storage, eas$elevation, stor)$y })
             quantiles = quantiles[, level := tmp_levels]
             setnames(quantiles, "level", level_col)
         }
@@ -95,7 +95,7 @@ save_plot_file <- function(p, filename, width, height, ...) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
 #' prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 #' plot(prob_field, "storage")
 plot.wateres_prob_field <- function(x, type = "storage", filename = NULL, width = 8, height = 6, ...) {
@@ -146,13 +146,13 @@ alpha_beta <- function(reser, yield_coeff, upper_limit) UseMethod("alpha_beta")
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
 #' alpha_beta = alpha_beta(reser)
 alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05), upper_limit = 5) {
     alpha = seq(yield_coeff[1], yield_coeff[2], by = yield_coeff[3])
     yields = alpha * mean(reser$Q)
-    Vz = sapply(1:length(yields), function(i) { sry(reser, reliability = 1, yield = yields[i], empirical_rel = FALSE, upper_limit = upper_limit)$storage })
-    beta = sapply(1:length(yields), function(i) { Vz[i] * 1e6 / (yields[i] * 3600 * 24 * 365) })
+    storages = sapply(1:length(yields), function(i) { sry(reser, reliability = 1, yield = yields[i], empirical_rel = FALSE, upper_limit = upper_limit)$storage })
+    beta = sapply(1:length(yields), function(i) { storages[i] / (yields[i] * 3600 * 24 * 365) })
 
     resul = data.table(alpha = alpha, beta = beta)
     class(resul) = c("wateres_alpha_beta", class(resul))
@@ -175,7 +175,7 @@ alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05), upper_lim
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4, area = 0.754)
+#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
 #' alpha_beta = alpha_beta(reser)
 #' plot(alpha_beta)
 plot.wateres_alpha_beta <- function(x, filename = NULL, width = 8, height = 6, ...) {

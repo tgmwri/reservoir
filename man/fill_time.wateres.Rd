@@ -20,7 +20,7 @@ fill_time(reser, yield, begins, samples)
 }
 \value{
 A data table of filling times:
-  \item{begin}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.wateres}})}
+  \item{begin}{time steps when simulation of time series begins}
   \item{months}{number of months during that the reservoir changes from empty to full, or \code{NA} if the reservoir is not full and the end
     of the time series is reached}
 }
@@ -36,7 +36,7 @@ reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-reser = as.wateres(reser, Vpot = 0.4, area = 0.754)
+reser = as.wateres(reser, Vpot = 4e5, area = 754e3)
 fill = fill_time(reser, yield = 0.01)
 }
 
