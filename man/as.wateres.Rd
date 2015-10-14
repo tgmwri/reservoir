@@ -4,7 +4,7 @@
 \alias{as.wateres}
 \title{Water reservoir creation}
 \usage{
-as.wateres(dframe, Vpot, area, eas = NULL, observed = FALSE)
+as.wateres(dframe, storage, area, eas = NULL, observed = FALSE)
 }
 \arguments{
 \item{dframe}{A name of file containing table with data (including header) or directly data frame or data table.
@@ -12,7 +12,7 @@ The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and date
 Alternatively, this can be a Bilan object where the dates and modelled or observed runoffs are read from.
 In that case, catchment area needs to be specified within the Bilan object.}
 
-\item{Vpot}{Potential storage of the reservoir in m3.}
+\item{storage}{Potential storage of the reservoir in m3.}
 
 \item{area}{Flooded area of the reservoir for the potential storage in m2.}
 
@@ -40,6 +40,6 @@ reser = data.frame(
 eas = data.frame(
     elevation = c(496, 502, 511, 520, 529), area = c(0, 58e3, 180e3, 424e3, 754e3),
     storage = c(0, 161e3, 1.864e6, 6.362e6, 14.400e6))
-reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3, eas = eas)
+reser = as.wateres(reser, storage = 14.4e6, area = 754e3, eas = eas)
 }
 

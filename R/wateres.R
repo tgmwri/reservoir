@@ -15,7 +15,7 @@
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' reser = set_evaporation(reser, altitude = 529)
 #' summary(reser)
 #' sry(reser, reliab = 0.9, yield = 0.14)
@@ -44,7 +44,7 @@ days_in_month <- function(date) {
 #'   The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column).
 #'   Alternatively, this can be a Bilan object where the dates and modelled or observed runoffs are read from.
 #'   In that case, catchment area needs to be specified within the Bilan object.
-#' @param Vpot Potential storage of the reservoir in m3.
+#' @param storage Potential storage of the reservoir in m3.
 #' @param area Flooded area of the reservoir for the potential storage in m2.
 #' @param eas Elevation-area-storage relationship given as a data frame or data table with the three columns representing
 #'   elevation (m.a.s.l.), area (m2) and storage (m3). If values of this three variables are not sorted and their orders
@@ -62,8 +62,8 @@ days_in_month <- function(date) {
 #' eas = data.frame(
 #'     elevation = c(496, 502, 511, 520, 529), area = c(0, 58e3, 180e3, 424e3, 754e3),
 #'     storage = c(0, 161e3, 1.864e6, 6.362e6, 14.400e6))
-#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3, eas = eas)
-as.wateres <- function(dframe, Vpot, area, eas = NULL, observed = FALSE) {
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3, eas = eas)
+as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
     if ("bilan" %in% class(dframe)) {
         if (requireNamespace("bilan", quietly = TRUE)) {
             catch_area = bilan::bil.get.area(dframe)
@@ -92,7 +92,7 @@ as.wateres <- function(dframe, Vpot, area, eas = NULL, observed = FALSE) {
     dframe$.days = sapply(dframe$DTM, days_in_month)
     dframe$Q = as.numeric(dframe$Q)
     class(dframe) = c("wateres", "data.table", "data.frame")
-    attr(dframe, "Vpot") = Vpot
+    attr(dframe, "storage") = storage
     attr(dframe, "area") = area
     if (!is.null(eas)) {
         if (ncol(eas) != 3)
@@ -121,9 +121,9 @@ as.wateres <- function(dframe, Vpot, area, eas = NULL, observed = FALSE) {
 #' @param empirical_rel Whether empirical probability will be used for reliability, passed to the \code{\link{sry.wateres}} function.
 #' @param upper_limit An upper limit of yield (as multiple of the mean annual flow) for optimization passed to the \code{\link{sry.wateres}} function.
 #' @return A vector of reservoir characteristics:
-#'   \item{Vpot}{potential reservoir storage in m3 (given as a parameter of \code{\link{as.wateres}})}
-#'   \item{Qn_max}{the maximum yield (m3.s-1) for 100\% reliability for given potential storage}
-#'   \item{alpha}{level of development - ratio Qn_max to the mean annual flow}
+#'   \item{storage}{potential reservoir storage in m3 (given as a parameter of \code{\link{as.wateres}})}
+#'   \item{yield}{the maximum yield (m3.s-1) for given reliability and potential storage}
+#'   \item{alpha}{level of development - ratio of yield to the mean annual flow}
 #'   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
 #'   \item{resilience}{resilience calculated as number of continuous sequences of failures / total number of time steps with failures, NA for no failure}
 #'   \item{vulnerability}{vulnerability (in m3) calculated as mean of monthly deficit volumes that represent maximum deficit of each failure period}
@@ -140,18 +140,18 @@ as.wateres <- function(dframe, Vpot, area, eas = NULL, observed = FALSE) {
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' summary(reser, reliability = 1)
 #' summary(reser, reliability = 0.95)
 summary.wateres <- function(object, ..., reliability = 1, empirical_rel = FALSE, upper_limit = 5) {
     resul = sry(object, reliability = reliability, empirical_rel = empirical_rel, upper_limit = upper_limit, get_series = TRUE)
-    Qn_max = resul$yield
+    yield = resul$yield
     Qa = mean(object$Q)
-    alpha = Qn_max / Qa
+    alpha = yield / Qa
     Qyears = object[, list(Q = mean(Q)), by = year(DTM)]
     m = (1 - alpha) / (sd(Qyears$Q) / Qa)
 
-    failures = !(resul$series$yield + .Machine$double.eps ^ 0.5 > Qn_max)
+    failures = !(resul$series$yield + .Machine$double.eps ^ 0.5 > yield)
     failures_duration = sum(failures)
     if (failures_duration == 0) {
         resilience = vulnerability = dimless_vulner = NA
@@ -167,11 +167,11 @@ summary.wateres <- function(object, ..., reliability = 1, empirical_rel = FALSE,
         resilience = failures_count / failures_duration
         deficits = sapply(
             1:failures_count,
-            function(i) { max(.Call("convert_m3", PACKAGE = "wateres", Qn_max - resul$series$yield[seq_begins[i]:seq_ends[i]], object$.days[seq_begins[i]:seq_ends[i]], TRUE)) } )
+            function(i) { max(.Call("convert_m3", PACKAGE = "wateres", yield - resul$series$yield[seq_begins[i]:seq_ends[i]], object$.days[seq_begins[i]:seq_ends[i]], TRUE)) } )
         vulnerability = mean(deficits)
-        dimless_vulner = vulnerability / (.Call("convert_m3", PACKAGE = "wateres", Qn_max, 1, TRUE) * 30.5)
+        dimless_vulner = vulnerability / (.Call("convert_m3", PACKAGE = "wateres", yield, 1, TRUE) * 30.5)
     }
-    print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, alpha = alpha, m = m, resilience = resilience, vulnerability = vulnerability, dimless_vulner = dimless_vulner))
+    print(c(storage = attr(object, "storage"), yield = yield, alpha = alpha, m = m, resilience = resilience, vulnerability = vulnerability, dimless_vulner = dimless_vulner))
 }
 
 #' @rdname fill_time.wateres
@@ -198,7 +198,7 @@ fill_time <- function(reser, yield, begins, samples) UseMethod("fill_time")
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 4e5, area = 754e3)
+#' reser = as.wateres(reser, storage = 4e5, area = 754e3)
 #' fill = fill_time(reser, yield = 0.01)
 fill_time.wateres <- function(reser, yield, begins = NULL, samples = 10) {
     if (is.null(begins)) {
@@ -209,8 +209,8 @@ fill_time.wateres <- function(reser, yield, begins = NULL, samples = 10) {
     for (beg in 1:length(begins)) {
         tmp_reser = reser[begins[beg]:nrow(reser), ]
         attributes(tmp_reser) = attributes(reser)
-        series = calc_series(tmp_reser, attr(tmp_reser, "Vpot"), yield, FALSE, initial_storage = 0)
-        storage_full = !(series$storage < attr(tmp_reser, "Vpot"))
+        series = calc_series(tmp_reser, attr(tmp_reser, "storage"), yield, FALSE, initial_storage = 0)
+        storage_full = !(series$storage < attr(tmp_reser, "storage"))
         if (all(!storage_full))
             fill_months[beg] = NA
         else
@@ -348,7 +348,7 @@ sry <- function(reser, storage, reliability, yield, empirical_rel, upper_limit, 
 #'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
 #'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-#' reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' sry(reser, reliab = 0.9, yield = 0.14)
 #' sry(reser, storage = 41e3, yield = 0.14)
 #' sry(reser, yield = 0.14)
@@ -361,9 +361,9 @@ sry.wateres <- function(reser, storage, reliability, yield, empirical_rel = TRUE
             stop("Invalid value of reliability.")
     }
     if (missing(storage) && (missing(reliability) || missing(yield)))
-        storage = attr(reser, "Vpot")
+        storage = attr(reser, "storage")
     if (missing(storage) || missing(yield)) {
-        upper_limit = ifelse(missing(storage), upper_limit * attr(reser, "Vpot"), upper_limit * mean(reser$Q))
+        upper_limit = ifelse(missing(storage), upper_limit * attr(reser, "storage"), upper_limit * mean(reser$Q))
         if (missing(storage)) {
             resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, yield_req = yield,
                 empirical = empirical_rel, throw_exceed = throw_exceed)

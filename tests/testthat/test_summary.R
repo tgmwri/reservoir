@@ -33,8 +33,8 @@ riv = as.wateres("rivendell.txt", 14.4e6, 754e3)
 
 test_that("characteristics are calculated correctly", {
     chars = summary(riv)
-    expect_equivalent(chars["Vpot"], 14.4e6)
-    expect_equivalent(chars["Qn_max"], 0.145018882520)
+    expect_equivalent(chars["storage"], 14.4e6)
+    expect_equivalent(chars["yield"], 0.145018882520)
     expect_equivalent(chars["alpha"], 0.921783447266)
     expect_equivalent(chars["m"], 0.311966575415)
     expect_true(is.na(chars["resilience"]))
@@ -44,8 +44,8 @@ test_that("characteristics are calculated correctly", {
 
 test_that("characteristics are calculated for given reliability", {
     chars = summary(riv, reliability = 0.95)
-    expect_equivalent(chars["Vpot"], 14.4e6)
-    expect_equivalent(chars["Qn_max"], 0.1557741525525)
+    expect_equivalent(chars["storage"], 14.4e6)
+    expect_equivalent(chars["yield"], 0.1557741525525)
     expect_equivalent(chars["alpha"], 0.9901471645571)
     expect_equivalent(chars["m"], 0.0392980158775)
     expect_equivalent(chars["resilience"], 0.272727272727)
@@ -86,7 +86,7 @@ reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
         0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
+reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 
 test_that("withdrawal without evaporation is calculated", {
     reser = set_withdrawal(reser, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)

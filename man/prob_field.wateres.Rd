@@ -8,7 +8,7 @@
 prob_field(reser, probs, yield, storage, throw_exceed)
 
 \method{prob_field}{wateres}(reser, probs, yield, storage = attr(reser,
-  "Vpot"), throw_exceed = FALSE)
+  "storage"), throw_exceed = FALSE)
 }
 \arguments{
 \item{reser}{A wateres object.}
@@ -36,7 +36,7 @@ reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
-reser = as.wateres(reser, Vpot = 14.4e6, area = 754e3)
+reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 }
 \seealso{
