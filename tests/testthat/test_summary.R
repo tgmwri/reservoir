@@ -53,6 +53,13 @@ test_that("characteristics are calculated for given reliability", {
     expect_equivalent(chars["dimless_vulner"], 0.614231792124)
 })
 
+test_that("fill times are calculated", {
+    set.seed(446)
+    fill = fill_time(riv, yield = 0.14, samples = 10)
+    expect_equal(fill$begin, c(1, 78, 104, 117, 133, 526, 731, 914, 1099, 1116, 1244))
+    expect_equal(fill$months, c(88, 129, 105, 92, 110, 445, 245, 218, NA, NA, NA))
+})
+
 context("storage, yield, evaporation and withdrawal time series")
 
 test_that("storage, yield, evaporation and withdrawal time series are calculated", {

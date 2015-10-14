@@ -174,6 +174,53 @@ summary.wateres <- function(object, ..., reliability = 1, empirical_rel = FALSE,
     print(c(Vpot = attr(object, "Vpot"), Qn_max = Qn_max, alpha = alpha, m = m, resilience = resilience, vulnerability = vulnerability, dimless_vulner = dimless_vulner))
 }
 
+#' @rdname fill_time.wateres
+#' @export
+fill_time <- function(reser, yield, begins, samples) UseMethod("fill_time")
+
+#' Reservoir filling time
+#'
+#' Experimental calculation of filling time of the reservoir. A sample of time series is calculated based on the given beginning time steps (alternatively,
+#'   these time steps are sampled randomly).
+#'
+#' @param reser A \code{wateres} object.
+#' @param yield A required yield.
+#' @param begins A vector of time steps that represent begins of time series to be simulated.
+#' @param samples A number of time steps of begins to be randomly sampled.
+#' @return A data table of filling times:
+#'   \item{begin}{potential reservoir storage in millions of m3 (given as a parameter of \code{\link{as.wateres}})}
+#'   \item{months}{number of months during that the reservoir changes from empty to full, or \code{NA} if the reservoir is not full and the end
+#'     of the time series is reached}
+#' @details If provided, the \code{begins} argument is used to calculate the time series. Alternatively, the \code{samples} argument is applied.
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, Vpot = 0.4, area = 0.754)
+#' fill = fill_time(reser, yield = 0.01)
+fill_time.wateres <- function(reser, yield, begins = NULL, samples = 10) {
+    if (is.null(begins)) {
+        begins = sample(1:nrow(reser), samples)
+        begins = c(1, begins)
+    }
+    fill_months = vector("numeric", length(begins))
+    for (beg in 1:length(begins)) {
+        tmp_reser = reser[begins[beg]:nrow(reser), ]
+        attributes(tmp_reser) = attributes(reser)
+        series = calc_series(tmp_reser, attr(tmp_reser, "Vpot"), yield, FALSE, initial_storage = 0)
+        storage_full = !(series$storage < attr(tmp_reser, "Vpot") * 1e6)
+        if (all(!storage_full))
+            fill_months[beg] = NA
+        else
+            fill_months[beg] = which(storage_full)[1] - 1
+    }
+    fill_months = fill_months[order(begins)]
+    begins = begins[order(begins)]
+    return(data.table(begin = begins, months = fill_months))
+}
+
 # bisection for monotonic function
 bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
     lower = min(interval)
