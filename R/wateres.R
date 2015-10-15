@@ -117,9 +117,10 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
 #'
 #' @param object A wateres object.
 #' @param ... Further arguments passed to the \code{\link{sry.wateres}} function (as \code{prob_type} or \code{upper_limit}).
-#' @param reliability A reliability value passed to the \code{\link{sry.wateres}} function.
-#' @return A vector of reservoir characteristics:
+#' @param reliability A vector of reliability values passed to the \code{\link{sry.wateres}} function.
+#' @return A data table of reservoir characteristics:
 #'   \item{storage}{potential reservoir storage in m3 (given as a parameter of \code{\link{as.wateres}})}
+#'   \item{reliability}{given reliability}
 #'   \item{yield}{the maximum yield (m3.s-1) for given reliability and potential storage}
 #'   \item{alpha}{level of development - ratio of yield to the mean annual flow}
 #'   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
@@ -143,6 +144,11 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
 #' summary(reser, reliability = 1)
 #' summary(reser, reliability = 0.95)
 summary.wateres <- function(object, ..., reliability = "max") {
+    as.data.table(t(sapply(reliability, summary_wateres, object, ...)))
+}
+
+# summary for one value of reliability
+summary_wateres <- function(reliability, object, ...) {
     resul = sry(object, reliability = reliability, ..., get_series = TRUE)
     yield = resul$yield
     Qa = mean(object$Q)
@@ -170,7 +176,9 @@ summary.wateres <- function(object, ..., reliability = "max") {
         vulnerability = mean(deficits)
         dimless_vulner = vulnerability / (.Call("convert_m3", PACKAGE = "wateres", yield, 1, TRUE) * 30.5)
     }
-    print(c(storage = attr(object, "storage"), yield = yield, alpha = alpha, m = m, resilience = resilience, vulnerability = vulnerability, dimless_vulner = dimless_vulner))
+    return(
+        c(storage = attr(object, "storage"), reliability = resul$reliability, yield = yield, alpha = alpha, m = m, resilience = resilience,
+        vulnerability = vulnerability, dimless_vulner = dimless_vulner))
 }
 
 #' @rdname fill_time.wateres

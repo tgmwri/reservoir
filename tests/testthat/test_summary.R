@@ -33,26 +33,40 @@ riv = as.wateres("rivendell.txt", 14.4e6, 754e3)
 
 test_that("characteristics are calculated correctly", {
     chars = summary(riv)
-    expect_equivalent(chars["storage"], 14.4e6)
-    expect_equivalent(chars["yield"], 0.145018882520)
-    expect_equivalent(chars["alpha"], 0.921783447266)
-    expect_equivalent(chars["m"], 0.311966575415)
-    expect_true(is.na(chars["resilience"]))
-    expect_true(is.na(chars["vulnerability"]))
-    expect_true(is.na(chars["dimless_vulner"]))
+    expect_equivalent(chars$storage, 14.4e6)
+    expect_equivalent(chars$reliability, 1)
+    expect_equivalent(chars$yield, 0.145018882520)
+    expect_equivalent(chars$alpha, 0.921783447266)
+    expect_equivalent(chars$m, 0.311966575415)
+    expect_true(is.na(chars$resilience))
+    expect_true(is.na(chars$vulnerability))
+    expect_true(is.na(chars$dimless_vulner))
     chars_ch = summary(riv, prob_type = "ch")
-    expect_equivalent(chars_ch, chars)
+    expect_equivalent(chars_ch$reliability, 0.999469857619)
+    expect_equivalent(chars_ch[, reliability := NULL], chars[, reliability := NULL])
 })
 
 test_that("characteristics are calculated for given reliability", {
     chars = summary(riv, reliability = 0.95)
-    expect_equivalent(chars["storage"], 14.4e6)
-    expect_equivalent(chars["yield"], 0.1557741525525)
-    expect_equivalent(chars["alpha"], 0.9901471645571)
-    expect_equivalent(chars["m"], 0.0392980158775)
-    expect_equivalent(chars["resilience"], 0.272727272727)
-    expect_equivalent(chars["vulnerability"], 252139.72249)
-    expect_equivalent(chars["dimless_vulner"], 0.614231792124)
+    expect_equivalent(chars$storage, 14.4e6)
+    expect_equivalent(chars$yield, 0.1557741525525)
+    expect_equivalent(chars$alpha, 0.9901471645571)
+    expect_equivalent(chars$m, 0.0392980158775)
+    expect_equivalent(chars$resilience, 0.272727272727)
+    expect_equivalent(chars$vulnerability, 252139.72249)
+    expect_equivalent(chars$dimless_vulner, 0.614231792124)
+})
+
+test_that("characteristics are calculated for vector of reliabilities", {
+    chars = summary(riv, reliability = c(0.5, 0.7, 0.9))
+    expect_equivalent(chars$storage, rep(14.4e6, 3))
+    expect_equivalent(chars$reliability, c(0.499620924943, 0.699772554966, 0.899924184989))
+    expect_equivalent(chars$yield, c(0.213269035375, 0.185025217469, 0.16306729083))
+    expect_equivalent(chars$alpha,c(1.355601858231, 1.17607569322, 1.036504535587))
+    expect_equivalent(chars$m, c(-1.418317351576, -0.70227757562, -0.145598272436))
+    expect_equivalent(chars$resilience, c(0.160606060606, 0.209595959596, 0.280303030303))
+    expect_equivalent(chars$vulnerability, c(384376.37714, 295149.73258, 245221.73623))
+    expect_equivalent(chars$dimless_vulner, c(0.683935745794, 0.605337932228, 0.570661436397))
 })
 
 test_that("fill times are calculated", {
@@ -99,7 +113,7 @@ test_that("withdrawal without evaporation is calculated", {
 
 test_that("summary for short time series is calculated", {
     chars = summary(reser, reliability = 0.95) # failure in last time step
-    expect_equivalent(chars, c(14.4e6, 0.453715758324, 2.15755462646, -28.4899573928, 1, 963407.750510, 0.805772962576))
+    expect_equivalent(as.numeric(chars), c(14.4e6, 0.95652173913, 0.453715758324, 2.15755462646, -28.4899573928, 1, 963407.750510, 0.805772962576))
 })
 
 context("storage-reliability-yield relationship")

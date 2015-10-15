@@ -11,11 +11,12 @@
 
 \item{...}{Further arguments passed to the \code{\link{sry.wateres}} function (as \code{prob_type} or \code{upper_limit}).}
 
-\item{reliability}{A reliability value passed to the \code{\link{sry.wateres}} function.}
+\item{reliability}{A vector of reliability values passed to the \code{\link{sry.wateres}} function.}
 }
 \value{
-A vector of reservoir characteristics:
+A data table of reservoir characteristics:
   \item{storage}{potential reservoir storage in m3 (given as a parameter of \code{\link{as.wateres}})}
+  \item{reliability}{given reliability}
   \item{yield}{the maximum yield (m3.s-1) for given reliability and potential storage}
   \item{alpha}{level of development - ratio of yield to the mean annual flow}
   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
