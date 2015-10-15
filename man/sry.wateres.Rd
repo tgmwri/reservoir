@@ -19,7 +19,8 @@ equal to the potential volume of \code{reser} will be used. If only storage is m
 and yield.)}
 
 \item{reliability}{A reliability value, cannot be less than zero or greater than maximum reliability value
-(depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)}
+(depending on data and usage of empirical reliability). Alternatively, \dQuote{max} value can be used to set reliability to its maximum
+value. (If missing, reliability will be calculated using storage and yield.)}
 
 \item{yield}{A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)}
 

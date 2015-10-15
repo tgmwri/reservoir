@@ -40,6 +40,8 @@ test_that("characteristics are calculated correctly", {
     expect_true(is.na(chars["resilience"]))
     expect_true(is.na(chars["vulnerability"]))
     expect_true(is.na(chars["dimless_vulner"]))
+    chars_ch = summary(riv, prob_type = "ch")
+    expect_equivalent(chars_ch, chars)
 })
 
 test_that("characteristics are calculated for given reliability", {

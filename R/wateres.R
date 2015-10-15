@@ -142,7 +142,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' summary(reser, reliability = 1)
 #' summary(reser, reliability = 0.95)
-summary.wateres <- function(object, ..., reliability = 1) {
+summary.wateres <- function(object, ..., reliability = "max") {
     resul = sry(object, reliability = reliability, ..., get_series = TRUE)
     yield = resul$yield
     Qa = mean(object$Q)
@@ -272,14 +272,14 @@ calc_series <- function(reser, storage_req, yield_req, throw_exceed, initial_sto
     return(resul)
 }
 
-calc_reliability <- function(series, yield_req, prob_type) {
+calc_reliability <- function(yield, yield_req, prob_type) {
     if (prob_type == "chegodayev")
         coeff = c(m = -0.3, n = 0.4)
     else if (prob_type == 4)
         coeff = c(m = 0, n = 0)
     else
         coeff = c(m = -1, n = -1)
-    reliab = (sum(series$yield + .Machine$double.eps ^ 0.5 > yield_req) + coeff["m"]) / (length(series$yield) + coeff["n"])
+    reliab = (sum(yield + .Machine$double.eps ^ 0.5 > yield_req) + coeff["m"]) / (length(yield) + coeff["n"])
     names(reliab) = NULL
     return(reliab)
 }
@@ -292,7 +292,7 @@ calc_diff_reliability <- function(x, reser, storage_req, reliab_req, yield_req, 
         yield_req = x
 
     series = calc_series(reser, storage_req, yield_req, throw_exceed)
-    reliab = calc_reliability(series, yield_req, prob_type)
+    reliab = calc_reliability(series$yield, yield_req, prob_type)
     return(reliab - reliab_req)
 }
 
@@ -302,7 +302,7 @@ is_reliab_equal <- function(value, resul_value, reser, storage_req, yield_req, p
     else
         yield_req = value
     series = calc_series(reser, storage_req, yield_req, throw_exceed)
-    if (calc_reliability(series, yield_req, prob_type) == resul_value)
+    if (calc_reliability(series$yield, yield_req, prob_type) == resul_value)
         return(0.5)
     else
         return(-1)
@@ -322,7 +322,8 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 #'   equal to the potential volume of \code{reser} will be used. If only storage is missing, it will be optimized using reliability
 #'   and yield.)
 #' @param reliability A reliability value, cannot be less than zero or greater than maximum reliability value
-#'   (depending on data and usage of empirical reliability). (If missing, it will be calculated using storage and yield.)
+#'   (depending on data and usage of empirical reliability). Alternatively, \dQuote{max} value can be used to set reliability to its maximum
+#'   value. (If missing, reliability will be calculated using storage and yield.)
 #' @param yield A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)
 #' @param prob_type Type of empirical probability used for calculation of reliability given as a number corresponding with the \code{type}
 #'   argument of the \code{\link{quantile}} function or \dQuote{chegodayev} representing the (m - 0.3) / (n + 0.4) formula.
@@ -365,8 +366,9 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
             stop("Invalid probability type.")
     }
     if (!missing(reliability)) {
-        max_series = calc_series(reser, 1, 0, throw_exceed)
-        max_reliab = calc_reliability(max_series, 0, prob_type)
+        max_reliab = calc_reliability(rep(1, nrow(reser)), 0, prob_type)
+        if (reliability == "max")
+            reliability = max_reliab
         if (reliability > max_reliab || reliability < 0)
             stop("Invalid value of reliability.")
     }
@@ -378,14 +380,14 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
             resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, yield_req = yield,
                 prob_type = prob_type, throw_exceed = throw_exceed)
             series_neighbour = calc_series(reser, resul[1] + 1e-5, yield, throw_exceed)
-            reliab_neighbour = calc_reliability(series_neighbour, yield, prob_type)
+            reliab_neighbour = calc_reliability(series_neighbour$yield, yield, prob_type)
             missing = "storage"
         }
         else {
             resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, storage_req = storage,
                 prob_type = prob_type, throw_exceed = throw_exceed)
             series_neighbour = calc_series(reser, storage, resul[1] - 1e-5, throw_exceed)
-            reliab_neighbour = calc_reliability(series_neighbour, resul[1] - 1e-5, throw_exceed)
+            reliab_neighbour = calc_reliability(series_neighbour$yield, resul[1] - 1e-5, throw_exceed)
             missing = "yield"
         }
         reliab_found = resul[2] + reliability
@@ -403,7 +405,7 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
         assign(missing, resul[1])
     }
     series = calc_series(reser, storage, yield, throw_exceed)
-    reliability = calc_reliability(series, yield, prob_type)
+    reliability = calc_reliability(series$yield, yield, prob_type)
     resul = list(storage = storage, reliability = reliability, yield = yield)
     if (get_series)
         resul$series = series
