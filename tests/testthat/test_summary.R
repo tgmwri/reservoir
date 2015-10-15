@@ -103,16 +103,12 @@ test_that("summary for short time series is calculated", {
 context("storage-reliability-yield relationship")
 
 test_that("storage for reliability and yield is optimized", {
-    sry = sry(riv, reliab = 0.5, yield = 0.14)
+    sry = sry(riv, reliab = 0.5, yield = 0.14, prob_type = "ch")
     expect_equivalent(sry$storage, 40175.9600915)
     expect_equivalent(sry$reliability, 0.499621326871)
     expect_equivalent(sry$yield, 0.14)
-    sry = sry(riv, reliab = 0.5, yield = 0.14, empirical_rel = FALSE)
-    expect_equivalent(sry$storage, 40175.9600927)
-    expect_equivalent(sry$reliability, 0.5)
-    expect_equivalent(sry$yield, 0.14)
     # increase of upper limit of storage needed
-    sry = sry(riv, reliab = 0.7, yield = 0.7, upper = 100)
+    sry = sry(riv, reliab = 0.7, yield = 0.7, upper = 100, prob_type = "ch")
     expect_equivalent(sry$storage, 1318806579.71)
     expect_equivalent(sry$reliability, 0.700318085429)
     expect_equivalent(sry$yield, 0.7)
@@ -120,50 +116,63 @@ test_that("storage for reliability and yield is optimized", {
 
 test_that("invalid reliability is rejected", {
     expect_error(sry(riv, reliab = -0.5, yield = 0.14))
-    expect_error(sry(riv, reliab = 1, yield = 0.14))
+    expect_error(sry(riv, reliab = 1, yield = 0.14, prob_type = "ch"))
+})
+
+test_that("different probability types can be used", {
+    expect_error(sry(riv, reliab = 1, yield = 0.14, prob_type = 11))
+    expect_error(sry(riv, reliab = 1, yield = 0.14, prob_type = "pus"))
+    sry = sry(riv, reliab = 0.5, yield = 0.14, prob_type = 4)
+    expect_equivalent(sry$storage, 40175.9600927)
+    expect_equivalent(sry$reliability, 0.5)
+    expect_equivalent(sry$yield, 0.14)
+    sry = sry(riv, reliab = 0.5, yield = 0.14, prob_type = 7)
+    expect_equivalent(sry$storage, 40175.9600915)
+    expect_equivalent(sry$reliability, 0.499620924943)
+    expect_equivalent(sry$yield, 0.14)
 })
 
 test_that("reliability for storage and yield is calculated", {
-    sry = sry(riv, storage = 41e3, yield = 0.14)
+    sry = sry(riv, storage = 41e3, yield = 0.14, prob_type = "ch")
     expect_equivalent(sry$storage, 41e3)
     expect_equivalent(sry$reliability, 0.499621326871)
     expect_equivalent(sry$yield, 0.14)
 
     # default storage value
-    sry = sry(riv, yield = 0.14)
+    sry = sry(riv, yield = 0.14, prob_type = "ch")
     expect_equivalent(sry$storage, 14.4e6)
     expect_equivalent(sry$reliability, 0.999469857619)
     expect_equivalent(sry$yield, 0.14)
 
     # evaporation applied
     riv = set_evaporation(riv, altitude = 529)
-    sry = sry(riv, storage = 41e3, yield = 0.14)
+    sry = sry(riv, storage = 41e3, yield = 0.14, prob_type = "ch")
     expect_equivalent(sry$storage, 41e3)
     expect_equivalent(sry$reliability, 0.433732202363)
     expect_equivalent(sry$yield, 0.14)
 
     # withdrawal applied
     riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
-    sry = sry(riv, storage = 41e3, yield = 0.14)
+    sry = sry(riv, storage = 41e3, yield = 0.14, prob_type = "ch")
     expect_equivalent(sry$storage, 41e3)
     expect_equivalent(sry$reliability, 0.430702817328)
     expect_equivalent(sry$yield, 0.14)
 })
 
 test_that("yield for storage and reliability is optimized", {
-    sry = sry(riv, storage = 41e3, reliab = 0.5)
+    sry = sry(riv, storage = 41e3, reliab = 0.5, prob_type = "ch")
     expect_equivalent(sry$storage, 41e3)
     expect_equivalent(sry$reliability, 0.500378673129)
     expect_equivalent(sry$yield, 0.139881646821)
-    sry = sry(riv, storage = 14.4e6, reliab = 1, empirical_rel = FALSE)
+    sry = sry(riv, storage = 14.4e6, reliab = 1, prob_type = 4)
     expect_equivalent(sry$storage, 14.4e6)
     expect_equivalent(sry$reliability, 1)
     expect_equivalent(sry$yield, 0.14501888252)
 })
 
 test_that("yield is optimized with the option to throw exceeding volume", {
-    sry1 = sry(riv, storage = 41e3, reliab = 0.88)
-    sry2 = sry(riv, storage = 41e3, reliab = 0.88, throw_exceed = TRUE)
+    sry1 = sry(riv, storage = 41e3, reliab = 0.88, prob_type = "ch")
+    sry2 = sry(riv, storage = 41e3, reliab = 0.88, prob_type = "ch", throw_exceed = TRUE)
     expect_equivalent(sry1$storage, 41e3)
     expect_equivalent(sry1$reliability, 0.880566495002)
     expect_equivalent(sry1$yield, 0.0618148688114)

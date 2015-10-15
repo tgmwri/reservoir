@@ -4,19 +4,14 @@
 \alias{summary.wateres}
 \title{Water reservoir summary}
 \usage{
-\method{summary}{wateres}(object, ..., reliability = 1,
-  empirical_rel = FALSE, upper_limit = 5)
+\method{summary}{wateres}(object, ..., reliability = 1)
 }
 \arguments{
 \item{object}{A wateres object.}
 
-\item{...}{Further arguments are not used.}
+\item{...}{Further arguments passed to the \code{\link{sry.wateres}} function (as \code{prob_type} or \code{upper_limit}).}
 
 \item{reliability}{A reliability value passed to the \code{\link{sry.wateres}} function.}
-
-\item{empirical_rel}{Whether empirical probability will be used for reliability, passed to the \code{\link{sry.wateres}} function.}
-
-\item{upper_limit}{An upper limit of yield (as multiple of the mean annual flow) for optimization passed to the \code{\link{sry.wateres}} function.}
 }
 \value{
 A vector of reservoir characteristics:
@@ -34,7 +29,8 @@ Calculates and shows characteristics of the reservoir.
 \details{
 The maximum yield is calculated by using the \code{\link{sry.wateres}} function for potential storage and reliability 1.
 
-  An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability or if an invalid reliability is given.
+  An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability or if an invalid reliability or probability
+  type is given.
 }
 \examples{
 reser = data.frame(

@@ -151,7 +151,7 @@ alpha_beta <- function(reser, yield_coeff, upper_limit) UseMethod("alpha_beta")
 alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05), upper_limit = 5) {
     alpha = seq(yield_coeff[1], yield_coeff[2], by = yield_coeff[3])
     yields = alpha * mean(reser$Q)
-    storages = sapply(1:length(yields), function(i) { sry(reser, reliability = 1, yield = yields[i], empirical_rel = FALSE, upper_limit = upper_limit)$storage })
+    storages = sapply(1:length(yields), function(i) { sry(reser, reliability = 1, yield = yields[i], prob_type = 4, upper_limit = upper_limit)$storage })
     beta = sapply(1:length(yields), function(i) { storages[i] / (yields[i] * 3600 * 24 * 365) })
 
     resul = data.table(alpha = alpha, beta = beta)

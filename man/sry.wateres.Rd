@@ -5,12 +5,11 @@
 \alias{sry.wateres}
 \title{Calculation of storage, reliability and yield}
 \usage{
-sry(reser, storage, reliability, yield, empirical_rel, upper_limit,
-  throw_exceed, get_series)
+sry(reser, storage, reliability, yield, prob_type, upper_limit, throw_exceed,
+  get_series)
 
-\method{sry}{wateres}(reser, storage, reliability, yield,
-  empirical_rel = TRUE, upper_limit = 5, throw_exceed = FALSE,
-  get_series = FALSE)
+\method{sry}{wateres}(reser, storage, reliability, yield, prob_type = 7,
+  upper_limit = 5, throw_exceed = FALSE, get_series = FALSE)
 }
 \arguments{
 \item{reser}{A wateres object.}
@@ -24,8 +23,11 @@ and yield.)}
 
 \item{yield}{A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)}
 
-\item{empirical_rel}{Whether empirical probability (by (m - 0.3) / (n + 0.4) formula) will be used for calculation
-of reliability. If enabled, maximum reliability value will be less than 1.}
+\item{prob_type}{Type of empirical probability used for calculation of reliability given as a number corresponding with the \code{type}
+  argument of the \code{\link{quantile}} function or \dQuote{chegodayev} representing the (m - 0.3) / (n + 0.4) formula.
+ For the numeric argument, currently only types 4 [m / n] and 7 [(m - 1) / (n - 1)] are supported.
+
+ Therefore, maximum reliability value can be less than 1 for certain types.}
 
 \item{upper_limit}{An upper limit for optimization of storage or yield given as multiple of potential volume of the reservoir
 (for storage) or as multiple of mean monthly flow (for yield).}
