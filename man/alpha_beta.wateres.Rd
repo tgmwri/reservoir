@@ -5,10 +5,10 @@
 \alias{alpha_beta.wateres}
 \title{Calculation of alpha and beta characteristics}
 \usage{
-alpha_beta(reser, alphas, max_beta, upper_limit)
+alpha_beta(reser, alphas, max_beta, reliability, ...)
 
 \method{alpha_beta}{wateres}(reser, alphas = seq(0, 1, 0.02), max_beta = 2,
-  upper_limit = 5)
+  reliability = "max", ...)
 }
 \arguments{
 \item{reser}{A wateres object.}
@@ -17,18 +17,22 @@ alpha_beta(reser, alphas, max_beta, upper_limit)
 
 \item{max_beta}{A maximum value of calculated beta to be considered, greater values will be ignored.}
 
-\item{upper_limit}{An upper limit of storage (as multiple of the potential storage) for optimization as in the \code{\link{sry.wateres}} function.}
+\item{reliability}{A reliability value passed to the \code{\link{sry.wateres}} function.}
+
+\item{...}{Further arguments passed to the \code{\link{sry.wateres}} function (as \code{prob_type} or \code{upper_limit}).}
 }
 \value{
 A \code{wateres_alpha_beta} object which is a data.table consisting of:
   \item{alpha}{level of development, given as the \code{alphas} argument}
-  \item{beta}{ratio of storage representing 100\% reliability and volume of yield}
+  \item{beta}{ratio of storage representing the given reliability and volume of mean annual flow}
 }
 \description{
-Calculates pairs of alpha (level of development) and beta (ratio of storage and volume of yield) characteristics of the reservoir.
+Calculates pairs of alpha (level of development) and beta (ratio of storage and volume of annual flow) characteristics of the reservoir
+for given reliability.
 }
 \details{
-An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability.
+An error occurs if the range given by \code{upper_limit} does not contain the given value of reliability. In that case, try to increase
+  the \code{upper_limit} argument.
 }
 \examples{
 reser = data.frame(
@@ -39,6 +43,7 @@ reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 alpha_beta = alpha_beta(reser)
 }
 \seealso{
-\code{\link{plot.wateres_alpha_beta}} for plotting the results
+\code{\link{plot.wateres_alpha_beta}} for plotting the results, \code{\link{sry.wateres}} for calculation of a reservoir storage for the
+  given yield and reliability
 }
 
