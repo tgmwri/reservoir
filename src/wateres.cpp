@@ -35,12 +35,15 @@ RcppExport SEXP convert_m3(SEXP Rvalues, SEXP Rdays, SEXP Rto_volume)
 }
 
 //value in mm, area in m2
-double convert_mm_to_m3s1(double value, unsigned days, double area)
+//to_m3s1 converts to m3.s-1, otherwise to m3 per month
+double convert_mm(double value, unsigned days, double area, bool to_m3s1)
 {
   value = value / 1e3 * area;
   vector<double> tmp_value(1, value);
-  vector<unsigned> tmp_days(1, days);
-  convert_m3(tmp_value, tmp_days, false);
+  if (to_m3s1) {
+    vector<unsigned> tmp_days(1, days);
+    convert_m3(tmp_value, tmp_days, false);
+  }
   return tmp_value[0];
 }
 
@@ -48,9 +51,10 @@ double convert_mm_to_m3s1(double value, unsigned days, double area)
  * - creates water reservoir from given vectors of variables and options
  */
 wateres::wateres(
-  vector<double> evaporation, vector<double> withdrawal, vector<double> yield, vector<double> storage,
-  vector<unsigned> days, DataFrame eas, bool throw_exceed, double volume, double area)
+  vector<double> precipitation, vector<double> evaporation, vector<double> withdrawal, vector<double> yield,
+  vector<double> storage, vector<unsigned> days, DataFrame eas, bool throw_exceed, double volume, double area)
 {
+  this->precipitation = precipitation;
   this->evaporation = evaporation;
   this->withdrawal = withdrawal;
   this->yield = yield;
@@ -92,19 +96,24 @@ double wateres::get_area(double storage_req)
  */
 void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name var)
 {
+  int tmp_coeff = -1; //whether to add or subtract in the balance
   switch (var) {
+    case PRECIPITATION:
+      tmp_coeff = 1;
+      variable[ts] = convert_mm(variable[ts], days[ts], area, false);
+      break;
     case EVAPORATION:
       double tmp_area;
       if (eas.size() == 0)
         tmp_area = area;
       else
         tmp_area = get_area(storage[ts]);
-      variable[ts] = convert_mm_to_m3s1(variable[ts], days[ts], tmp_area);
+      variable[ts] = convert_mm(variable[ts], days[ts], tmp_area, true);
       break;
     default:
       break;
   }
-  storage[ts + 1] -= variable[ts];
+  storage[ts + 1] += variable[ts] * tmp_coeff;
   if (storage[ts + 1] < 0) {
     variable[ts] = variable[ts] + storage[ts + 1];
     storage[ts + 1] = 0;
@@ -122,6 +131,9 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
   }
   else {
     switch (var) {
+      case PRECIPITATION:
+        calc_balance_var(evaporation, ts, EVAPORATION);
+        break;
       case EVAPORATION:
         calc_balance_var(yield, ts, YIELD);
         break;
@@ -145,6 +157,7 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
   * - calculates monthly time series of reservoir storage and yield
   * @param Rinflow time series of inflows in m3.s-1
   * @param Rdays number of days for months of time series
+  * @param Rprecipitation time series of precipitation in mm
   * @param Revaporation time series of evaporation in mm
   * @param Rwithdrawal time series of withdrawal in m3
   * @param Ryield_req required yield (reservoir outflow) in m3.s-1
@@ -153,14 +166,15 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
   * @param Rarea area flooded by reservoir in m2
   * @param Reas elevation-area-storage relationship (in m.a.s.l., m2 and m3)
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
-  * @return list consisting of storage (in m3), yield (m3.s-1), evaporation (m3) and withdrawal (m3)
+  * @return list consisting of storage (in m3), yield (m3.s-1), precipitation (m3), evaporation (m3) and withdrawal (m3)
   */
 RcppExport SEXP calc_storage(
-  SEXP Rinflow, SEXP Rdays, SEXP Revaporation, SEXP Rwithdrawal, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage,
+  SEXP Rinflow, SEXP Rdays, SEXP Rprecipitation, SEXP Revaporation, SEXP Rwithdrawal, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage,
   SEXP Rarea, SEXP Reas, SEXP Rthrow_exceed)
 {
   vector<double> inflow = as<vector<double> >(Rinflow);
   vector<unsigned> days = as<vector<unsigned> >(Rdays);
+  vector<double> precipitation = as<vector<double> >(Rprecipitation);
   vector<double> evaporation = as<vector<double> >(Revaporation);
   vector<double> withdrawal = as<vector<double> >(Rwithdrawal);
   double yield_req = as<double>(Ryield_req);
@@ -179,16 +193,17 @@ RcppExport SEXP calc_storage(
   vector<double> yield(time_steps, 0), storage(time_steps + 1, 0);
   storage[0] = initial_storage;
 
-  wateres reser(evaporation, withdrawal, yield, storage, days, eas, throw_exceed, volume, area);
+  wateres reser(precipitation, evaporation, withdrawal, yield, storage, days, eas, throw_exceed, volume, area);
   for (ts = 0; ts < time_steps; ts++) {
     reser.yield[ts] = yield_req_vol[ts];
     reser.storage[ts + 1] = reser.storage[ts] + inflow[ts];
-    reser.calc_balance_var(reser.evaporation, ts, wateres::EVAPORATION);
+    reser.calc_balance_var(reser.precipitation, ts, wateres::PRECIPITATION);
   }
   List resul;
   resul["storage"] = reser.storage;
   convert_m3(reser.yield, days, false);
   resul["yield"] = reser.yield;
+  resul["precipitation"] = reser.precipitation;
   resul["evaporation"] = reser.evaporation;
   resul["withdrawal"] = reser.withdrawal;
 

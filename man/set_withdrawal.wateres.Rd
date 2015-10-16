@@ -19,7 +19,7 @@ or one constant value.}
 A modified \code{wateres} object with withdrawal time series added (denoted as \code{W}).
 }
 \description{
-Sets or calculates time series of withdrawal from the reservoir.
+Sets time series of withdrawal from the reservoir.
 }
 \details{
 Withdrawal is applied when calculating reservoir water balance after the yield and evaporation demands are satisfied.

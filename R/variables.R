@@ -6,7 +6,7 @@ set_variable <- function(reser, values, variable) {
             values = rep_len(values, nrow(reser))
         }
         else {
-            var_names = c(E = "evaporation", W = "withdrawal")
+            var_names = c(E = "evaporation", W = "withdrawal", P = "precipitation")
             text_const = ifelse(variable == "W", " or one constant value", "")
             stop("Incorrect length of ", var_names[variable], " length of time series or 12 (monthly values)", text_const, " required.")
         }
@@ -59,7 +59,7 @@ set_withdrawal <- function(reser, values) UseMethod("set_withdrawal")
 
 #' Withdrawal setting
 #'
-#' Sets or calculates time series of withdrawal from the reservoir.
+#' Sets time series of withdrawal from the reservoir.
 #'
 #' @param reser A \code{wateres} object.
 #' @param values A vector of monthly withdrawal values in m3, either of length of reservoir time series, or 12 monthly values starting by January,
@@ -80,5 +80,33 @@ set_withdrawal.wateres <- function(reser, values) {
     if (length(values) == 1)
         values = rep(values, 12)
     reser = set_variable(reser, values, "W")
+    return(reser)
+}
+
+#' @rdname set_precipitation.wateres
+#' @export
+set_precipitation <- function(reser, values) UseMethod("set_precipitation")
+
+#' Precipitation setting
+#'
+#' Sets time series of precipitation on the reservoir area.
+#'
+#' @param reser A \code{wateres} object.
+#' @param values A vector of monthly precipitation values in mm, either of length of reservoir time series, or 12 monthly values starting by January.
+#' @return A modified \code{wateres} object with precipitation time series added (denoted as \code{P}).
+#' @details Precipitation is applied when calculating reservoir water balance. When calculating precipitation volume, the flooded area related
+#'   to the potential storage is always used.
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
+#' sry(reser, storage = 21e3, yield = 0.17)
+#' reser = set_precipitation(reser, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
+#' sry(reser, storage = 21e3, yield = 0.17)
+set_precipitation.wateres <- function(reser, values) {
+    reser = set_variable(reser, values, "P")
     return(reser)
 }

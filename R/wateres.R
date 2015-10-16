@@ -263,7 +263,7 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
 
 get_reser_variables <- function(reser) {
     tmp = list()
-    for (var in c("E", "W")) {
+    for (var in c("E", "W", "P")) {
         if (!var %in% names(reser))
             tmp[[var]] = rep(0, nrow(reser))
         else
@@ -275,7 +275,7 @@ get_reser_variables <- function(reser) {
 calc_series <- function(reser, storage_req, yield_req, throw_exceed, initial_storage = storage_req) {
     tmp = get_reser_variables(reser)
     resul = .Call(
-        "calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp$E, tmp$W, yield_req, storage_req, initial_storage,
+        "calc_storage", PACKAGE = "wateres", reser$Q, reser$.days, tmp$P, tmp$E, tmp$W, yield_req, storage_req, initial_storage,
         attr(reser, "area"), attr(reser, "eas"), throw_exceed)
     return(resul)
 }

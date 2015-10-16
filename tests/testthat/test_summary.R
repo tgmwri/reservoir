@@ -76,9 +76,9 @@ test_that("fill times are calculated", {
     expect_equal(fill$months, c(88, 129, 105, 92, 110, 445, 245, 218, NA, NA, NA))
 })
 
-context("storage, yield, evaporation and withdrawal time series")
+context("storage, yield, precipitation, evaporation and withdrawal time series")
 
-test_that("storage, yield, evaporation and withdrawal time series are calculated", {
+test_that("storage, yield, precipitation, evaporation and withdrawal time series are calculated", {
     resul = calc_series(riv, 41e3, 0.06, FALSE)
     resul_throw = calc_series(riv, 41e3, 0.06, TRUE)
     expect_equivalent(resul, readRDS("series.rds"))
@@ -89,6 +89,9 @@ test_that("storage, yield, evaporation and withdrawal time series are calculated
     riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
     resul_with = calc_series(riv, 14.4e6, 0.14, FALSE)
     expect_equivalent(resul_with, readRDS("series_withdrawal.rds"))
+    riv = set_precipitation(riv, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
+    resul_precip = calc_series(riv, 14.4e6, 0.14, FALSE)
+    expect_equivalent(resul_precip, readRDS("series_precipitation.rds"))
 })
 
 test_that("series with evaporation depending on E-A-S relationship are calculated", {

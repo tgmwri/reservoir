@@ -8,13 +8,13 @@ class wateres
 {
   public:
     wateres(
-      std::vector<double> evaporation, std::vector<double> withdrawal, std::vector<double> yield, std::vector<double> storage,
-      std::vector<unsigned> days, Rcpp::DataFrame eas, bool throw_exceed, double volume, double area); //!< reservoir from given values
+      std::vector<double> precipitation, std::vector<double> evaporation, std::vector<double> withdrawal, std::vector<double> yield,
+      std::vector<double> storage, std::vector<unsigned> days, Rcpp::DataFrame eas, bool throw_exceed, double volume, double area); //!< reservoir from given values
 
     //! water balance variables
-    enum var_name {EVAPORATION, YIELD, WITHDRAWAL};
+    enum var_name {PRECIPITATION, EVAPORATION, YIELD, WITHDRAWAL};
     //! values of water balance variables
-    std::vector<double> evaporation, withdrawal, yield, storage;
+    std::vector<double> precipitation, evaporation, withdrawal, yield, storage;
     std::vector<unsigned> days; //!< number of days for time steps
     Rcpp::DataFrame eas; //!< elevation-area-storage relationship (m, m2 and m3)
 

@@ -42,3 +42,9 @@ test_that("withdrawal values of incorrect length are rejected", {
     expect_error(set_withdrawal(riv, monthly_with[1:5]))
 })
 
+monthly_precip = c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58)
+
+test_that("precipitation monthly values are set", {
+    riv = set_precipitation(riv, monthly_precip)
+    expect_equivalent(riv$P, rep_len(monthly_precip, nrow(riv)))
+})
