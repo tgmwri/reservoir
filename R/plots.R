@@ -136,13 +136,14 @@ alpha_beta <- function(reser, alphas, max_beta, reliability, ...) UseMethod("alp
 #' @param reser A wateres object.
 #' @param alphas A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied. Usually the interval between 0 and 1 is used.
 #' @param max_beta A maximum value of calculated beta to be considered, greater values will be ignored.
-#' @param reliability A reliability value passed to the \code{\link{sry.wateres}} function.
+#' @param reliability A vector of reliability values passed to the \code{\link{sry.wateres}} function.
 #' @param ... Further arguments passed to the \code{\link{sry.wateres}} function (as \code{prob_type} or \code{upper_limit}).
 #' @return A \code{wateres_alpha_beta} object which is a data.table consisting of:
 #'   \item{alpha}{level of development, given as the \code{alphas} argument}
 #'   \item{beta}{ratio of storage representing the given reliability and volume of mean annual flow}
+#'   \item{reliability}{given reliability values}
 #' @details An error occurs if the range given by \code{upper_limit} does not contain the given value of reliability. In that case, try to increase
-#'   the \code{upper_limit} argument.
+#'   the \code{upper_limit} argument or increase the lowest value of \code{alphas}.
 #' @seealso \code{\link{plot.wateres_alpha_beta}} for plotting the results, \code{\link{sry.wateres}} for calculation of a reservoir storage for the
 #'   given yield and reliability
 #' @export
@@ -154,21 +155,29 @@ alpha_beta <- function(reser, alphas, max_beta, reliability, ...) UseMethod("alp
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' alpha_beta = alpha_beta(reser)
 alpha_beta.wateres <- function(reser, alphas = seq(0, 1, 0.02), max_beta = 2, reliability = "max", ...) {
+    resul = rbindlist(lapply(reliability, alpha_beta_wateres, reser, alphas, max_beta, ...))
+    resul$reliability = as.factor(resul$reliability)
+    class(resul) = c("wateres_alpha_beta", class(resul))
+    return(resul)
+}
+
+alpha_beta_wateres <- function(reliability, reser, alphas, max_beta, ...) {
     Q_annual = mean(reser$Q)
     yields = alphas * Q_annual
-    storages = sapply(1:length(yields), function(i) { sry(reser, reliability = reliability, yield = yields[i], ...)$storage })
-    beta = storages / (.Call("convert_m3", PACKAGE = "wateres", Q_annual, 1, TRUE) * 365.25)
-    resul = data.table(alpha = alphas, beta = beta)
+    resul = sapply(1:length(yields), function(i) { resul = sry(reser, reliability = reliability, yield = yields[i], ...); c(NA, resul$storage, resul$reliability) })
+    resul = as.data.table(t(resul))
+    setnames(resul, c("alpha", "beta", "reliability"))
+    resul$alpha = alphas
+    resul$beta = resul$beta / (.Call("convert_m3", PACKAGE = "wateres", Q_annual, 1, TRUE) * 365.25)
     betas_max_pos = which(resul$beta > max_beta)
     if (length(betas_max_pos) > 0)
         resul = resul[1:(betas_max_pos[1] - 1), ]
-    class(resul) = c("wateres_alpha_beta", class(resul))
     return(resul)
 }
 
 #' Plot of alpha and beta characteristics
 #'
-#' Plots characteristics in a given \code{wateres_alpha_beta} object, by using the \code{ggplot2} package.
+#' Plots characteristics for given reliabilities stored in a \code{wateres_alpha_beta} object, by using the \code{ggplot2} package.
 #'
 #' @param x A \code{wateres_alpha_beta} object.
 #' @param filename A file name where the plot will be saved. If not specified, the plot will be printed to the current device.
@@ -188,8 +197,10 @@ alpha_beta.wateres <- function(reser, alphas = seq(0, 1, 0.02), max_beta = 2, re
 plot.wateres_alpha_beta <- function(x, filename = NULL, width = 8, height = 6, ...) {
     check_plot_pkgs()
 
-    p = ggplot2::ggplot(x, ggplot2::aes(x = beta, y = alpha)) + ggplot2::geom_line(colour = "#F8766D")
+    p = ggplot2::ggplot(x, ggplot2::aes(x = beta, y = alpha, colour = reliability)) + ggplot2::geom_line()
     p = p + ggplot2::scale_x_continuous("beta [\u2013]") + ggplot2::scale_y_continuous("alpha [\u2013]")
+    p = p + ggplot2::scale_colour_discrete(name = "reliability", labels = levels(x$reliability))
+    p = p + ggplot2::theme(legend.position = "bottom")
 
     save_plot_file(p, filename, width, height, ...)
     return(p)

@@ -20,3 +20,7 @@ test_that("alphas and betas are calculated", {
     expect_equivalent(alpha_beta, readRDS("alpha_beta.rds"))
 })
 
+test_that("alphas and betas for more reliabiliites are calculated", {
+    alpha_beta = alpha_beta(riv, upper = 10, reliability = c(0.9, 0.95, 1), prob_type = 4, alphas = seq(0.4, 1, 0.02))
+    expect_equivalent(alpha_beta, readRDS("alpha_beta_reliabs.rds"))
+})

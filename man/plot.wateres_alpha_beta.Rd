@@ -22,7 +22,7 @@
 A \code{ggplot} object.
 }
 \description{
-Plots characteristics in a given \code{wateres_alpha_beta} object, by using the \code{ggplot2} package.
+Plots characteristics for given reliabilities stored in a \code{wateres_alpha_beta} object, by using the \code{ggplot2} package.
 }
 \examples{
 reser = data.frame(
