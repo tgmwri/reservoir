@@ -126,17 +126,18 @@ plot.wateres_prob_field <- function(x, type = "storage", filename = NULL, width 
 
 #' @rdname alpha_beta.wateres
 #' @export
-alpha_beta <- function(reser, yield_coeff, upper_limit) UseMethod("alpha_beta")
+alpha_beta <- function(reser, alphas, max_beta, upper_limit) UseMethod("alpha_beta")
 
 #' Calculation of alpha and beta characteristics
 #'
 #' Calculates pairs of alpha (level of development) and beta (ratio of storage and volume of yield) characteristics of the reservoir.
 #'
 #' @param reser A wateres object.
-#' @param yield_coeff A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied.
+#' @param alphas A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied. Usually the interval between 0 and 1 is used.
+#' @param max_beta A maximum value of calculated beta to be considered, greater values will be ignored.
 #' @param upper_limit An upper limit of storage (as multiple of the potential storage) for optimization as in the \code{\link{sry.wateres}} function.
 #' @return A \code{wateres_alpha_beta} object which is a data.table consisting of:
-#'   \item{alpha}{level of development, given as the \code{yield_coeff} argument}
+#'   \item{alpha}{level of development, given as the \code{alphas} argument}
 #'   \item{beta}{ratio of storage representing 100\% reliability and volume of yield}
 #' @details An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability.
 #' @seealso \code{\link{plot.wateres_alpha_beta}} for plotting the results
@@ -148,13 +149,15 @@ alpha_beta <- function(reser, yield_coeff, upper_limit) UseMethod("alpha_beta")
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' alpha_beta = alpha_beta(reser)
-alpha_beta.wateres <- function(reser, yield_coeff = c(0.1, 1.2, 0.05), upper_limit = 5) {
-    alpha = seq(yield_coeff[1], yield_coeff[2], by = yield_coeff[3])
-    yields = alpha * mean(reser$Q)
+alpha_beta.wateres <- function(reser, alphas = seq(0, 1, 0.02), max_beta = 2, upper_limit = 5) {
+    Q_annual = mean(reser$Q)
+    yields = alphas * Q_annual
     storages = sapply(1:length(yields), function(i) { sry(reser, reliability = 1, yield = yields[i], prob_type = 4, upper_limit = upper_limit)$storage })
-    beta = sapply(1:length(yields), function(i) { storages[i] / (yields[i] * 3600 * 24 * 365) })
-
-    resul = data.table(alpha = alpha, beta = beta)
+    beta = storages / (.Call("convert_m3", PACKAGE = "wateres", Q_annual, 1, TRUE) * 365.25)
+    resul = data.table(alpha = alphas, beta = beta)
+    betas_max_pos = which(resul$beta > max_beta)
+    if (length(betas_max_pos) > 0)
+        resul = resul[1:(betas_max_pos[1] - 1), ]
     class(resul) = c("wateres_alpha_beta", class(resul))
     return(resul)
 }

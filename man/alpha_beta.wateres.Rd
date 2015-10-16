@@ -5,21 +5,23 @@
 \alias{alpha_beta.wateres}
 \title{Calculation of alpha and beta characteristics}
 \usage{
-alpha_beta(reser, yield_coeff, upper_limit)
+alpha_beta(reser, alphas, max_beta, upper_limit)
 
-\method{alpha_beta}{wateres}(reser, yield_coeff = c(0.1, 1.2, 0.05),
+\method{alpha_beta}{wateres}(reser, alphas = seq(0, 1, 0.02), max_beta = 2,
   upper_limit = 5)
 }
 \arguments{
 \item{reser}{A wateres object.}
 
-\item{yield_coeff}{A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied.}
+\item{alphas}{A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied. Usually the interval between 0 and 1 is used.}
+
+\item{max_beta}{A maximum value of calculated beta to be considered, greater values will be ignored.}
 
 \item{upper_limit}{An upper limit of storage (as multiple of the potential storage) for optimization as in the \code{\link{sry.wateres}} function.}
 }
 \value{
 A \code{wateres_alpha_beta} object which is a data.table consisting of:
-  \item{alpha}{level of development, given as the \code{yield_coeff} argument}
+  \item{alpha}{level of development, given as the \code{alphas} argument}
   \item{beta}{ratio of storage representing 100\% reliability and volume of yield}
 }
 \description{
