@@ -34,17 +34,11 @@ RcppExport SEXP convert_m3(SEXP Rvalues, SEXP Rdays, SEXP Rto_volume)
   return wrap(values);
 }
 
+//converts mm to m3
 //value in mm, area in m2
-//to_m3s1 converts to m3.s-1, otherwise to m3 per month
-double convert_mm(double value, unsigned days, double area, bool to_m3s1)
+double convert_mm(double value, double area)
 {
-  value = value / 1e3 * area;
-  vector<double> tmp_value(1, value);
-  if (to_m3s1) {
-    vector<unsigned> tmp_days(1, days);
-    convert_m3(tmp_value, tmp_days, false);
-  }
-  return tmp_value[0];
+  return value / 1e3 * area;
 }
 
 /**
@@ -100,7 +94,7 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
   switch (var) {
     case PRECIPITATION:
       tmp_coeff = 1;
-      variable[ts] = convert_mm(variable[ts], days[ts], area, false);
+      variable[ts] = convert_mm(variable[ts], area);
       break;
     case EVAPORATION:
       double tmp_area;
@@ -108,7 +102,7 @@ void wateres::calc_balance_var(vector<double> &variable, unsigned ts, var_name v
         tmp_area = area;
       else
         tmp_area = get_area(storage[ts]);
-      variable[ts] = convert_mm(variable[ts], days[ts], tmp_area, true);
+      variable[ts] = convert_mm(variable[ts], tmp_area);
       break;
     default:
       break;
@@ -186,7 +180,6 @@ RcppExport SEXP calc_storage(
 
   unsigned time_steps = inflow.size(), ts;
   convert_m3(inflow, days, true);
-  convert_m3(evaporation, days, true);
   vector<double> yield_req_vol(time_steps, yield_req);
   convert_m3(yield_req_vol, days, true);
 
