@@ -7,17 +7,17 @@
 \method{summary}{wateres}(object, ..., reliability = "max")
 }
 \arguments{
-\item{object}{A wateres object.}
+\item{object}{A \code{wateres} object.}
 
-\item{...}{Further arguments passed to the \code{\link{sry.wateres}} function (as \code{prob_type} or \code{upper_limit}).}
+\item{...}{Further arguments passed to the \code{\link{sry.wateres}} function (as \code{storage}, \code{yield}, \code{prob_type} or \code{upper_limit}).}
 
 \item{reliability}{A vector of reliability values passed to the \code{\link{sry.wateres}} function.}
 }
 \value{
 A data table of reservoir characteristics:
-  \item{storage}{potential reservoir storage in m3 (given as a parameter of \code{\link{as.wateres}})}
+  \item{storage}{reservoir storage in m3, potential or the minimum storage calculated for given reliability and yield}
   \item{reliability}{given reliability}
-  \item{yield}{the maximum yield (m3.s-1) for given reliability and potential storage}
+  \item{yield}{the maximum yield (m3.s-1), given or calculated for given reliability and potential storage}
   \item{alpha}{level of development - ratio of yield to the mean annual flow}
   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
   \item{resilience}{resilience calculated as number of continuous sequences of failures / total number of time steps with failures, NA for no failure}
@@ -28,9 +28,9 @@ A data table of reservoir characteristics:
 Calculates and shows characteristics of the reservoir.
 }
 \details{
-The maximum yield is calculated by using the \code{\link{sry.wateres}} function for potential storage and reliability 1.
+The maximum yield or the minimum storage is calculated by using the \code{\link{sry.wateres}} function for given storage or yield and reliability.
 
-  An error occurs if the range given by \code{upper_limit} does not contain value of 100\% reliability or if an invalid reliability or probability
+  An error occurs if the range given by \code{upper_limit} does not contain value of the given reliability or if an invalid reliability value or probability
   type is given.
 }
 \examples{
@@ -47,6 +47,6 @@ Thomas A. McMahon, Adebayo J. Adeloye, Sen-Lin Zhou (2006): Understanding perfor
   Journal of Hydrology 324, 359–382.
 }
 \seealso{
-\code{\link{sry.wateres}} used for optimization of the yield for given reliability
+\code{\link{sry.wateres}} used for optimization of the yield or storage for given reliability
 }
 

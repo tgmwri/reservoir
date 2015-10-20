@@ -46,15 +46,28 @@ test_that("characteristics are calculated correctly", {
     expect_equivalent(chars_ch[, reliability := NULL], chars[, reliability := NULL])
 })
 
-test_that("characteristics are calculated for given reliability", {
+test_that("characteristics are calculated for given reliability and storage", {
     chars = summary(riv, reliability = 0.95)
     expect_equivalent(chars$storage, 14.4e6)
+    expect_equivalent(chars$reliability, 0.949962092494)
     expect_equivalent(chars$yield, 0.1557741525525)
     expect_equivalent(chars$alpha, 0.9901471645571)
     expect_equivalent(chars$m, 0.0392980158775)
     expect_equivalent(chars$resilience, 0.272727272727)
     expect_equivalent(chars$vulnerability, 252139.72249)
     expect_equivalent(chars$dimless_vulner, 0.614231792124)
+})
+
+test_that("characteristics are calculated for given reliability and yield", {
+    chars = summary(riv, reliability = 0.95, yield = 0.14)
+    expect_equivalent(chars$storage, 2503180.76138)
+    expect_equivalent(chars$reliability, 0.949962092494)
+    expect_equivalent(chars$yield, 0.14)
+    expect_equivalent(chars$alpha, 0.889881926922)
+    expect_equivalent(chars$m, 0.439205730099)
+    expect_equivalent(chars$resilience, 0.287878787879)
+    expect_equivalent(chars$vulnerability, 227977.768421)
+    expect_equivalent(chars$dimless_vulner, 0.617946505608)
 })
 
 test_that("characteristics are calculated for vector of reliabilities", {
