@@ -237,7 +237,11 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
     if (flower == fupper && flower == 0)
         return(c(lower, 0))
     else if (flower * fupper > 0) {
-        stop("Required reliability is not contained within the given interval.")
+        # reliability greater than required and cannot be increased by increasing of upper limit
+        if (flower > 0 && flower < fupper)
+            return(c(lower, flower))
+        else
+            stop("Required reliability is not contained within the given interval.")
     }
     else {
         for (i in 1:max_iter) {
@@ -342,6 +346,9 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 #'
 #'   As the required reliability represents a range of storage or yield values, the smallest value of storage (or the greatest value
 #'   of yield) is returned, considering some tolerance value of the optimization algorithm.
+#'
+#'   If the calculated reliability is even for the zero storage value greater than the required reliability, the zero storage will and
+#'   the corresponding reliability be returned.
 #' @export
 #' @examples
 #' reser = data.frame(

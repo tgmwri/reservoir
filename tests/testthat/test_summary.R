@@ -144,6 +144,11 @@ test_that("storage for reliability and yield is optimized", {
     expect_equivalent(sry$storage, 1318806579.71)
     expect_equivalent(sry$reliability, 0.700318085429)
     expect_equivalent(sry$yield, 0.7)
+    # even zero storage sufficient
+    sry = sry(riv, reliability = 0.95, yield = 0.01, prob_type = "ch")
+    expect_equivalent(sry$storage, 0)
+    expect_equivalent(sry$reliability, 0.997197818843)
+    expect_equivalent(sry$yield, 0.01)
 })
 
 test_that("invalid reliability is rejected", {
