@@ -11,7 +11,7 @@ alpha_beta(reser, alphas, max_beta, reliability, ...)
   reliability = "max", ...)
 }
 \arguments{
-\item{reser}{A wateres object.}
+\item{reser}{A \code{wateres} object.}
 
 \item{alphas}{A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied. Usually the interval between 0 and 1 is used.}
 
@@ -25,15 +25,15 @@ alpha_beta(reser, alphas, max_beta, reliability, ...)
 A \code{wateres_alpha_beta} object which is a data.table consisting of:
   \item{alpha}{level of development, given as the \code{alphas} argument}
   \item{beta}{ratio of storage representing the given reliability and volume of mean annual flow}
-  \item{reliability}{given reliability values}
+  \item{reliability}{given reliability values (may differ from reliabilities calculated by \code{\link{sry.wateres}})}
 }
 \description{
 Calculates pairs of alpha (level of development) and beta (ratio of storage and volume of annual flow) characteristics of the reservoir
-for given reliability.
+for given reliabilities.
 }
 \details{
 An error occurs if the range given by \code{upper_limit} does not contain the given value of reliability. In that case, try to increase
-  the \code{upper_limit} argument or increase the lowest value of \code{alphas}.
+  the \code{upper_limit} argument.
 }
 \examples{
 reser = data.frame(

@@ -131,9 +131,9 @@ alpha_beta <- function(reser, alphas, max_beta, reliability, ...) UseMethod("alp
 #' Calculation of alpha and beta characteristics
 #'
 #' Calculates pairs of alpha (level of development) and beta (ratio of storage and volume of annual flow) characteristics of the reservoir
-#' for given reliability.
+#' for given reliabilities.
 #'
-#' @param reser A wateres object.
+#' @param reser A \code{wateres} object.
 #' @param alphas A vector of alpha values, i.e. coefficients by which mean annual flow will be multiplied. Usually the interval between 0 and 1 is used.
 #' @param max_beta A maximum value of calculated beta to be considered, greater values will be ignored.
 #' @param reliability A vector of reliability values passed to the \code{\link{sry.wateres}} function.
@@ -141,9 +141,9 @@ alpha_beta <- function(reser, alphas, max_beta, reliability, ...) UseMethod("alp
 #' @return A \code{wateres_alpha_beta} object which is a data.table consisting of:
 #'   \item{alpha}{level of development, given as the \code{alphas} argument}
 #'   \item{beta}{ratio of storage representing the given reliability and volume of mean annual flow}
-#'   \item{reliability}{given reliability values}
+#'   \item{reliability}{given reliability values (may differ from reliabilities calculated by \code{\link{sry.wateres}})}
 #' @details An error occurs if the range given by \code{upper_limit} does not contain the given value of reliability. In that case, try to increase
-#'   the \code{upper_limit} argument or increase the lowest value of \code{alphas}.
+#'   the \code{upper_limit} argument.
 #' @seealso \code{\link{plot.wateres_alpha_beta}} for plotting the results, \code{\link{sry.wateres}} for calculation of a reservoir storage for the
 #'   given yield and reliability
 #' @export
@@ -164,10 +164,12 @@ alpha_beta.wateres <- function(reser, alphas = seq(0, 1, 0.02), max_beta = 2, re
 alpha_beta_wateres <- function(reliability, reser, alphas, max_beta, ...) {
     Q_annual = mean(reser$Q)
     yields = alphas * Q_annual
-    resul = sapply(1:length(yields), function(i) { resul = sry(reser, reliability = reliability, yield = yields[i], ...); c(NA, resul$storage, resul$reliability) })
+    resul = sapply(1:length(yields), function(i) { resul = sry(reser, reliability = reliability, yield = yields[i], ...); c(NA, resul$storage, NA) })
     resul = as.data.table(t(resul))
     setnames(resul, c("alpha", "beta", "reliability"))
     resul$alpha = alphas
+    resul[, reliability := as.character(reliability)]
+    resul$reliability = as.character(reliability)
     resul$beta = resul$beta / (.Call("convert_m3", PACKAGE = "wateres", Q_annual, 1, TRUE) * 365.25)
     betas_max_pos = which(resul$beta > max_beta)
     if (length(betas_max_pos) > 0)

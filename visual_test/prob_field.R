@@ -21,7 +21,7 @@ alpha_beta = alpha_beta(riv, upper = 10)
 plot(alpha_beta)
 save_vtest("alpha beta plot")
 
-alpha_beta = alpha_beta(riv, upper = 10, reliability = c(0.9, 0.95, 1), prob_type = 4, alphas = seq(0.4, 1, 0.02))
+alpha_beta = alpha_beta(riv, upper = 10, reliability = c(0.9, 0.95, 1), prob_type = 4, alphas = seq(0, 1, 0.02))
 plot(alpha_beta)
 save_vtest("alpha beta plot for more reliabilities")
 
