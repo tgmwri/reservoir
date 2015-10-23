@@ -412,7 +412,7 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
             }
             else {
                 series_neighbour = calc_series(reser, storage, resul[1] - 1e-5, throw_exceed)
-                reliab_neighbour = calc_reliability(series_neighbour$yield, resul[1] - 1e-5, throw_exceed)
+                reliab_neighbour = calc_reliability(series_neighbour$yield, resul[1] - 1e-5, prob_type)
             }
             missing = "yield"
         }
