@@ -113,14 +113,14 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
 
 #' Water reservoir summary
 #'
-#' Calculates and shows characteristics of the reservoir.
+#' Calculates characteristics of the reservoir.
 #'
 #' @param object A \code{wateres} object.
 #' @param ... Further arguments passed to the \code{\link{sry.wateres}} function (as \code{storage}, \code{yield}, \code{prob_type} or \code{upper_limit}).
 #' @param reliability A vector of reliability values passed to the \code{\link{sry.wateres}} function.
 #' @return A data table of reservoir characteristics:
-#'   \item{storage}{reservoir storage in m3, potential or the minimum storage calculated for given reliability and yield}
-#'   \item{reliability}{given reliability}
+#'   \item{storage}{reservoir storage in m3, given or the minimum storage calculated for given reliability and yield}
+#'   \item{reliability}{given or calculated reliability}
 #'   \item{yield}{the maximum yield (m3.s-1), given or calculated for given reliability and potential storage}
 #'   \item{alpha}{level of development - ratio of yield to the mean annual flow}
 #'   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
@@ -129,9 +129,12 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
 #'   \item{dimless_vulner}{dimensionless vulnerability, vulnerability value divided by yield value in volume units}
 #' @details The maximum yield or the minimum storage is calculated by using the \code{\link{sry.wateres}} function for given storage or yield and reliability.
 #'
+#'   To calculate reliability for given storage and yield without any optimization, provide all the three arguments: storage, reliability (will be ignored)
+#'   and yield.
+#'
 #'   An error occurs if the range given by \code{upper_limit} does not contain value of the given reliability or if an invalid reliability value or probability
 #'   type is given.
-#' @seealso \code{\link{sry.wateres}} used for optimization of the yield or storage for given reliability
+#' @seealso \code{\link{sry.wateres}} used for optimization of the yield or storage for given reliability and for calculation of reliability
 #' @references Thomas A. McMahon, Adebayo J. Adeloye, Sen-Lin Zhou (2006): Understanding performance measures of reservoirs,
 #'   Journal of Hydrology 324, 359–382.
 #' @export
@@ -311,7 +314,7 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 
 #' Calculation of storage, reliability and yield
 #'
-#' Calculates one of the water reservoir storage, time-based reliability and yield (release) variable while the
+#' Calculates one of the water reservoir characteristics: storage, time-based reliability or yield (release) while the
 #' two remaining values are provided.
 #'
 #' @param reser A \code{wateres} object.
@@ -338,7 +341,10 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 #'   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
 #'   \item{series}{only if \code{get_series} is enabled, a list consisting of reservoir storage (m3), yield (m3.s-1), evaporation (m3)
 #'     and withdrawal (m3) time series}
-#' @details To optimize the value of storage or yield, a simple bisection algorithm is applied. If the optimization fails because
+#' @details If all the three values are provided, the reliability value will be ignored and it will be calculated for the provided
+#'   storage and yield.
+#'
+#'   To optimize the value of storage or yield, a simple bisection algorithm is applied. If the optimization fails because
 #'   the required reliability is not contained within the provided interval, try to change its upper limit given as the \code{upper_limit}
 #'   argument.
 #'

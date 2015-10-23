@@ -15,8 +15,8 @@
 }
 \value{
 A data table of reservoir characteristics:
-  \item{storage}{reservoir storage in m3, potential or the minimum storage calculated for given reliability and yield}
-  \item{reliability}{given reliability}
+  \item{storage}{reservoir storage in m3, given or the minimum storage calculated for given reliability and yield}
+  \item{reliability}{given or calculated reliability}
   \item{yield}{the maximum yield (m3.s-1), given or calculated for given reliability and potential storage}
   \item{alpha}{level of development - ratio of yield to the mean annual flow}
   \item{m}{standardized net inflow - a measure of resilience calculated as (1 - alpha) / (standard deviation of annual flows / mean annual flow)}
@@ -25,10 +25,13 @@ A data table of reservoir characteristics:
   \item{dimless_vulner}{dimensionless vulnerability, vulnerability value divided by yield value in volume units}
 }
 \description{
-Calculates and shows characteristics of the reservoir.
+Calculates characteristics of the reservoir.
 }
 \details{
 The maximum yield or the minimum storage is calculated by using the \code{\link{sry.wateres}} function for given storage or yield and reliability.
+
+  To calculate reliability for given storage and yield without any optimization, provide all the three arguments: storage, reliability (will be ignored)
+  and yield.
 
   An error occurs if the range given by \code{upper_limit} does not contain value of the given reliability or if an invalid reliability value or probability
   type is given.
@@ -47,6 +50,6 @@ Thomas A. McMahon, Adebayo J. Adeloye, Sen-Lin Zhou (2006): Understanding perfor
   Journal of Hydrology 324, 359–382.
 }
 \seealso{
-\code{\link{sry.wateres}} used for optimization of the yield or storage for given reliability
+\code{\link{sry.wateres}} used for optimization of the yield or storage for given reliability and for calculation of reliability
 }
 

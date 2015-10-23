@@ -47,11 +47,14 @@ A list consisting of:
     and withdrawal (m3) time series}
 }
 \description{
-Calculates one of the water reservoir storage, time-based reliability and yield (release) variable while the
+Calculates one of the water reservoir characteristics: storage, time-based reliability or yield (release) while the
 two remaining values are provided.
 }
 \details{
-To optimize the value of storage or yield, a simple bisection algorithm is applied. If the optimization fails because
+If all the three values are provided, the reliability value will be ignored and it will be calculated for the provided
+  storage and yield.
+
+  To optimize the value of storage or yield, a simple bisection algorithm is applied. If the optimization fails because
   the required reliability is not contained within the provided interval, try to change its upper limit given as the \code{upper_limit}
   argument.
 
