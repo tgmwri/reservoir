@@ -58,6 +58,9 @@ To optimize the value of storage or yield, a simple bisection algorithm is appli
   As the required reliability represents a range of storage or yield values, the smallest value of storage (or the greatest value
   of yield) is returned, considering some tolerance value of the optimization algorithm.
 
+  When optimizing the storage or yield value, a value which produces reliability closest to the required reliability is selected,
+  hence the resulting reliability can be less or greater than the required one.
+
   If the calculated reliability is even for the zero storage value greater than the required reliability, the zero storage and
   the corresponding reliability will be returned. Contrary to this, if the calculated reliability is for the optimized yield greater,
   the optimization fails as the reliability can be decreased by increasing the upper limit.

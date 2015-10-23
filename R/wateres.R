@@ -345,6 +345,9 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 #'   As the required reliability represents a range of storage or yield values, the smallest value of storage (or the greatest value
 #'   of yield) is returned, considering some tolerance value of the optimization algorithm.
 #'
+#'   When optimizing the storage or yield value, a value which produces reliability closest to the required reliability is selected,
+#'   hence the resulting reliability can be less or greater than the required one.
+#'
 #'   If the calculated reliability is even for the zero storage value greater than the required reliability, the zero storage and
 #'   the corresponding reliability will be returned. Contrary to this, if the calculated reliability is for the optimized yield greater,
 #'   the optimization fails as the reliability can be decreased by increasing the upper limit.
@@ -375,6 +378,7 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
     }
     if (missing(storage) && (missing(reliability) || missing(yield)))
         storage = attr(reser, "storage")
+    bisection_failed_text = "Required reliability is not contained within the given interval. Increase the upper limit."
     if (missing(storage) || missing(yield)) {
         upper_limit = ifelse(missing(storage), upper_limit * attr(reser, "storage"), upper_limit * mean(reser$Q))
         if (missing(storage)) {
@@ -382,7 +386,7 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
                 prob_type = prob_type, throw_exceed = throw_exceed)
             if (length(resul) == 1) {
                 if (resul == "both negative")
-                    stop("Required reliability is not contained within the given interval. Increase the upper limit.")
+                    stop(bisection_failed_text)
                 else if (resul == "negative and zero") {
                     resul = c(upper_limit, 0)
                     reliab_neighbour = -1 # storage can be decreased in the next bisection -> arbitrary different reliab_neighbour
@@ -404,7 +408,7 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
             if (length(resul) == 1) {
                 # even if the yield is zero, an yield greater than the upper limit could give the same reliability
                 if (resul != "negative and zero")
-                    stop("Required reliability is not contained within the given interval. Increase the upper limit.")
+                    stop(bisection_failed_text)
                 else {
                     resul = c(0, max_reliab - reliability)
                     reliab_neighbour = -1 # yield can be increased in the next bisection -> arbitrary different reliab_neighbour
@@ -426,6 +430,16 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
             else {
                 resul = bisection(is_reliab_equal, c(resul[1], upper_limit), resul_value = reliab_found, reser = reser, storage_req = storage,
                     prob_type = prob_type, throw_exceed = throw_exceed)
+            }
+            if (length(resul) == 1) {
+                if (resul == "both positive or both zero") {
+                    if (missing == "storage") # storage decreased to zero (with reliability slightly less than given one)
+                        resul = c(0, 0.5)
+                    else # for yield increase to the upper limit which can be further extended
+                        stop(bisection_failed_text)
+                }
+                else # should not happen
+                    stop("Additional bisection failed.")
             }
         }
         assign(missing, resul[1])

@@ -240,4 +240,7 @@ test_that("storage-reliability-yield is calculated for corner cases of bisection
     expect_equivalent(sry, list(storage = 0, reliability = 0.6359436534, yield = 0.1))
     # zero and positive - yield
     expect_error(sry(riv, reliability = 0.75030293850348372953, storage = 1e6, prob_type = "ch", upper = 1))
+    # in additional bisection storage decreased to zero with reliability slightly less than required one
+    sry = sry(riv, reliab = 0.6363636364, yield = 0.1, prob_type = 4)
+    expect_equivalent(sry, list(storage = 0, reliability = 0.6363636364, yield = 0.1))
 })
