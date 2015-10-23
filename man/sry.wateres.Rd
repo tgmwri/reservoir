@@ -12,14 +12,14 @@ sry(reser, storage, reliability, yield, prob_type, upper_limit, throw_exceed,
   upper_limit = 5, throw_exceed = FALSE, get_series = FALSE)
 }
 \arguments{
-\item{reser}{A wateres object.}
+\item{reser}{A \code{wateres} object.}
 
 \item{storage}{A water reservoir storage value in m3. (If missing together with reliability or yield, the default value
 equal to the potential volume of \code{reser} will be used. If only storage is missing, it will be optimized using reliability
 and yield.)}
 
 \item{reliability}{A reliability value, cannot be less than zero or greater than maximum reliability value
-(depending on data and usage of empirical reliability). Alternatively, \dQuote{max} value can be used to set reliability to its maximum
+(depending on data and probability type). Alternatively, \dQuote{max} value can be used to set reliability to its maximum
 value. (If missing, reliability will be calculated using storage and yield.)}
 
 \item{yield}{A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)}
@@ -58,8 +58,9 @@ To optimize the value of storage or yield, a simple bisection algorithm is appli
   As the required reliability represents a range of storage or yield values, the smallest value of storage (or the greatest value
   of yield) is returned, considering some tolerance value of the optimization algorithm.
 
-  If the calculated reliability is even for the zero storage value greater than the required reliability, the zero storage will and
-  the corresponding reliability be returned.
+  If the calculated reliability is even for the zero storage value greater than the required reliability, the zero storage and
+  the corresponding reliability will be returned. Contrary to this, if the calculated reliability is for the optimized yield greater,
+  the optimization fails as the reliability can be decreased by increasing the upper limit.
 }
 \examples{
 reser = data.frame(

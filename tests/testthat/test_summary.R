@@ -144,11 +144,6 @@ test_that("storage for reliability and yield is optimized", {
     expect_equivalent(sry$storage, 1318806579.71)
     expect_equivalent(sry$reliability, 0.700318085429)
     expect_equivalent(sry$yield, 0.7)
-    # even zero storage sufficient
-    sry = sry(riv, reliability = 0.95, yield = 0.01, prob_type = "ch")
-    expect_equivalent(sry$storage, 0)
-    expect_equivalent(sry$reliability, 0.997197818843)
-    expect_equivalent(sry$yield, 0.01)
 })
 
 test_that("invalid reliability is rejected", {
@@ -214,4 +209,35 @@ test_that("yield is optimized with the option to throw exceeding volume", {
     expect_equivalent(sry1$reliability, 0.880566495002)
     expect_equivalent(sry1$yield, 0.0618148688114)
     expect_equivalent(sry1, sry2)
+})
+
+test_that("storage-reliability-yield is calculated for corner cases of bisection", {
+    # both negative - storage (for yield cannot be both negative as for 0 yield is always max. reliability)
+    expect_error(sry(riv, reliability = 0.95, yield = 20, prob_type = "ch", upper = 1))
+    # both positive - storage 0
+    sry = sry(riv, reliability = 0.95, yield = 0.01, prob_type = "ch", upper = 1)
+    expect_equivalent(sry, list(storage = 0, reliability = 0.9971978188, yield = 0.01))
+    # both positive - yield
+    expect_error(sry(riv, reliability = 0.95, storage = 1e6, prob_type = "ch", upper = 0.5))
+    # both equal positive - storage 0
+    sry = sry(riv, reliability = 0.95, yield = 0.01, prob_type = "ch", upper = 1e-4)
+    expect_equivalent(sry, list(storage = 0, reliability = 0.9971978188, yield = 0.01))
+    # both equal positive - yield
+    expect_error(sry(riv, reliability = 0.95, storage = 1e6, prob_type = "ch", upper = 1e-4))
+    # both equal zero - storage 0
+    sry = sry(riv, reliability = "max", yield = 0.001, prob_type = "ch", upper = 1e-4)
+    expect_equivalent(sry, list(storage = 0, reliability = 0.9994698576, yield = 0.001))
+    # both equal zero - yield
+    expect_error(sry(riv, reliability = "max", storage = 1e6, prob_type = "ch", upper = 1e-4))
+    # zero and negative - storage upper - then decreased in the additional bisection
+    sry = sry(riv, reliability = "max", yield = 0.1, prob_type = "ch", upper = 1)
+    expect_equivalent(sry, list(storage = 2474927.96008955, reliability = 0.9994698576, yield = 0.1))
+    # zero and negative - yield 0 - then increased in the additional bisection
+    sry = sry(riv, reliability = "max", storage = 1e6, prob_type = "ch", upper = 1)
+    expect_equivalent(sry, list(storage = 1e6, reliability = 0.9994698576, yield = 0.07089385265))
+    # zero and positive - storage 0
+    sry = sry(riv, reliability = 0.63594365343835201898, yield = 0.1, prob_type = "ch", upper = 1)
+    expect_equivalent(sry, list(storage = 0, reliability = 0.6359436534, yield = 0.1))
+    # zero and positive - yield
+    expect_error(sry(riv, reliability = 0.75030293850348372953, storage = 1e6, prob_type = "ch", upper = 1))
 })

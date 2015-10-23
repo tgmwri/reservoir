@@ -229,20 +229,18 @@ fill_time.wateres <- function(reser, yield, begins = NULL, samples = 10) {
 }
 
 # bisection for monotonic function
+# returns pair of resulting values or string describing function values when bisection is not feasible
 bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
     lower = min(interval)
     upper = max(interval)
     flower = func(lower, ...)
     fupper = func(upper, ...)
-    if (flower == fupper && flower == 0)
-        return(c(lower, 0))
-    else if (flower * fupper > 0) {
-        # reliability greater than required and cannot be increased by increasing of upper limit
-        if (flower > 0 && flower < fupper)
-            return(c(lower, flower))
-        else
-            stop("Required reliability is not contained within the given interval.")
-    }
+    if (flower < 0 && fupper < 0)
+        return("both negative")
+    else if (flower == fupper || (flower > 0 && fupper > 0))
+        return("both positive or both zero")
+    else if (flower * fupper == 0)
+        return(ifelse(flower > 0 || fupper > 0, "positive and zero", "negative and zero"))
     else {
         for (i in 1:max_iter) {
             if (upper - lower < tolerance)
@@ -316,12 +314,12 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 #' Calculates one of the water reservoir storage, time-based reliability and yield (release) variable while the
 #' two remaining values are provided.
 #'
-#' @param reser A wateres object.
+#' @param reser A \code{wateres} object.
 #' @param storage A water reservoir storage value in m3. (If missing together with reliability or yield, the default value
 #'   equal to the potential volume of \code{reser} will be used. If only storage is missing, it will be optimized using reliability
 #'   and yield.)
 #' @param reliability A reliability value, cannot be less than zero or greater than maximum reliability value
-#'   (depending on data and usage of empirical reliability). Alternatively, \dQuote{max} value can be used to set reliability to its maximum
+#'   (depending on data and probability type). Alternatively, \dQuote{max} value can be used to set reliability to its maximum
 #'   value. (If missing, reliability will be calculated using storage and yield.)
 #' @param yield A required yield in m3.s-1, constant for all months. (If missing, it will be optimized using storage and reliability.)
 #' @param prob_type Type of empirical probability used for calculation of reliability given as a number corresponding with the \code{type}
@@ -347,8 +345,9 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 #'   As the required reliability represents a range of storage or yield values, the smallest value of storage (or the greatest value
 #'   of yield) is returned, considering some tolerance value of the optimization algorithm.
 #'
-#'   If the calculated reliability is even for the zero storage value greater than the required reliability, the zero storage will and
-#'   the corresponding reliability be returned.
+#'   If the calculated reliability is even for the zero storage value greater than the required reliability, the zero storage and
+#'   the corresponding reliability will be returned. Contrary to this, if the calculated reliability is for the optimized yield greater,
+#'   the optimization fails as the reliability can be decreased by increasing the upper limit.
 #' @export
 #' @examples
 #' reser = data.frame(
@@ -381,15 +380,40 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
         if (missing(storage)) {
             resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, yield_req = yield,
                 prob_type = prob_type, throw_exceed = throw_exceed)
-            series_neighbour = calc_series(reser, resul[1] + 1e-5, yield, throw_exceed)
-            reliab_neighbour = calc_reliability(series_neighbour$yield, yield, prob_type)
+            if (length(resul) == 1) {
+                if (resul == "both negative")
+                    stop("Required reliability is not contained within the given interval. Increase the upper limit.")
+                else if (resul == "negative and zero") {
+                    resul = c(upper_limit, 0)
+                    reliab_neighbour = -1 # storage can be decreased in the next bisection -> arbitrary different reliab_neighbour
+                }
+                else { # minimum storage always zero in other cases
+                    tmp_series = calc_series(reser, 0, yield, throw_exceed)
+                    resul = c(0, calc_reliability(tmp_series$yield, yield, prob_type) - reliability)
+                }
+            }
+            if (!exists("reliab_neighbour")) {
+                series_neighbour = calc_series(reser, resul[1] + 1e-5, yield, throw_exceed)
+                reliab_neighbour = calc_reliability(series_neighbour$yield, yield, prob_type)
+            }
             missing = "storage"
         }
         else {
             resul = bisection(calc_diff_reliability, c(0, upper_limit), reser = reser, reliab_req = reliability, storage_req = storage,
                 prob_type = prob_type, throw_exceed = throw_exceed)
-            series_neighbour = calc_series(reser, storage, resul[1] - 1e-5, throw_exceed)
-            reliab_neighbour = calc_reliability(series_neighbour$yield, resul[1] - 1e-5, throw_exceed)
+            if (length(resul) == 1) {
+                # even if the yield is zero, an yield greater than the upper limit could give the same reliability
+                if (resul != "negative and zero")
+                    stop("Required reliability is not contained within the given interval. Increase the upper limit.")
+                else {
+                    resul = c(0, max_reliab - reliability)
+                    reliab_neighbour = -1 # yield can be increased in the next bisection -> arbitrary different reliab_neighbour
+                }
+            }
+            else {
+                series_neighbour = calc_series(reser, storage, resul[1] - 1e-5, throw_exceed)
+                reliab_neighbour = calc_reliability(series_neighbour$yield, resul[1] - 1e-5, throw_exceed)
+            }
             missing = "yield"
         }
         reliab_found = resul[2] + reliability
