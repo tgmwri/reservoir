@@ -28,12 +28,14 @@ NULL
   library.dynam.unload("wateres", libpath)
 }
 
-days_in_month <- function(date) {
-    mon = format(date, format = "%m")
-    while (format(date, format = "%m") == mon) {
-        date = date + 1
-    }
-    return(as.integer(format(date - 1, format = "%d")))
+days_in_month = c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+days_for_months <- function(DTM) {
+    mon = as.numeric(format(DTM, format = "%m"))
+    year = as.numeric(format(DTM, format = "%Y"))
+    days = rep(c(days_in_month[mon[1]:length(days_in_month)], days_in_month[0:(mon[1] - 1)]), length.out = length(DTM))
+    is_leap_feb = (mon == 2 & (year %% 4 == 0 & (year %% 100 != 0 | year %% 400 == 0)))
+    days[is_leap_feb] = 29
+    return(days)
 }
 
 #' Water reservoir creation
@@ -71,7 +73,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
                 stop("Catchment area needs to be specified when using Bilan data.")
             data = bilan::bil.get.data(dframe)
             Qvar = ifelse(observed, "R", "RM")
-            days = sapply(data$DTM, days_in_month)
+            days = days_for_months(data$DTM)
             dframe = data.frame(DTM = data$DTM, Q = data[[Qvar]] * catch_area / (24 * 3.6 * days))
         }
         else {
@@ -89,7 +91,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
     }
     dframe = dframe[, required_cols]
     dframe$DTM = as.Date(dframe$DTM)
-    dframe$.days = sapply(dframe$DTM, days_in_month)
+    dframe$.days = days_for_months(dframe$DTM)
     dframe$Q = as.numeric(dframe$Q)
     class(dframe) = c("wateres", "data.table", "data.frame")
     attr(dframe, "storage") = storage
