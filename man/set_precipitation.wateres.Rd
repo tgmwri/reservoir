@@ -12,7 +12,8 @@ set_precipitation(reser, values)
 \arguments{
 \item{reser}{A \code{wateres} object.}
 
-\item{values}{A vector of monthly precipitation values in mm, either of length of reservoir time series, or 12 monthly values starting by January.}
+\item{values}{A vector of precipitation values in mm, either of length of reservoir time series, or 12 monthly values starting by January
+(for monthly data only).}
 }
 \value{
 A modified \code{wateres} object with precipitation time series added (denoted as \code{P}).

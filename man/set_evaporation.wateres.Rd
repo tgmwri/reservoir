@@ -21,12 +21,14 @@ set_evaporation(reser, values, altitude)
 A modified \code{wateres} object with evaporation time series added (denoted as \code{E}).
 }
 \description{
-Sets or calculates time series of evaporation from the reservoir.
+For monthly data, sets or calculates time series of evaporation from the reservoir.
 }
 \details{
 Evaporation is applied when calculating reservoir water balance. If no elevation-area-storage relationship is provided for the reservoir,
   evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
   linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
+
+  An error occurs if data in \code{reser} are not monhtly.
 }
 \examples{
 reser = data.frame(

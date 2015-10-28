@@ -114,6 +114,14 @@ test_that("series with evaporation depending on E-A-S relationship are calculate
     expect_equivalent(resul, readRDS("series_evaporation_eas.rds"))
 })
 
+test_that("series for hourly data are calculated", {
+    rivh = as.wateres("rivendell_1h.txt", 14.4e6, 754e3, eas = eas, time_step = "hour")
+    expect_error(set_evaporation(rivh, altitude = 529))
+    expect_error(set_precipitation(rivh, 1:12))
+    resul = calc_series(rivh, 14.4e6, 0.14, FALSE, 14e6)
+    expect_equivalent(resul, readRDS("series_hourly.rds"))
+})
+
 reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
         0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),

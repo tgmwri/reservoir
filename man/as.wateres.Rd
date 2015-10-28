@@ -4,11 +4,12 @@
 \alias{as.wateres}
 \title{Water reservoir creation}
 \usage{
-as.wateres(dframe, storage, area, eas = NULL, observed = FALSE)
+as.wateres(dframe, storage, area, eas = NULL, observed = FALSE,
+  time_step = "month")
 }
 \arguments{
 \item{dframe}{A name of file containing table with data (including header) or directly data frame or data table.
-The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column).
+The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, for monthly time step only).
 Alternatively, this can be a Bilan object where the dates and modelled or observed runoffs are read from.
 In that case, catchment area needs to be specified within the Bilan object.}
 
@@ -21,6 +22,8 @@ elevation (m.a.s.l.), area (m2) and storage (m3). If values of this three variab
 differ, this argument will be ignored.}
 
 \item{observed}{Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).}
+
+\item{time_step}{Time step length, currently \dQuote{month} and \dQuote{hour} values are supported.}
 }
 \value{
 A wateres object which is also of data.frame and data.table classes.

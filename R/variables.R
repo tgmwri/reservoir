@@ -1,12 +1,14 @@
 set_variable <- function(reser, values, variable) {
     if (length(values) != nrow(reser)) {
+        var_names = c(E = "evaporation", W = "withdrawal", P = "precipitation")
         if (length(values) == 12) {
+            if (attr(reser, "time_step") != "month")
+                stop("Variable ", var_names[variable], " can be set by 12 values only for monthly data.")
             first_month = as.integer(format(reser$DTM[1], "%m"))
             values = rep(values, 2)[first_month:(first_month + 11)]
             values = rep_len(values, nrow(reser))
         }
         else {
-            var_names = c(E = "evaporation", W = "withdrawal", P = "precipitation")
             text_const = ifelse(variable == "W", " or one constant value", "")
             stop("Incorrect length of ", var_names[variable], " length of time series or 12 (monthly values)", text_const, " required.")
         }
@@ -21,7 +23,7 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 
 #' Evaporation setting or calculation
 #'
-#' Sets or calculates time series of evaporation from the reservoir.
+#' For monthly data, sets or calculates time series of evaporation from the reservoir.
 #'
 #' @param reser A \code{wateres} object.
 #' @param values A vector of monthly evaporation values in mm, either of length of reservoir time series, or 12 monthly values starting by January.
@@ -31,6 +33,8 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #' @details Evaporation is applied when calculating reservoir water balance. If no elevation-area-storage relationship is provided for the reservoir,
 #'   evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
 #'   linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
+#'
+#'   An error occurs if data in \code{reser} are not monhtly.
 #' @references ČSN 72 2405
 #' @export
 #' @examples
@@ -44,6 +48,8 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #' reser = set_evaporation(reser, altitude = 529)
 #' sry(reser, storage = 21e3, yield = 0.14)
 set_evaporation.wateres <- function(reser, values = NULL, altitude = NULL) {
+    if (attr(reser, "time_step") != "month")
+        stop("Evaporation can be set only for monthly data.")
     if (!is.null(altitude)) {
         E_annual = 4.957651e-5 * altitude ^ 2 - 0.3855958 * altitude + 871.19424
         E_monthly = c(0.01, 0.02, 0.06, 0.09, 0.12, 0.14, 0.16, 0.15, 0.11, 0.07, 0.05, 0.02)
@@ -62,8 +68,8 @@ set_withdrawal <- function(reser, values) UseMethod("set_withdrawal")
 #' Sets time series of withdrawal from the reservoir.
 #'
 #' @param reser A \code{wateres} object.
-#' @param values A vector of monthly withdrawal values in m3, either of length of reservoir time series, or 12 monthly values starting by January,
-#'   or one constant value.
+#' @param values A vector of withdrawal values in m3, either of length of reservoir time series, or 12 monthly values starting by January
+#'    (for monthly data only), or one constant value.
 #' @return A modified \code{wateres} object with withdrawal time series added (denoted as \code{W}).
 #' @details Withdrawal is applied when calculating reservoir water balance after the yield and evaporation demands are satisfied.
 #' @export
@@ -92,7 +98,8 @@ set_precipitation <- function(reser, values) UseMethod("set_precipitation")
 #' Sets time series of precipitation on the reservoir area.
 #'
 #' @param reser A \code{wateres} object.
-#' @param values A vector of monthly precipitation values in mm, either of length of reservoir time series, or 12 monthly values starting by January.
+#' @param values A vector of precipitation values in mm, either of length of reservoir time series, or 12 monthly values starting by January
+#'    (for monthly data only).
 #' @return A modified \code{wateres} object with precipitation time series added (denoted as \code{P}).
 #' @details Precipitation is applied when calculating reservoir water balance. When calculating precipitation volume, the flooded area related
 #'   to the potential storage is always used.
