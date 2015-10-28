@@ -91,7 +91,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE) {
     }
     dframe = dframe[, required_cols]
     dframe$DTM = as.Date(dframe$DTM)
-    dframe$.days = days_for_months(dframe$DTM)
+    dframe$minutes = days_for_months(dframe$DTM) * 24 * 60
     dframe$Q = as.numeric(dframe$Q)
     class(dframe) = c("wateres", "data.table", "data.frame")
     attr(dframe, "storage") = storage
@@ -177,9 +177,9 @@ summary_wateres <- function(reliability, object, ...) {
         resilience = failures_count / failures_duration
         deficits = sapply(
             1:failures_count,
-            function(i) { max(.Call("convert_m3", PACKAGE = "wateres", yield - resul$series$yield[seq_begins[i]:seq_ends[i]], object$.days[seq_begins[i]:seq_ends[i]], TRUE)) } )
+            function(i) { max(.Call("convert_m3", PACKAGE = "wateres", yield - resul$series$yield[seq_begins[i]:seq_ends[i]], object$minutes[seq_begins[i]:seq_ends[i]], TRUE)) } )
         vulnerability = mean(deficits)
-        dimless_vulner = vulnerability / (.Call("convert_m3", PACKAGE = "wateres", yield, 1, TRUE) * 30.5)
+        dimless_vulner = vulnerability / (.Call("convert_m3", PACKAGE = "wateres", yield, 1, TRUE) * 30.5 * 24 * 60)
     }
     return(
         c(storage = resul$storage, reliability = resul$reliability, yield = yield, alpha = alpha, m = m, resilience = resilience,

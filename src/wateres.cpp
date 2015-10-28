@@ -4,12 +4,12 @@
 using namespace std;
 using namespace Rcpp;
 
-// converts between m3.s-1 and m3 per month
-void convert_m3(vector<double> &values, const vector<unsigned> &days, bool to_volume)
+// converts between m3.s-1 and m3 per time step given in minutes
+void convert_m3(vector<double> &values, const vector<unsigned> &minutes, bool to_volume)
 {
   unsigned val_count = values.size();
   for (unsigned val = 0; val < val_count; val++) {
-    unsigned coeff = 3600 * 24 * days[val];
+    unsigned coeff = 60 * minutes[val];
     if (to_volume)
       values[val] *= coeff;
     else
@@ -20,17 +20,17 @@ void convert_m3(vector<double> &values, const vector<unsigned> &days, bool to_vo
 /**
   * - converts m3.s-1 to m3 per month or other way round
   * @param Rvalues time series of values
-  * @param Rdays number of days for months of time series, must be an integer
+  * @param Rminutes numbers of minutes in time steps of time series, must be an integer
   * @param Rto_volume whether to convert to m3 per month
   * @return vector of converted values
   */
-RcppExport SEXP convert_m3(SEXP Rvalues, SEXP Rdays, SEXP Rto_volume)
+RcppExport SEXP convert_m3(SEXP Rvalues, SEXP Rminutes, SEXP Rto_volume)
 {
   vector<double> values = as<vector<double> >(Rvalues);
-  vector<unsigned> days = as<vector<unsigned> >(Rdays);
+  vector<unsigned> minutes = as<vector<unsigned> >(Rminutes);
   bool to_volume = as<bool>(Rto_volume);
 
-  convert_m3(values, days, to_volume);
+  convert_m3(values, minutes, to_volume);
   return wrap(values);
 }
 
@@ -62,7 +62,7 @@ wateres::wateres(
       var[v].resize(row_count, 0);
     }
   }
-  this->days = as<vector<unsigned> >(reser[".days"]);
+  this->minutes = as<vector<unsigned> >(reser["minutes"]);
   area = as<double>(reser.attr("area"));
   eas = as<DataFrame>(reser.attr("eas"));
 }
@@ -157,8 +157,8 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
 /**
   * - calculates monthly time series of reservoir storage and yield
   * @param Rreser reservoir object with time series of inflows (Q) in m3.s-1, precipitation (R) in mm, evaporation (E) in mm,
-    withdrawal in m3, number of days in months (.days) and with attributes (area - flooded by reservoir in m2, eas - elevation-area-storage
-    relationship (in m.a.s.l., m2 and m3)
+    withdrawal in m3, number of minutes in time steps (minutes) and with attributes (area - flooded by reservoir in m2,
+    eas - elevation-area-storage relationship (in m.a.s.l., m2 and m3)
   * @param Rinflow time series of inflows in m3.s-1
   * @param Ryield_req required yield (reservoir outflow) in m3.s-1
   * @param Rvolume reservoir potential volume in m3
@@ -177,15 +177,15 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
   unsigned ts;
   //reser.nrows() incorrect when subset of data.table used and its attributes are copied afterwards
   //-> take length of arbitrary column which is not affected by the attributes
-  unsigned time_steps = as<NumericVector>(reser[".days"]).size();
+  unsigned time_steps = as<NumericVector>(reser["minutes"]).size();
 
   vector<double> storage(time_steps + 1, 0);
   storage[0] = initial_storage;
 
   wateres reservoir(reser, storage, throw_exceed, volume);
   vector<double> yield_req_vol(time_steps, yield_req);
-  convert_m3(yield_req_vol, reservoir.days, true);
-  convert_m3(reservoir.var[wateres::INFLOW], reservoir.days, true);
+  convert_m3(yield_req_vol, reservoir.minutes, true);
+  convert_m3(reservoir.var[wateres::INFLOW], reservoir.minutes, true);
   for (ts = 0; ts < time_steps; ts++) {
     reservoir.var[wateres::YIELD][ts] = yield_req_vol[ts];
     reservoir.storage[ts + 1] = reservoir.storage[ts] + reservoir.var[wateres::INFLOW][ts];
@@ -193,7 +193,7 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
   }
   List resul;
   resul["storage"] = reservoir.storage;
-  convert_m3(reservoir.var[wateres::YIELD], reservoir.days, false);
+  convert_m3(reservoir.var[wateres::YIELD], reservoir.minutes, false);
   resul["yield"] = reservoir.var[wateres::YIELD];
   resul["precipitation"] = reservoir.var[wateres::PRECIPITATION];
   resul["evaporation"] = reservoir.var[wateres::EVAPORATION];

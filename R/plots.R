@@ -170,7 +170,7 @@ alpha_beta_wateres <- function(reliability, reser, alphas, max_beta, ...) {
     resul$alpha = alphas
     resul[, reliability := as.character(reliability)]
     resul$reliability = as.character(reliability)
-    resul$beta = resul$beta / (.Call("convert_m3", PACKAGE = "wateres", Q_annual, 1, TRUE) * 365.25)
+    resul$beta = resul$beta / (.Call("convert_m3", PACKAGE = "wateres", Q_annual, 1, TRUE) * 365.25 * 24 * 60)
     betas_max_pos = which(resul$beta > max_beta)
     if (length(betas_max_pos) > 0)
         resul = resul[1:(betas_max_pos[1] - 1), ]

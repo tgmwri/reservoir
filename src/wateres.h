@@ -15,7 +15,7 @@ class wateres
     static const std::string var_names[]; //!< names of variables
     std::vector<std::vector<double> > var; //!< values of water balance variables
     std::vector<double> storage;
-    std::vector<unsigned> days; //!< number of days for time steps
+    std::vector<unsigned> minutes; //!< number of minutes for time steps
     Rcpp::DataFrame eas; //!< elevation-area-storage relationship (m, m2 and m3)
 
     void calc_balance_var(unsigned ts, var_name var); //!< calculates water balance for given variable and time step
