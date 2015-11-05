@@ -31,6 +31,9 @@ A \code{wateres_prob_field} object which is a list consisting of:
 Calculates monthly values of storage, yield and level (if possible) for given probabilities by using the \code{\link{quantile}} function
   with the default settings.
 }
+\details{
+An error occurs if time step of data in \code{reser} is not one month.
+}
 \examples{
 reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,

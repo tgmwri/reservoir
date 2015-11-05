@@ -16,6 +16,7 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 #'   \item{quantiles}{data.table containing storage, yield and level values for months and given probabilities. Level values are available
 #'     only if the elevation-area-storage relationship for the reservoir has been provided (as an argument of \code{\link{as.wateres}}).}
 #'   \item{probs}{given probability values in percent as characters}
+#' @details An error occurs if time step of data in \code{reser} is not one month.
 #' @seealso \code{\link{plot.wateres_prob_field}} for plotting the results
 #' @export
 #' @examples
@@ -26,37 +27,33 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "storage"), throw_exceed = FALSE) {
-    calc_resul = calc_series(reser, storage, yield, throw_exceed)
+    if (attr(reser, "time_step") != "month")
+        stop("Probability fields can be calculated only for monthly data.")
 
-    eas = attr(reser, "eas")
-    reser = cbind(reser, storage = calc_resul$storage[2:length(calc_resul$storage)], yield = calc_resul$yield)
+    calc_resul = calc_series(reser, storage, yield, throw_exceed, get_level = TRUE)
+
+    vars = c("storage", "yield")
+    if ("level" %in% colnames(calc_resul))
+        vars = c(vars, "level")
+
+    reser = cbind(reser, calc_resul[, vars, with = FALSE])
     var_quant = list()
-    for (var in c("storage", "yield")) {
+    for (var in vars) {
         var_mon = reser[, get(var), by = month(DTM)]
         setnames(var_mon, 2, var)
         var_quant[[var]] = tapply(var_mon[[var]], var_mon$month, quantile, 1 - probs)
     }
 
     prob_names = paste0(probs * 100, "%")
-    quantiles = as.data.table(matrix(NA, 12, 1 + 2 * length(probs)))
+    quantiles = as.data.table(matrix(NA, 12, 1 + length(vars) * length(probs)))
     quantiles = quantiles[, names(quantiles) := lapply(.SD, as.numeric)]
-    setnames(quantiles, 1:ncol(quantiles), c("month", paste0("storage_", prob_names), paste0("yield_", prob_names)))
+    setnames(quantiles, 1:ncol(quantiles), c("month", paste(rep(vars, each = length(prob_names)), prob_names, sep = "_")))
     quantiles = quantiles[, month := 1:12]
 
-    for (var in c("storage", "yield")) {
+    for (var in vars) {
         tmp_pos = which(gsub(var, "", names(quantiles), fixed = TRUE) != names(quantiles))
         for (mon in 1:12)
             quantiles[month == mon, names(quantiles)[tmp_pos] := as.list(var_quant[[var]][[mon]])]
-    }
-    if (!is.null(eas)) {
-        for (pname in prob_names) {
-            storage_col = paste0("storage_", pname)
-            level_col = paste0("level_", pname)
-            tmp = vector("numeric", 12)
-            tmp_levels = sapply(quantiles[, get(storage_col)], function(stor) { approx(eas$storage, eas$elevation, stor)$y })
-            quantiles = quantiles[, level := tmp_levels]
-            setnames(quantiles, "level", level_col)
-        }
     }
     resul = list(quantiles = quantiles, probs = prob_names)
     class(resul) = c("wateres_prob_field", class(resul))

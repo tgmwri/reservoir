@@ -281,9 +281,43 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
     }
 }
 
-calc_series <- function(reser, storage_req, yield_req, throw_exceed, initial_storage = storage_req) {
+#' @rdname calc_series.wateres
+#' @export
+calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, get_level) UseMethod("calc_series")
+
+#' Calcuation of reservoir time series
+#'
+#' Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation
+#' or withdrawal variables are applied.
+#'
+#' @param reser A \code{wateres} object.
+#' @param storage A maximum reservoir storage in m3, if not given, take from the \code{reser} object.
+#' @param yield A value of required constant yield in m3.s-1.
+#' @param throw_exceed Whether volume exceeding storage will be thrown or added to yield.
+#' @param initial_storage A value of initial reservoir storage in m3. If not specified. the reservoir is considered to be full.
+#' @param get_level Whether to obtain water level series for calculated storages. It is ignored if no elevation-area-storage relationship
+#'   is provided within the \code{reser} object.
+#' @return A data table of water balance variables: storage, yield, precipitation, evaporation and withdrawal. Additionally, water levels
+#'   are included if the \code{get_levels} argument is TRUE.
+#' @details When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted
+#'   to get a time series of the same length as for other variables.
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
+#' resul = calc_series(reser, 14.4e6, 0.14)
+calc_series.wateres <- function(reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage, get_level = FALSE) {
     resul = .Call(
-        "calc_storage", PACKAGE = "wateres", reser, yield_req, storage_req, initial_storage, throw_exceed)
+        "calc_storage", PACKAGE = "wateres", reser, yield, storage, initial_storage, throw_exceed)
+    resul$storage = resul$storage[2:length(resul$storage)]
+    resul = as.data.table(resul)
+    eas = attr(reser, "eas")
+    if (get_level && !is.null(eas)) {
+        resul = cbind(resul, level = approx(eas$storage, eas$elevation, resul$storage)$y)
+    }
     return(resul)
 }
 
@@ -372,6 +406,7 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 #'   If the calculated reliability is even for the zero storage value greater than the required reliability, the zero storage and
 #'   the corresponding reliability will be returned. Contrary to this, if the calculated reliability is for the optimized yield greater,
 #'   the optimization fails as the reliability can be decreased by increasing the upper limit.
+#' @seealso \code{\link{calc_series.wateres}} used for calculation of time series of water balance variables
 #' @export
 #' @examples
 #' reser = data.frame(
