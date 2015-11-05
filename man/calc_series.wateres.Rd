@@ -25,8 +25,9 @@ calc_series(reser, storage, yield, throw_exceed, initial_storage, get_level)
 is provided within the \code{reser} object.}
 }
 \value{
-A data table of water balance variables: storage, yield, precipitation, evaporation and withdrawal. Additionally, water levels
-  are included if the \code{get_levels} argument is TRUE.
+A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
+  precipitation, evaporation and withdrawal (in m3).
+  Additionally, water levels are included if the \code{get_levels} argument is TRUE.
 }
 \description{
 Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation

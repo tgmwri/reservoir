@@ -25,4 +25,9 @@ alpha_beta = alpha_beta(riv, upper = 10, reliability = c(0.9, 0.95, 1), prob_typ
 plot(alpha_beta)
 save_vtest("alpha beta plot for more reliabilities")
 
+riv = set_evaporation(riv, altitude = 529)
+series = calc_series(riv, 14.4e6, 0.14, FALSE)
+plot(series, riv)
+save_vtest("time series")
+
 end_vcontext()

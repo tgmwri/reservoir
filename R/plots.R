@@ -1,3 +1,61 @@
+#' Plot of reservoir time series
+#'
+#' Plots time series of chosen water balance variables for the reservoir, by using the \code{ggplot2} package.
+#'
+#' @param x A \code{wateres_series} object with reservoir variables as returned by \code{\link{calc_series.wateres}}.
+#' @param reser A corresponding \code{wateres} object whose series of inflow and number of minutes will be used.
+#' @param type A type of variables to be plotted: \dQuote{storage}, \dQuote{level} or \dQuote{flow} which plots all of the remaining variables.
+#' @param begin A time step to begin the plot.
+#' @param end A time step to end the plot.
+#' @param filename A file name where the plot will be saved. If not specified, the plot will be printed to the current device.
+#' @param width Plot width in inches (or a unit specified by the \code{units} argument).
+#' @param height Plot height in inches (or a unit specified by the \code{units} argument).
+#' @param ... Further arguments passed to the \code{\link[ggplot2:ggsave]{ggsave}} function saving the plot to a file.
+#' @return A \code{ggplot} object.
+#' @details Series of flows with all values equal to zero are ignored.
+#' @seealso \code{\link{calc_series.wateres}} used for calculation of reservoir time series
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
+#' plot(calc_series(reser, 14.4e6, 0.14), reser)
+plot.wateres_series <- function(x, reser, type = "flow", begin = 1, end = nrow(x), filename = NULL, width = 8, height = 6, ...) {
+    check_plot_pkgs()
+
+    types = c("flow", "storage", "level")
+    units = c(storage = "mil. m\u00b3", flow = "m\u00b3.s\u207b\u00b9", level = "m.a.s.l.")
+    type = types[pmatch(type, types, 1)]
+    if (type == "flow") {
+        x = cbind(inflow = reser$Q, x)
+        vars = colnames(x)[!(colnames(x) %in% c("storage", "level"))]
+    }
+    else
+        vars = type
+
+    series = x[begin:end, vars, with = FALSE]
+    if (type == "flow") {
+        series = series[, vars[!sapply(vars, function(var) { all(series[[var]] == 0) })], with = FALSE]
+        vars_to_convert = c("precipitation", "evaporation", "withdrawal")
+        for (var in vars_to_convert[vars_to_convert %in% colnames(series)])
+            set(series, j = var, value = .Call("convert_m3", PACKAGE = "wateres", series[[var]], reser$minutes, FALSE))
+    }
+
+    series = series[, ts := 1:nrow(series)]
+    mseries = reshape2::melt(series, id = "ts")
+    if (type == "storage")
+        mseries$value = mseries$value / 1e6
+    p = ggplot2::ggplot(mseries, ggplot2::aes(x = ts, y = value, colour = variable)) + ggplot2::geom_line()
+    p = p + ggplot2::scale_x_continuous("time step") + ggplot2::scale_y_continuous(paste0(type, " [", units[type], "]"))
+    p = p + ggplot2::scale_colour_discrete(name = "variable", labels = levels(mseries$variable))
+    p = p + ggplot2::theme(legend.position = "bottom")
+
+    save_plot_file(p, filename, width, height, ...)
+    return(p)
+}
+
 #' @rdname prob_field.wateres
 #' @export
 prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("prob_field")

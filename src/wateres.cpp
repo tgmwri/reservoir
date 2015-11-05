@@ -18,10 +18,10 @@ void convert_m3(vector<double> &values, const vector<unsigned> &minutes, bool to
 }
 
 /**
-  * - converts m3.s-1 to m3 per month or other way round
+  * - converts m3.s-1 to m3 per time step or other way round
   * @param Rvalues time series of values
   * @param Rminutes numbers of minutes in time steps of time series, must be an integer
-  * @param Rto_volume whether to convert to m3 per month
+  * @param Rto_volume whether to convert to m3 per time step
   * @return vector of converted values
   */
 RcppExport SEXP convert_m3(SEXP Rvalues, SEXP Rminutes, SEXP Rto_volume)

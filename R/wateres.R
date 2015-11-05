@@ -297,8 +297,9 @@ calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, ge
 #' @param initial_storage A value of initial reservoir storage in m3. If not specified. the reservoir is considered to be full.
 #' @param get_level Whether to obtain water level series for calculated storages. It is ignored if no elevation-area-storage relationship
 #'   is provided within the \code{reser} object.
-#' @return A data table of water balance variables: storage, yield, precipitation, evaporation and withdrawal. Additionally, water levels
-#'   are included if the \code{get_levels} argument is TRUE.
+#' @return A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
+#'   precipitation, evaporation and withdrawal (in m3).
+#'   Additionally, water levels are included if the \code{get_level} argument is TRUE.
 #' @details When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted
 #'   to get a time series of the same length as for other variables.
 #' @export
@@ -318,6 +319,7 @@ calc_series.wateres <- function(reser, storage = attr(reser, "storage"), yield, 
     if (get_level && !is.null(eas)) {
         resul = cbind(resul, level = approx(eas$storage, eas$elevation, resul$storage)$y)
     }
+    class(resul) = c("wateres_series", class(resul))
     return(resul)
 }
 
