@@ -18,8 +18,8 @@ In that case, catchment area needs to be specified within the Bilan object.}
 \item{area}{Flooded area of the reservoir for the potential storage in m2.}
 
 \item{eas}{Elevation-area-storage relationship given as a data frame or data table with the three columns representing
-elevation (m.a.s.l.), area (m2) and storage (m3). If values of this three variables are not sorted and their orders
-differ, this argument will be ignored.}
+elevation (m.a.s.l.), area (m2) and storage (m3). If values of these three variables are not sorted and their orders
+differ or if they contain any NA value, this argument will be ignored.}
 
 \item{observed}{Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).}
 

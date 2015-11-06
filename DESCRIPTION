@@ -13,5 +13,5 @@ Imports:
 Suggests:
     testthat, bilan, ggplot2, reshape2
 Depends:
-    R (>= 2.15)
+    R (>= 3.1)
 LinkingTo: Rcpp

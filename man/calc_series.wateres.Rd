@@ -27,7 +27,7 @@ is provided within the \code{reser} object.}
 \value{
 A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
   precipitation, evaporation and withdrawal (in m3).
-  Additionally, water levels are included if the \code{get_levels} argument is TRUE.
+  Additionally, water levels are included if the \code{get_level} argument is TRUE.
 }
 \description{
 Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation

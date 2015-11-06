@@ -19,10 +19,12 @@ test_that("elevation-area-storage relationship is set", {
     expect_warning(as.wateres("rivendell.txt", 14.4e6, 754e3, eas = data.frame(elev = 529)))
     riv = as.wateres("rivendell.txt", 14.4e6, 754e3, eas = eas)
     expect_equivalent(attr(riv, "eas"), eas)
+    orig_eas = eas
     eas$storage[2] = 2e5
     expect_warning(as.wateres("rivendell.txt", 14.4e6, 754e3, eas = eas))
-    orig_eas = eas
-    eas = eas[c(1, 3:2, 4:nrow(eas)),]
+    eas$storage[2] = NA
+    expect_warning(as.wateres("rivendell.txt", 14.4e6, 754e3, eas = eas))
+    eas = orig_eas[c(1, 3:2, 4:nrow(eas)),]
     riv = as.wateres("rivendell.txt", 14.4e6, 754e3, eas = eas)
     expect_equivalent(attr(riv, "eas"), orig_eas)
 })

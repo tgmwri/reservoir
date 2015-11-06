@@ -49,8 +49,8 @@ days_for_months <- function(DTM) {
 #' @param storage Potential storage of the reservoir in m3.
 #' @param area Flooded area of the reservoir for the potential storage in m2.
 #' @param eas Elevation-area-storage relationship given as a data frame or data table with the three columns representing
-#'   elevation (m.a.s.l.), area (m2) and storage (m3). If values of this three variables are not sorted and their orders
-#'   differ, this argument will be ignored.
+#'   elevation (m.a.s.l.), area (m2) and storage (m3). If values of these three variables are not sorted and their orders
+#'   differ or if they contain any NA value, this argument will be ignored.
 #' @param observed Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).
 #' @param time_step Time step length, currently \dQuote{month} and \dQuote{hour} values are supported.
 #' @return A wateres object which is also of data.frame and data.table classes.
@@ -112,15 +112,19 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
     if (!is.null(eas)) {
         if (ncol(eas) != 3)
             warning("Incorrect number of columns for elevation-area-storage relationship.")
+        else if (anyNA(eas))
+            warning("Elevation-area-storage relationship contains NAs and will be ignored.")
         else {
             ref_order = order(eas[[1]])
             if (!(identical(ref_order, order(eas[[2]])) && identical(ref_order, order(eas[[3]]))))
                 warning("Elevation-area-storage values are not sorted correctly and will be ignored.")
-            eas = as.data.table(eas)
-            setnames(eas, c("elevation", "area", "storage"))
-            if (!identical(ref_order, 1:length(ref_order)))
-                setorder(eas, elevation, area, storage)
-            attr(dframe, "eas") = eas
+            else {
+                eas = as.data.table(eas)
+                setnames(eas, c("elevation", "area", "storage"))
+                if (!identical(ref_order, 1:length(ref_order)))
+                    setorder(eas, elevation, area, storage)
+                attr(dframe, "eas") = eas
+            }
         }
     }
     return(dframe)
