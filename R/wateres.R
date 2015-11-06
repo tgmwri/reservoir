@@ -287,7 +287,7 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
 
 #' @rdname calc_series.wateres
 #' @export
-calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, get_level) UseMethod("calc_series")
+calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, initial_level, get_level) UseMethod("calc_series")
 
 #' Calcuation of reservoir time series
 #'
@@ -298,7 +298,9 @@ calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, ge
 #' @param storage A maximum reservoir storage in m3, if not given, take from the \code{reser} object.
 #' @param yield A required yield in m3.s-1, either a value of fixed yield or a vector of the same length as the reservoir series.
 #' @param throw_exceed Whether volume exceeding storage will be thrown or added to yield.
-#' @param initial_storage A value of initial reservoir storage in m3. If not specified. the reservoir is considered to be full.
+#' @param initial_storage A value of initial reservoir storage in m3. If not specified, the reservoir is considered to be full.
+#' @param initial_level A value of initial water level in m.a.s.l. If specified and elevation-area-storage relationship is not provided within the
+#'   \code{reser} object, it will be ignored; otherwise the \code{initial_storage} argument will be ignored.
 #' @param get_level Whether to obtain water level series for calculated storages. It is ignored if no elevation-area-storage relationship
 #'   is provided within the \code{reser} object.
 #' @return A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
@@ -314,18 +316,24 @@ calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, ge
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' resul = calc_series(reser, 14.4e6, 0.14)
-calc_series.wateres <- function(reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage, get_level = FALSE) {
+calc_series.wateres <- function(reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage, initial_level, get_level = FALSE) {
     if (length(yield) == 1)
         yield = rep(yield, nrow(reser))
     else if (length(yield) != nrow(reser))
         stop(paste0("Time series of required yield must have the length of the reservoir series (", nrow(reser), ")."))
+    eas = attr(reser, "eas")
+    if (!missing(initial_level)) {
+        if (is.null(eas))
+            warning("Initial level is ignored because of missing elevation-area-storage relationship.")
+        else
+            initial_storage = approx(eas$elevation, eas$storage, initial_level, rule = 2)$y
+    }
 
     resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, storage, initial_storage, throw_exceed)
     resul$storage = resul$storage[2:length(resul$storage)]
     resul = as.data.table(resul)
-    eas = attr(reser, "eas")
     if (get_level && !is.null(eas)) {
-        resul = cbind(resul, level = approx(eas$storage, eas$elevation, resul$storage)$y)
+        resul = cbind(resul, level = approx(eas$storage, eas$elevation, resul$storage, rule = 2)$y)
     }
     class(resul) = c("wateres_series", class(resul))
     return(resul)

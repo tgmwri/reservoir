@@ -45,6 +45,13 @@ test_that("series with variable yield are calculated", {
     expect_equivalent(resul, readRDS("series_var_yield.rds"))
 })
 
+test_that("series with specified initial conditions are calculated", {
+    resul_storage = calc_series(rivh, yield = 1, initial_storage = 5e6, get_level = TRUE)
+    expect_equivalent(resul_storage, readRDS("series_init_storage.rds"))
+    resul_level = calc_series(rivh, yield = 1, initial_level = 512, get_level = TRUE)
+    expect_equivalent(resul_level, readRDS("series_init_level.rds"))
+})
+
 reser = data.frame(
     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
         0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),

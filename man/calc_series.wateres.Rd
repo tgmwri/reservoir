@@ -5,21 +5,26 @@
 \alias{calc_series.wateres}
 \title{Calcuation of reservoir time series}
 \usage{
-calc_series(reser, storage, yield, throw_exceed, initial_storage, get_level)
+calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
+  get_level)
 
 \method{calc_series}{wateres}(reser, storage = attr(reser, "storage"), yield,
-  throw_exceed = FALSE, initial_storage = storage, get_level = FALSE)
+  throw_exceed = FALSE, initial_storage = storage, initial_level,
+  get_level = FALSE)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
 
 \item{storage}{A maximum reservoir storage in m3, if not given, take from the \code{reser} object.}
 
-\item{yield}{A required yiled in m3.s-1, either a value of fixed yield or a vector of the same length as the reservoir series.}
+\item{yield}{A required yield in m3.s-1, either a value of fixed yield or a vector of the same length as the reservoir series.}
 
 \item{throw_exceed}{Whether volume exceeding storage will be thrown or added to yield.}
 
-\item{initial_storage}{A value of initial reservoir storage in m3. If not specified. the reservoir is considered to be full.}
+\item{initial_storage}{A value of initial reservoir storage in m3. If not specified, the reservoir is considered to be full.}
+
+\item{initial_level}{A value of initial water level in m.a.s.l. If specified and elevation-area-storage relationship is not provided within the
+\code{reser} object, it will be ignored; otherwise the \code{initial_storage} argument will be ignored.}
 
 \item{get_level}{Whether to obtain water level series for calculated storages. It is ignored if no elevation-area-storage relationship
 is provided within the \code{reser} object.}
