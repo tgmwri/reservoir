@@ -30,12 +30,19 @@ test_that("series with evaporation depending on E-A-S relationship are calculate
     expect_equivalent(resul, readRDS("series_evaporation_eas.rds"))
 })
 
+rivh = as.wateres("rivendell_1h.txt", 14.4e6, 754e3, eas = eas, time_step = "hour")
+
 test_that("series for hourly data are calculated", {
-    rivh = as.wateres("rivendell_1h.txt", 14.4e6, 754e3, eas = eas, time_step = "hour")
     expect_error(set_evaporation(rivh, altitude = 529))
     expect_error(set_precipitation(rivh, 1:12))
     resul = calc_series(rivh, 14.4e6, 0.14, FALSE, 14e6, get_level = TRUE)
     expect_equivalent(resul, readRDS("series_hourly.rds"))
+})
+
+test_that("series with variable yield are calculated", {
+    expect_error(calc_series(rivh, 14.4e6, yield = rep(0.14, 3), FALSE, 14e6, get_level = TRUE))
+    resul = calc_series(rivh, 14.4e6, yield = rep(c(0.14, 2, 0.5), each = 8), FALSE, 14e6, get_level = TRUE)
+    expect_equivalent(resul, readRDS("series_var_yield.rds"))
 })
 
 reser = data.frame(

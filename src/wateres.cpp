@@ -160,7 +160,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
     withdrawal in m3, number of minutes in time steps (minutes) and with attributes (area - flooded by reservoir in m2,
     eas - elevation-area-storage relationship (in m.a.s.l., m2 and m3)
   * @param Rinflow time series of inflows in m3.s-1
-  * @param Ryield_req required yield (reservoir outflow) in m3.s-1
+  * @param Ryield_req time series of required yield (reservoir outflow) in m3.s-1
   * @param Rvolume reservoir potential volume in m3
   * @param Rinitial_storage initial storage in the reservoir in m3
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
@@ -169,7 +169,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
 RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage, SEXP Rthrow_exceed)
 {
   DataFrame reser = as<DataFrame>(Rreser);
-  double yield_req = as<double>(Ryield_req);
+  vector<double> yield_req = as<vector<double> >(Ryield_req);
   double volume = as<double>(Rvolume);
   double initial_storage = as<double>(Rinitial_storage);
   bool throw_exceed = as<bool>(Rthrow_exceed);
@@ -183,11 +183,10 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
   storage[0] = initial_storage;
 
   wateres reservoir(reser, storage, throw_exceed, volume);
-  vector<double> yield_req_vol(time_steps, yield_req);
-  convert_m3(yield_req_vol, reservoir.minutes, true);
+  convert_m3(yield_req, reservoir.minutes, true);
   convert_m3(reservoir.var[wateres::INFLOW], reservoir.minutes, true);
   for (ts = 0; ts < time_steps; ts++) {
-    reservoir.var[wateres::YIELD][ts] = yield_req_vol[ts];
+    reservoir.var[wateres::YIELD][ts] = yield_req[ts];
     reservoir.storage[ts + 1] = reservoir.storage[ts] + reservoir.var[wateres::INFLOW][ts];
     reservoir.calc_balance_var(ts, wateres::PRECIPITATION);
   }

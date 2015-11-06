@@ -15,7 +15,7 @@ calc_series(reser, storage, yield, throw_exceed, initial_storage, get_level)
 
 \item{storage}{A maximum reservoir storage in m3, if not given, take from the \code{reser} object.}
 
-\item{yield}{A value of required constant yield in m3.s-1.}
+\item{yield}{A required yiled in m3.s-1, either a value of fixed yield or a vector of the same length as the reservoir series.}
 
 \item{throw_exceed}{Whether volume exceeding storage will be thrown or added to yield.}
 
