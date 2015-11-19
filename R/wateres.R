@@ -97,7 +97,8 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
         if (!colname %in% colnames(dframe))
             stop(paste0("To create a reservoir, ", colname, " column is required."))
     }
-    dframe = as.data.frame(dframe[, required_cols])
+    dframe = as.data.frame(dframe) # remove data.table class to use data.frame subsetting
+    dframe = as.data.frame(dframe[, required_cols]) # keep data.frame if only one required column
     colnames(dframe) = required_cols
     dframe$minutes = 60
     if (time_step == "month") {
