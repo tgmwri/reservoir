@@ -2,7 +2,7 @@ Package: wateres
 Title: Characteristics and Simulations for Water Reservoirs
 Version: 2015.8.9000
 Authors@R: c(
-    person("Stanislav", "Horacek", email = "stanislav.horacek@gmail.com", role = c("aut", "cre")),
+    person("Stanislav", "Horacek", email = "stanislav.horacek@gmail.com", role = c("aut", "cre"), comment = "T. G. Masaryk Water Research Institute, Prague, Czech Republic"),
     person("Roman", "Kozin", role = "aut"))
 Description: Tools to calculate characteristics of water reservoirs
     and to perform simulations for them.
