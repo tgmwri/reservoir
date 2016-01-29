@@ -138,6 +138,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
 #' @param object A \code{wateres} object.
 #' @param ... Further arguments passed to the \code{\link{sry.wateres}} function (as \code{storage}, \code{yield}, \code{prob_type} or \code{upper_limit}).
 #' @param reliability A vector of reliability values passed to the \code{\link{sry.wateres}} function.
+#' @param get_series Whether time series of reservoir balance variables for the given reliabilites will be returned.
 #' @return A data table of reservoir characteristics:
 #'   \item{storage}{reservoir storage in m3, given or the minimum storage calculated for given reliability and yield}
 #'   \item{reliability}{given or calculated reliability}
@@ -147,6 +148,11 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
 #'   \item{resilience}{resilience calculated as number of continuous sequences of failures / total number of time steps with failures, NA for no failure}
 #'   \item{vulnerability}{vulnerability (in m3) calculated as mean of monthly deficit volumes that represent maximum deficit of each failure period}
 #'   \item{dimless_vulner}{dimensionless vulnerability, vulnerability value divided by yield value in volume units}
+#'
+#'   If the \code{get_series} argument is \code{TRUE}, a list is returned instead. The list consists of:
+#'   \item{chars}{the table of characteristics described above}
+#'   \item{series}{a list of time series of water reservoir variables for the given reliabilities; list names are identical with the values of
+#'     the \code{reliability} argument}
 #' @details The maximum yield or the minimum storage is calculated by using the \code{\link{sry.wateres}} function for given storage or yield and reliability.
 #'
 #'   To calculate reliability for given storage and yield without any optimization, provide all the three arguments: storage, reliability (will be ignored)
@@ -166,12 +172,27 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' summary(reser, reliability = 1)
 #' summary(reser, reliability = 0.95)
-summary.wateres <- function(object, ..., reliability = "max") {
-    as.data.table(t(sapply(reliability, summary_wateres, object, ...)))
+summary.wateres <- function(object, ..., reliability = "max", get_series = FALSE) {
+    resul = sapply(reliability, summary_wateres, object, get_series, ...)
+    if (!get_series) {
+        return(as.data.table(t(resul)))
+    }
+    else {
+        series = list()
+        for (rel in seq(length(resul), 2, -2)) {
+            nominal_rel = as.character(reliability[rel / 2])
+            series[[nominal_rel]] = resul[[rel]]
+            resul[[rel]] = NULL
+        }
+        char_names = names(resul[[1]])
+        chars = as.data.table(matrix(unlist(resul), ncol = length(char_names), byrow = TRUE))
+        colnames(chars) = char_names
+        return(list(chars = chars, series = series))
+    }
 }
 
 # summary for one value of reliability
-summary_wateres <- function(reliability, object, ...) {
+summary_wateres <- function(reliability, object, get_series, ...) {
     resul = sry(object, reliability = reliability, ..., get_series = TRUE)
     yield = resul$yield
     Qa = mean(object$Q)
@@ -199,9 +220,12 @@ summary_wateres <- function(reliability, object, ...) {
         vulnerability = mean(deficits)
         dimless_vulner = vulnerability / (.Call("convert_m3", PACKAGE = "wateres", yield, 1, TRUE) * 30.5 * 24 * 60)
     }
-    return(
-        c(storage = resul$storage, reliability = resul$reliability, yield = yield, alpha = alpha, m = m, resilience = resilience,
-        vulnerability = vulnerability, dimless_vulner = dimless_vulner))
+    chars = c(storage = resul$storage, reliability = resul$reliability, yield = yield, alpha = alpha, m = m, resilience = resilience,
+        vulnerability = vulnerability, dimless_vulner = dimless_vulner)
+    if (get_series)
+        return(list(chars = chars, series = resul$series))
+    else
+        return(chars)
 }
 
 #' @rdname fill_time.wateres

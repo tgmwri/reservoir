@@ -53,6 +53,11 @@ test_that("characteristics are calculated for vector of reliabilities", {
     expect_equivalent(chars$dimless_vulner, c(0.683935745794, 0.605337932228, 0.570661436397))
 })
 
+test_that("characteristics and time series are calculated for vector of reliabilities", {
+    resul = summary(riv, reliability = c(0.5, 0.7), get_series = TRUE)
+    expect_equivalent(resul, readRDS("summary_series.rds"))
+})
+
 test_that("fill times are calculated", {
     set.seed(446)
     fill = fill_time(riv, yield = 0.14, samples = 10)

@@ -4,7 +4,8 @@
 \alias{summary.wateres}
 \title{Water reservoir summary}
 \usage{
-\method{summary}{wateres}(object, ..., reliability = "max")
+\method{summary}{wateres}(object, ..., reliability = "max",
+  get_series = FALSE)
 }
 \arguments{
 \item{object}{A \code{wateres} object.}
@@ -12,6 +13,8 @@
 \item{...}{Further arguments passed to the \code{\link{sry.wateres}} function (as \code{storage}, \code{yield}, \code{prob_type} or \code{upper_limit}).}
 
 \item{reliability}{A vector of reliability values passed to the \code{\link{sry.wateres}} function.}
+
+\item{get_series}{Whether time series of reservoir balance variables for the given reliabilites will be returned.}
 }
 \value{
 A data table of reservoir characteristics:
@@ -23,6 +26,11 @@ A data table of reservoir characteristics:
   \item{resilience}{resilience calculated as number of continuous sequences of failures / total number of time steps with failures, NA for no failure}
   \item{vulnerability}{vulnerability (in m3) calculated as mean of monthly deficit volumes that represent maximum deficit of each failure period}
   \item{dimless_vulner}{dimensionless vulnerability, vulnerability value divided by yield value in volume units}
+
+  If the \code{get_series} argument is \code{TRUE}, a list is returned instead. The list consists of:
+  \item{chars}{the table of characteristics described above}
+  \item{series}{a list of time series of water reservoir variables for the given reliabilities; list names are identical with the values of
+    the \code{reliability} argument}
 }
 \description{
 Calculates characteristics of the reservoir.
