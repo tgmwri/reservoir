@@ -333,6 +333,7 @@ calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, in
 #'   Additionally, water levels are included if the \code{get_level} argument is TRUE.
 #' @details When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted
 #'   to get a time series of the same length as for other variables.
+#' @seealso \code{\link{plot.wateres_series}} for plotting the time series
 #' @export
 #' @examples
 #' reser = data.frame(

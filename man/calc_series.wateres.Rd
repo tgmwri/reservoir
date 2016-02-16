@@ -50,4 +50,7 @@ reser = data.frame(
 reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 resul = calc_series(reser, 14.4e6, 0.14)
 }
+\seealso{
+\code{\link{plot.wateres_series}} for plotting the time series
+}
 
