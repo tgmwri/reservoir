@@ -11,7 +11,9 @@ Encoding: UTF-8
 Imports:
     data.table, Rcpp
 Suggests:
-    testthat, bilan, ggplot2, reshape2
+    testthat, bilan, ggplot2, reshape2,
+    knitr, rmarkdown
 Depends:
     R (>= 3.1)
 LinkingTo: Rcpp
+VignetteBuilder: knitr

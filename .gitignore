@@ -3,3 +3,4 @@
 /visual_test/vtest/*
 .Rproj.user
 *.Rproj
+inst/doc

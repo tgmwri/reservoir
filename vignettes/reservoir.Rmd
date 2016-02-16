@@ -1,0 +1,124 @@
+---
+title: "Reservoir Characteristics"
+author: "Stanislav Horacek"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reservoir Characteristics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The main purpose of the `wateres` package is calculation of various reservoir characteristics in order to evaluate its effectivity. This tutorial describes the calculation steps and options for one single reservoir.
+
+The package is focused on long-term reservoir balance in monthly time step, although some calculations for hourly data are also supported.
+
+## Creating a `wateres` object
+All input information about the reservoir is stored in an instance of the `wateres` class. To create this, a data frame with time series (currently date and monthly reservoir inflow in m³.s⁻¹) of input data is needed. Alternatively, a file containing the series can be used – a sample file of the Elven Rivendell is located within the tests of the package.
+
+Together with the time series, reservoir potential storage and corresponding flooded area have to be specified:
+```{r}
+library(wateres)
+riv = as.wateres("../tests/testthat/rivendell.txt", 14.4e6, 754e3)
+```
+All package functions are implemented as methods of the `wateres` object (or data structures of outputs in case of plotting).
+
+## Setting additional input information
+
+There are also optional time series and reservoir characteristics that affect the calculation. 
+
+For some water management purposes, water level outputs are required instead of volumes. Also, current flooded area of the reservoir could used when estimating its evaporation. Therefore, elevation-area-storage relationship can be set as an argument of the `as.wateres` function.
+
+```{r}
+eas = data.frame(
+    elevation = c(496, 499, 502, 505, 508, 511, 514, 517, 520, 523, 526, 529),
+    area = 1e3 * c(0, 5, 58, 90, 133, 180, 253, 347, 424, 483, 538, 754),
+    storage = 1e6 * c(0, 0.003, 0.161, 0.530, 1.085, 1.864, 2.943, 4.439, 6.362, 8.626, 11.175, 14.4))
+riv = as.wateres("../tests/testthat/rivendell.txt", 14.4e6, 754e3, eas = eas)
+```
+Evaporation from the flooded area of the reservoir can be set directly as time series (of the length equal to the length of the inflow data or 12 monthly values; in mm) or it can be estimated by a method according to the Czech Technical Standard, where evaporation is a function of reservoir altitude.
+
+All modification of the data are performed by a method of the `wateres` object -- the reservoir is passed as its first argument and a modified object is returned finally. Hence, the evaporation series for the Rivendell reservoir are set as follows:
+```{r}
+riv = set_evaporation(riv, altitude = 529)
+```
+and can be accessed as `riv$E`.
+
+Similarly, time series of withdrawal (i.e. water demand of lower priority than yield) from the reservoir is set. The `set_withdrawal` function accepts a constant value, 12 monthly values or complete time series (in m³); the values are stored in `riv$W`.
+```{r}
+riv = set_withdrawal(riv, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
+```
+
+Finally, precipitation values (in mm) stored in `riv$P` are supported:
+```{r}
+riv = set_precipitation(riv, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
+```
+Precipitation is supposed to affect the reservoir flooded area corresponding with the maximum storage.
+
+## Calculating reservoir water balance
+To calculate time series of water balance variables of the reservoir, use the `calc_series` function:
+```{r}
+resul = calc_series(riv, yield = 0.14, get_level = TRUE)
+```
+A required yield is the only argument to be set (as a fixed yield or a vector of values), however both maximum and initial storage can be also specified. Additionally, water levels can be calculated if elevation-area-storage relationship has been given and the `get_level` argument is set.
+
+The output is returned as a `wateres_series` object, i.e. a data table with water balance variables. It can be easily visualized by its `plot` function using the `ggplot2` package. Three plot types -- flows, storage and levels are supported:
+```{r, fig.width = 7}
+p = plot(resul, riv, "flow", begin = 0, end = 500)
+p = plot(resul, riv, "storage", begin = 0, end = 500)
+p = plot(resul, riv, "level", begin = 0, end = 500)
+```
+
+## Inspecting storage-reliability-yield relationship
+To optimize reservoir storage with respect to the required yield and the related time-based reliability, use the `sry` function. This function is passed by values of two of these three characteristics (storage, yield and reliability; potential reservoir storage is considered as a default storage value) while the remaining one will be:
+
+* simply calculated in case of reliability,
+* found by bisection algorithm in case of storage of yield.
+
+For instance, the reliability value for the yield required as above is found by:
+```{r}
+sry(riv, yield = 0.14)
+```
+meaning that the yield value is ensured in each time step.
+
+If a lower reliability is sufficient, a corresponding reservoir storage can be calculated as:
+```{r}
+sry_resul = sry(riv, reliability = 0.95, yield = 0.14)
+sry_resul
+```
+The calculated time series can be obtained by setting the `get_series` argument. There are also arguments controlling a method of reliability calculation^[Therefore, maximum reliability could be less than 1 and `"max"` value is also allowed as the `reliability` argument.] or bisection limits.
+
+## Calculating reservoir characteristics
+The `summary` function is a more convenient and concise way how to obtain reservoir characteristics. It employs the `sry` function and requires the same arguments. Moreover,
+
+* a vector of reliabilities can be entered instead of a single value,
+* a set of further characteristics is returned, including level of development, standardized net inflow, resilience and vulnerability.
+
+```{r}
+summary(riv, reliability = c(0.9, 0.95), yield = 0.14)
+```
+
+## Plot outputs
+Time series of water balance components can be also analyzed in terms of their probability for particular months. The probability fields are supported for reservoir storage, level and yield. They are calculated and visualized by:
+
+```{r fig.width = 5}
+prob_field = prob_field(riv, probs = c(0.9, 0.95, 0.99), yield = 0.14, storage = sry_resul$storage)
+p = plot(prob_field, "storage")
+p = plot(prob_field, "yield")
+```
+
+There is also a traditional method to characterize the reservoir by using curves representing the reservoir effectiveness as relation between level of development (alpha, determining the yield value) and ratio of storage and volume of annual flow (beta). These curves can be displayed for a vector of reliability values:
+```{r fig.width = 5}
+ab = alpha_beta(riv, alphas = seq(0, 1, 0.1), reliability = c(0.9, 0.95, 0.99))
+p = plot(ab)
+```
+
+## Using hourly data
+Use of the `wateres` package is not limited to the long-term water balance estimation. Since the package supports also hourly time step and variable yield output, it can be also applied to e.g. flood wave transformation:
+```{r fig.width = 5}
+rivh = as.wateres("../tests/testthat/rivendell_1h.txt", 14.4e6, 754e3, eas = eas, time_step = "hour")
+resul = calc_series(
+    rivh, yield = c(rep(0.2, 8), rep(1, 16)), get_level = TRUE, initial_storage = 14e6)
+p = plot(resul, rivh, "flow")
+p = plot(resul, rivh, "storage")
+```
