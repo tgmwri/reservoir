@@ -32,8 +32,11 @@ plot.wateres_series <- function(x, reser, type = "flow", begin = 1, end = nrow(x
         x = cbind(inflow = reser$Q, x)
         vars = colnames(x)[!(colnames(x) %in% c("storage", "level"))]
     }
-    else
+    else {
         vars = type
+        if (!vars %in% colnames(x))
+            stop(paste0("The required '", vars, "' is not available in time series data. Recalculate the time series with proper settings."))
+    }
 
     series = x[begin:end, vars, with = FALSE]
     if (type == "flow") {
