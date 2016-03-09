@@ -4,16 +4,34 @@
 using namespace std;
 using namespace Rcpp;
 
-// converts between m3.s-1 and m3 per time step given in minutes
+/**
+  * - converts one value from m3.s-1 to m3 per time step or other way round
+  * @param value value to be converted
+  * @param minutes numbers of minutes in the corresponding time step
+  * @param to_volume whether to convert to m3 per time step
+  * @return converted value
+  */
+double convert_m3(double value, unsigned minutes, bool to_volume)
+{
+  unsigned coeff = 60 * minutes;
+  if (to_volume)
+    return value * coeff;
+  else
+    return value / coeff;
+}
+
+/**
+  * - converts vector of values from m3.s-1 to m3 per time step or other way round
+  * @param values values to be converted
+  * @param minutes numbers of minutes in the corresponding time steps
+  * @param to_volume whether to convert to m3 per time step
+  * @return vector of converted values
+  */
 void convert_m3(vector<double> &values, const vector<unsigned> &minutes, bool to_volume)
 {
   unsigned val_count = values.size();
   for (unsigned val = 0; val < val_count; val++) {
-    unsigned coeff = 60 * minutes[val];
-    if (to_volume)
-      values[val] *= coeff;
-    else
-      values[val] /= coeff;
+    values[val] = convert_m3(values[val], minutes[val], to_volume);
   }
 }
 
@@ -188,7 +206,14 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
   for (ts = 0; ts < time_steps; ts++) {
     reservoir.var[wateres::YIELD][ts] = yield_req[ts];
     reservoir.storage[ts + 1] = reservoir.storage[ts] + reservoir.var[wateres::INFLOW][ts];
+    double withdrawal_req = reservoir.var[wateres::WITHDRAWAL][ts];
     reservoir.calc_balance_var(ts, wateres::PRECIPITATION);
+    double diff_yield = yield_req[ts] - reservoir.var[wateres::YIELD][ts];
+    if (diff_yield > 0)
+      reservoir.var[wateres::DEFICIT][ts] += diff_yield;
+    double diff_withdrawal = withdrawal_req - reservoir.var[wateres::WITHDRAWAL][ts];
+    if (diff_withdrawal > 0)
+      reservoir.var[wateres::DEFICIT][ts] += diff_withdrawal;
   }
   List resul;
   resul["storage"] = reservoir.storage;
@@ -197,6 +222,7 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
   resul["precipitation"] = reservoir.var[wateres::PRECIPITATION];
   resul["evaporation"] = reservoir.var[wateres::EVAPORATION];
   resul["withdrawal"] = reservoir.var[wateres::WITHDRAWAL];
+  resul["deficit"] = reservoir.var[wateres::DEFICIT];
 
   return resul;
 }

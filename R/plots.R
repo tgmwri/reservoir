@@ -41,7 +41,7 @@ plot.wateres_series <- function(x, reser, type = "flow", begin = 1, end = nrow(x
     series = x[begin:end, vars, with = FALSE]
     if (type == "flow") {
         series = series[, vars[!sapply(vars, function(var) { all(series[[var]] == 0) })], with = FALSE]
-        vars_to_convert = c("precipitation", "evaporation", "withdrawal")
+        vars_to_convert = c("precipitation", "evaporation", "withdrawal", "deficit")
         for (var in vars_to_convert[vars_to_convert %in% colnames(series)])
             set(series, j = var, value = .Call("convert_m3", PACKAGE = "wateres", series[[var]], reser$minutes, FALSE))
     }

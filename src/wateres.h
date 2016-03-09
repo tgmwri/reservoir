@@ -10,8 +10,8 @@ class wateres
     wateres(Rcpp::DataFrame reser, std::vector<double> storage, bool throw_exceed, double volume); //!< reservoir from given values
 
     //! water balance variables
-    enum var_name {INFLOW, EVAPORATION, WITHDRAWAL, PRECIPITATION, YIELD};
-    static const unsigned var_count = 5; //!< number of time series of variables
+    enum var_name {INFLOW, EVAPORATION, WITHDRAWAL, PRECIPITATION, YIELD, DEFICIT};
+    static const unsigned var_count = 6; //!< number of time series of variables
     static const std::string var_names[]; //!< names of variables
     std::vector<std::vector<double> > var; //!< values of water balance variables
     std::vector<double> storage;

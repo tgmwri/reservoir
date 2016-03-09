@@ -329,7 +329,8 @@ calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, in
 #' @param get_level Whether to obtain water level series for calculated storages. It is ignored if no elevation-area-storage relationship
 #'   is provided within the \code{reser} object.
 #' @return A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
-#'   precipitation, evaporation and withdrawal (in m3).
+#'   precipitation, evaporation, withdrawal and deficits (in m3). The deficits represent the missing volume which would satisfy the remaining
+#'   sum of yield and withdrawal demands.
 #'   Additionally, water levels are included if the \code{get_level} argument is TRUE.
 #' @details When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted
 #'   to get a time series of the same length as for other variables.
