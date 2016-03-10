@@ -9,7 +9,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The main purpose of the `wateres` package is calculation of various reservoir characteristics in order to evaluate its effectivity. This tutorial describes the calculation steps and options for one single reservoir.
+The main purpose of the `wateres` package is calculation of various reservoir characteristics in order to evaluate its effectiveness. This tutorial describes the calculation steps and options for one single reservoir.
 
 The package is focused on long-term reservoir balance in monthly time step, although some calculations for hourly data are also supported.
 
@@ -112,6 +112,62 @@ There is also a traditional method to characterize the reservoir by using curves
 ab = alpha_beta(riv, alphas = seq(0, 1, 0.1), reliability = c(0.9, 0.95, 0.99))
 p = plot(ab)
 ```
+
+## Calculating catchment and reservoir deficit volumes
+Estimation of reservoir effectiveness with respect to water demands in the corresponding catchment is a typical use case for the `wateres` package. Suppose that we need to cover water use requirements in the Bruinen catchment by the Rivendell reservoir. The time series of the Bruinen river discharge for the catchment outlet and water use within the catchment are available in a sample file (with a distinct change in water use; negative water use means that the river is supplied by water release originating e.g. in groundwater resources):
+```{r fig.width = 7}
+bru_data = read.table("../tests/testthat/bruinen.txt", header = TRUE, colClasses = c("Date", "numeric", "numeric"))
+library(ggplot2)
+ggplot(bru_data, aes(x = as.Date(DTM), y = USE)) + geom_line()
+```
+
+The catchment can be represented by a `wateres` reservoir whose storage is set to zero. There should be also a minimum residual flow set for the river:
+```{r}
+bru = as.wateres(data.frame(DTM = bru_data$DTM, Q = bru_data$Q), storage = 0, area = 0)
+bru_mrf = 1.514
+```
+To obtain water demand deficits, sum of minimum residual flow and water use needs to be set as yield:
+```{r fig.width = 7}
+bru_resul = calc_series(bru, yield = bru_mrf + bru_data$USE, throw = TRUE)
+p = plot(bru_resul, bru, "flow")
+```
+
+The remaining river flow cannot be visualized directly by the `plot.wateres_series` function, since it consists of the MRF (part of yield) and the difference between inflow and yield^[Specifically, the yield calculated with the `throw` argument set to `TRUE`, otherwise yield would equal to inflow because of no storage.]:
+```{r fig.width = 7}
+ggplot(
+    reshape2::melt(
+        data.frame(DTM = bru$DTM, Q_original = bru$Q, Q_with_use = bru_mrf + bru$Q - bru_resul$yield),
+        id = "DTM"),
+    aes(x = DTM, y = value, colour = variable)) + geom_line()
+```
+
+Afterwards, calculation for the reservoir can be performed. At first, a wateres object for the corresponding shorter time series is created and evaporation and precipitation are calculated:
+```{r}
+idcs = which(riv$DTM %in% bru$DTM)
+riv_short = as.wateres(
+    data.frame(
+        DTM = riv$DTM[idcs], Q = riv$Q[idcs]), storage = attr(riv, "storage"),
+        area = attr(riv, "area"), eas = attr(riv, "eas"))
+riv_short = set_evaporation(riv_short, altitude = 529)
+riv_short = set_precipitation(riv_short, riv$P[idcs])
+```
+
+Then, set withdrawal equal to the catchment deficits and a minimum residual flow value for the reservoir profile.^[The use of this MRF produces a bias since minimum residual flow demand has been already included in the catchment deficits; however it is applied to make calculations for catchment and reservoir consistent.]
+
+```{r}
+riv_short = set_withdrawal(riv_short, bru_resul$deficit)
+riv_mrf = 0.033
+```
+
+Having catchment deficits defined as withdrawal, reservoir yield is equal to the minimum residual flow:
+
+```{r, fig.width = 7}
+riv_resul = calc_series(riv_short, yield = riv_mrf)
+p = plot(riv_resul, riv_short, "flow")
+p = plot(riv_resul, riv_short, "storage")
+```
+
+implying that the deficits would be reduced by the reservoir by `1 - sum(riv_resul$deficit) / sum(bru_resul$deficit)`, i.e. by `r 100 * round(1 - sum(riv_resul$deficit) / sum(bru_resul$deficit), 2)` %.
 
 ## Using hourly data
 Use of the `wateres` package is not limited to the long-term water balance estimation. Since the package supports also hourly time step and variable yield output, it can be also applied to e.g. flood wave transformation:
