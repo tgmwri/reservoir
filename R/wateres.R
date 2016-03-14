@@ -53,6 +53,9 @@ days_for_months <- function(DTM) {
 #'   differ or if they contain any NA value, this argument will be ignored.
 #' @param observed Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).
 #' @param time_step Time step length, currently \dQuote{month} and \dQuote{hour} values are supported.
+#' @param id An identifier of the reservoir used for calculation of systems.
+#' @param id_down The identifier of the nearest reservoir downstream (also used in systems).
+#' @param title A reservoir title.
 #' @return A wateres object which is also of data.frame and data.table classes.
 #' @details An error occurs if \dQuote{Q} or \dQuote{DTM} column is missing or \code{dframe} is of another class
 #'   than \code{data.frame} or \code{data.table}.
@@ -66,7 +69,7 @@ days_for_months <- function(DTM) {
 #'     elevation = c(496, 502, 511, 520, 529), area = c(0, 58e3, 180e3, 424e3, 754e3),
 #'     storage = c(0, 161e3, 1.864e6, 6.362e6, 14.400e6))
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3, eas = eas)
-as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time_step = "month") {
+as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time_step = "month", id = NA, id_down = NA, title = NA) {
     ts_types = c("month", "hour")
     time_step = ts_types[pmatch(time_step, ts_types, 1)]
     if (is.na(time_step))
@@ -107,9 +110,8 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
     }
     dframe$Q = as.numeric(dframe$Q)
     class(dframe) = c("wateres", "data.table", "data.frame")
-    attr(dframe, "time_step") = time_step
-    attr(dframe, "storage") = storage
-    attr(dframe, "area") = area
+    for (attr_name in c("time_step", "storage", "area", "id", "id_down", "title"))
+        attr(dframe, attr_name) = get(attr_name)
     if (!is.null(eas)) {
         if (ncol(eas) != 3)
             warning("Incorrect number of columns for elevation-area-storage relationship.")

@@ -5,7 +5,7 @@
 \title{Water reservoir creation}
 \usage{
 as.wateres(dframe, storage, area, eas = NULL, observed = FALSE,
-  time_step = "month")
+  time_step = "month", id = NA, id_down = NA, title = NA)
 }
 \arguments{
 \item{dframe}{A name of file containing table with data (including header) or directly data frame or data table.
@@ -24,6 +24,12 @@ differ or if they contain any NA value, this argument will be ignored.}
 \item{observed}{Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).}
 
 \item{time_step}{Time step length, currently \dQuote{month} and \dQuote{hour} values are supported.}
+
+\item{id}{An identifier of the reservoir used for calculation of systems.}
+
+\item{id_down}{The identifier of the nearest reservoir downstream (also for systems).}
+
+\item{title}{A reservoir title.}
 }
 \value{
 A wateres object which is also of data.frame and data.table classes.
