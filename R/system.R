@@ -6,6 +6,7 @@
 #'   to be specified and needs to have a unique value.
 #' @return A \code{wateres_system} object which is also of list class.
 #' @details An error occurs if any of reservoir IDs is missing or is duplicate.
+#' @seealso \code{\link{check.wateres_system}} for checking validity of the system
 #' @export
 #' @examples
 #' period = seq(as.Date("2000-01-01"), by = "months", length.out = 24)
@@ -33,3 +34,4 @@ as.system <- function(...) {
     class(system) = c("wateres_system", "list")
     return(system)
 }
+
