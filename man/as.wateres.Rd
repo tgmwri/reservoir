@@ -5,7 +5,7 @@
 \title{Water reservoir creation}
 \usage{
 as.wateres(dframe, storage, area, eas = NULL, observed = FALSE,
-  time_step = "month", id = NA, id_down = NA, title = NA)
+  time_step = "month", id = NA, down_id = NA, title = NA)
 }
 \arguments{
 \item{dframe}{A name of file containing table with data (including header) or directly data frame or data table.
@@ -27,7 +27,7 @@ differ or if they contain any NA value, this argument will be ignored.}
 
 \item{id}{An identifier of the reservoir used for calculation of systems.}
 
-\item{id_down}{The identifier of the nearest reservoir downstream (also used in systems).}
+\item{down_id}{The identifier of the nearest reservoir downstream (also used in systems).}
 
 \item{title}{A reservoir title.}
 }
