@@ -64,3 +64,30 @@ test_that("withdrawal without evaporation is calculated", {
     expect_equivalent(resul$withdrawal,
         c(0, 0, 35000, 33000, 30000, 0, 0, 0, 0, 22000, 24000, 32000, 23000, 31000, 35000, 33000, 30000, 42000, 0, 0, 0, 22000, 24000, 0))
 })
+
+test_that("series with transfer are calculated", {
+    transfer = c(988841.6, 883737.6, 32864.0)
+    transfer_pos = c(108, 118, 131)
+    riv_wateruse = 4e5
+    riv_data = read.table("rivendell.txt", colClasses = c("Date", "numeric"), header = TRUE)
+    riv_data = riv_data[riv_data$DTM > as.Date("1981-01-01"), ]
+    riv = as.wateres(riv_data, storage = 14.4e6, area = 754e3, id = "riv", down_id = "thar")
+    riv = set_withdrawal(riv, rep(riv_wateruse, nrow(riv)))
+    riv$T = rep(0, nrow(riv))
+    riv$T[transfer_pos] = -transfer
+    riv_mrf = 0.033
+    riv_resul = calc_series(riv, yield = riv_mrf)
+    resul_orig = readRDS("series_transfer.rds")
+    expect_equivalent(riv_resul, resul_orig$riv)
+
+    thar_wateruse = 1e7
+    thar_data = read.table("tharbad.txt", colClasses = c("Date", "numeric"), header = TRUE)
+    thar_data = thar_data[thar_data$DTM > as.Date("1981-01-01"), ]
+    thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
+    thar = set_withdrawal(thar, rep(thar_wateruse, nrow(thar)))
+    thar$T = rep(0, nrow(riv))
+    thar$T[transfer_pos] = transfer
+    thar_mrf = 2.718
+    thar_resul = calc_series(thar, yield = thar_mrf)
+    expect_equivalent(thar_resul, resul_orig$thar)
+})

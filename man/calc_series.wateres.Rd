@@ -31,8 +31,9 @@ is provided within the \code{reser} object.}
 }
 \value{
 A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
-  precipitation, evaporation, withdrawal and deficits (in m3). The deficits represent the missing volume which would satisfy the remaining
-  sum of yield and withdrawal demands.
+  precipitation, evaporation, withdrawal, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
+  sum of yield and withdrawal demands. There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system.
+  Positive values of transfer mean additional inflow whereas negative represent additional withdrawal.
   Additionally, water levels are included if the \code{get_level} argument is TRUE.
 }
 \description{

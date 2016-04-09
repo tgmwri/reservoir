@@ -59,8 +59,8 @@ double convert_mm(double value, double area)
   return value / 1e3 * area;
 }
 
-//!variable names (inflow, evaporation, withdrawal, precipitation, yield)
-const string wateres::var_names[wateres::var_count] = {"Q", "E", "W", "P", "Y"};
+//!variable names: inflow, evaporation, withdrawal, precipitation, yield, deficit (not input variable), transfer
+const string wateres::var_names[wateres::var_count] = {"Q", "E", "W", "P", "Y", "D", "T"};
 
 /**
  * - creates water reservoir from given vectors of variables and options
@@ -83,6 +83,7 @@ wateres::wateres(
   this->minutes = as<vector<unsigned> >(reser["minutes"]);
   area = as<double>(reser.attr("area"));
   eas = as<DataFrame>(reser.attr("eas"));
+  transfer_add = true;
 }
 
 /**
@@ -108,13 +109,45 @@ double wateres::get_area(double storage_req)
 }
 
 /**
+ * - sets values of variables in a time step to zero
+ * - the following sequence applied: yield -> withdrawal -> transfer (if negative)
+ * @param ts time step to be calculated
+ * @param var_n identification of the variable to start with
+ */
+void wateres::set_var_zero(unsigned ts, var_name var_n)
+{
+  if (!(var_n == TRANSFER && var[var_n][ts] > 0))
+    var[var_n][ts] = 0;
+  switch (var_n) {
+    case YIELD:
+      set_var_zero(ts, WITHDRAWAL);
+      break;
+    case WITHDRAWAL:
+      set_var_zero(ts, TRANSFER);
+    default:
+      break;
+  }
+}
+
+/**
  * - calculates reservoir water balance for a time step starting from given variable
- * - sequence evaporation -> yield -> withdrawal applied
+ * - the following sequence applied: transfer added -> evaporation -> yield -> withdrawal -> transfer removed
  * @param ts time step to be calculated
  * @param var_n identification of the variable to start with
  */
 void wateres::calc_balance_var(unsigned ts, var_name var_n)
 {
+  //only positive transfer is added (firstly) and negative transfer is removed (lastly)
+  if (var_n == TRANSFER) {
+    if (transfer_add && var[var_n][ts] < 0) {
+      transfer_add = false;
+      calc_balance_var(ts, PRECIPITATION);
+      return;
+    }
+    else if (!transfer_add && var[var_n][ts] > 0) {
+      return;
+    }
+  }
   int tmp_coeff = -1; //whether to add or subtract in the balance
   switch (var_n) {
     case PRECIPITATION:
@@ -129,6 +162,9 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
         tmp_area = get_area(storage[ts]);
       var[var_n][ts] = convert_mm(var[var_n][ts], tmp_area);
       break;
+    case TRANSFER:
+      tmp_coeff = 1;
+      break;
     default:
       break;
   }
@@ -138,11 +174,13 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
     storage[ts + 1] = 0;
     switch (var_n) {
       case EVAPORATION:
-        var[YIELD][ts] = 0;
-        var[WITHDRAWAL][ts] = 0;
+        set_var_zero(ts, YIELD);
         break;
       case YIELD:
-        var[WITHDRAWAL][ts] = 0;
+        set_var_zero(ts, WITHDRAWAL);
+        break;
+      case WITHDRAWAL:
+        set_var_zero(ts, TRANSFER);
         break;
       default:
         break;
@@ -160,14 +198,21 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
         calc_balance_var(ts, WITHDRAWAL);
         break;
       case WITHDRAWAL:
-        if (storage[ts + 1] > volume) {
-          if (!throw_exceed)
-            var[YIELD][ts] += storage[ts + 1] - volume;
-          storage[ts + 1] = volume;
+        calc_balance_var(ts, TRANSFER);
+        break;
+      case TRANSFER:
+        if (transfer_add) {
+          transfer_add = false;
+          calc_balance_var(ts, PRECIPITATION);
         }
         break;
       default:
         break;
+    }
+    if (storage[ts + 1] > volume) {
+      if (!throw_exceed)
+        var[YIELD][ts] += storage[ts + 1] - volume;
+      storage[ts + 1] = volume;
     }
   }
 }
@@ -203,17 +248,21 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
   wateres reservoir(reser, storage, throw_exceed, volume);
   convert_m3(yield_req, reservoir.minutes, true);
   convert_m3(reservoir.var[wateres::INFLOW], reservoir.minutes, true);
+  bool is_transfer = false;
   for (ts = 0; ts < time_steps; ts++) {
     reservoir.var[wateres::YIELD][ts] = yield_req[ts];
     reservoir.storage[ts + 1] = reservoir.storage[ts] + reservoir.var[wateres::INFLOW][ts];
     double withdrawal_req = reservoir.var[wateres::WITHDRAWAL][ts];
-    reservoir.calc_balance_var(ts, wateres::PRECIPITATION);
+    reservoir.transfer_add = true;
+    reservoir.calc_balance_var(ts, wateres::TRANSFER);
     double diff_yield = yield_req[ts] - reservoir.var[wateres::YIELD][ts];
     if (diff_yield > 0)
       reservoir.var[wateres::DEFICIT][ts] += diff_yield;
     double diff_withdrawal = withdrawal_req - reservoir.var[wateres::WITHDRAWAL][ts];
     if (diff_withdrawal > 0)
       reservoir.var[wateres::DEFICIT][ts] += diff_withdrawal;
+    if (abs(reservoir.var[wateres::TRANSFER][ts]) > numeric_limits<double>::epsilon())
+      is_transfer = true;
   }
   List resul;
   resul["storage"] = reservoir.storage;
@@ -223,6 +272,8 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
   resul["evaporation"] = reservoir.var[wateres::EVAPORATION];
   resul["withdrawal"] = reservoir.var[wateres::WITHDRAWAL];
   resul["deficit"] = reservoir.var[wateres::DEFICIT];
+  if (is_transfer)
+    resul["transfer"] = reservoir.var[wateres::TRANSFER];
 
   return resul;
 }
