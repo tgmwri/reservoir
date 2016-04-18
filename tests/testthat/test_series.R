@@ -39,6 +39,17 @@ test_that("series for hourly data are calculated", {
     expect_equivalent(resul, readRDS("series_hourly.rds"))
 })
 
+rivd = as.wateres("rivendell_1d.txt", 14.4e6, 754e3, eas = eas, time_step = "day")
+
+test_that("series for daily data are calculated", {
+    rivd = set_evaporation(rivd, altitude = 529)
+    expect_equivalent(rivd$E[1:90], c(rep(0.219705678, 31), rep(0.4864911442, 28), rep(1.3182340683, 31)))
+    resul = calc_series(rivd, 14.4e6, 0.14, FALSE, 14e6, get_level = TRUE)
+    expect_equivalent(resul, readRDS("series_daily.rds"))
+    rivd$DTM = NULL
+    expect_error(set_evaporation(rivd, altitude = 529), "without specified date")
+})
+
 test_that("series with variable yield are calculated", {
     expect_error(calc_series(rivh, 14.4e6, yield = rep(0.14, 3), FALSE, 14e6, get_level = TRUE))
     resul = calc_series(rivh, 14.4e6, yield = rep(c(0.14, 2, 0.5), each = 8), FALSE, 14e6, get_level = TRUE)

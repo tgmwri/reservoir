@@ -34,6 +34,8 @@ Plots time series of chosen water balance variables for the reservoir, by using 
 }
 \details{
 Series of flows with all values equal to zero are ignored.
+
+  An error occurs if length of the time series of results (\code{x}) does not equal to the length of the reservoir data (\code{reser}).
 }
 \examples{
 reser = data.frame(

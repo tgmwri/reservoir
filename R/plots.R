@@ -13,6 +13,8 @@
 #' @param ... Further arguments passed to the \code{\link[ggplot2:ggsave]{ggsave}} function saving the plot to a file.
 #' @return A \code{ggplot} object.
 #' @details Series of flows with all values equal to zero are ignored.
+#'
+#'   An error occurs if length of the time series of results (\code{x}) does not equal to the length of the reservoir data (\code{reser}).
 #' @seealso \code{\link{calc_series.wateres}} used for calculation of reservoir time series
 #' @export
 #' @examples
@@ -24,6 +26,8 @@
 #' plot(calc_series(reser, 14.4e6, 0.14), reser)
 plot.wateres_series <- function(x, reser, type = "flow", begin = 1, end = nrow(x), filename = NULL, width = 8, height = 6, ...) {
     check_plot_pkgs()
+    if (nrow(x) != nrow(reser))
+        stop("The length of time series of results (", nrow(x), ") does not equal to the length of reservoir data (", nrow(reser), ").")
 
     types = c("flow", "storage", "level")
     units = c(storage = "mil. m\u00b3", flow = "m\u00b3.s\u207b\u00b9", level = "m.a.s.l.")

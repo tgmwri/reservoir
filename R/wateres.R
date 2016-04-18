@@ -32,7 +32,7 @@ days_in_month = c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 days_for_months <- function(DTM) {
     mon = as.numeric(format(DTM, format = "%m"))
     year = as.numeric(format(DTM, format = "%Y"))
-    days = rep(c(days_in_month[mon[1]:length(days_in_month)], days_in_month[0:(mon[1] - 1)]), length.out = length(DTM))
+    days = days_in_month[mon]
     is_leap_feb = (mon == 2 & (year %% 4 == 0 & (year %% 100 != 0 | year %% 400 == 0)))
     days[is_leap_feb] = 29
     return(days)
@@ -43,8 +43,8 @@ days_for_months <- function(DTM) {
 #' Creates a wateres object from provided time series.
 #'
 #' @param dframe A name of file containing table with data (including header) or directly data frame or data table.
-#'   The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, for monthly time step only).
-#'   Alternatively, this can be a Bilan object where the dates and modelled or observed runoffs are read from.
+#'   The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, required for monthly time step only).
+#'   Alternatively, this can be a Bilan object (in daily or monthly time step) where the dates and modelled or observed runoffs are read from.
 #'   In that case, catchment area needs to be specified within the Bilan object.
 #' @param storage Potential storage of the reservoir in m3.
 #' @param area Flooded area of the reservoir for the potential storage in m2.
@@ -52,12 +52,12 @@ days_for_months <- function(DTM) {
 #'   elevation (m.a.s.l.), area (m2) and storage (m3). If values of these three variables are not sorted and their orders
 #'   differ or if they contain any NA value, this argument will be ignored.
 #' @param observed Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).
-#' @param time_step Time step length, currently \dQuote{month} and \dQuote{hour} values are supported.
+#' @param time_step Time step length, currently \dQuote{month}, \dQuote{day} and \dQuote{hour} values are supported.
 #' @param id An identifier of the reservoir used for calculation of systems.
 #' @param down_id The identifier of the nearest reservoir downstream (also used in systems).
 #' @param title A reservoir title.
 #' @return A wateres object which is also of data.frame and data.table classes.
-#' @details An error occurs if \dQuote{Q} or \dQuote{DTM} column is missing or \code{dframe} is of another class
+#' @details An error occurs if any of the required columns is missing or \code{dframe} is of another class
 #'   than \code{data.frame} or \code{data.table}.
 #' @export
 #' @examples
@@ -70,7 +70,7 @@ days_for_months <- function(DTM) {
 #'     storage = c(0, 161e3, 1.864e6, 6.362e6, 14.400e6))
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3, eas = eas)
 as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time_step = "month", id = NA, down_id = NA, title = NA) {
-    ts_types = c("month", "hour")
+    ts_types = c("month", "day", "hour")
     time_step = ts_types[pmatch(time_step, ts_types, 1)]
     if (is.na(time_step))
         stop("Invalid value of time step.")
@@ -80,10 +80,13 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
             if (!(catch_area > 0))
                 stop("Catchment area needs to be specified when using Bilan data.")
             data = bilan::bil.get.data(dframe)
+            time_step = bilan::bil.info(dframe, FALSE)$time_step
             Qvar = ifelse(observed, "R", "RM")
-            days = days_for_months(data$DTM)
+            if (time_step == "month")
+                days = days_for_months(data$DTM)
+            else
+                days = 1
             dframe = data.frame(DTM = data$DTM, Q = data[[Qvar]] * catch_area / (24 * 3.6 * days))
-            time_step = "month"
         }
         else {
             stop("Bilan package is needed to load data from object of \"bilan\" class.")
@@ -100,12 +103,22 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
         if (!colname %in% colnames(dframe))
             stop(paste0("To create a reservoir, ", colname, " column is required."))
     }
+    optional_cols = "DTM"
+    all_cols = required_cols
+    for (col_name in optional_cols) {
+        if (col_name %in% colnames(dframe) && !col_name %in% required_cols)
+            all_cols = c(all_cols, col_name)
+    }
     dframe = as.data.frame(dframe) # remove data.table class to use data.frame subsetting
-    dframe = as.data.frame(dframe[, required_cols]) # keep data.frame if only one required column
-    colnames(dframe) = required_cols
-    dframe$minutes = 60
-    if (time_step == "month") {
+    dframe = as.data.frame(dframe[, all_cols]) # keep data.frame if only one required column
+    colnames(dframe) = all_cols
+    if ("DTM" %in% colnames(dframe))
         dframe$DTM = as.Date(dframe$DTM)
+    dframe$minutes = 60
+    if (time_step == "day") {
+        dframe$minutes = 24 * dframe$minutes
+    }
+    if (time_step == "month") {
         dframe$minutes = days_for_months(dframe$DTM) * 24 * dframe$minutes
     }
     dframe$Q = as.numeric(dframe$Q)

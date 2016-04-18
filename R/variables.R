@@ -2,11 +2,15 @@ set_variable <- function(reser, values, variable) {
     if (length(values) != nrow(reser)) {
         var_names = c(E = "evaporation", W = "withdrawal", P = "precipitation")
         if (length(values) == 12) {
-            if (attr(reser, "time_step") != "month")
-                stop("Variable ", var_names[variable], " can be set by 12 values only for monthly data.")
-            first_month = as.integer(format(reser$DTM[1], "%m"))
-            values = rep(values, 2)[first_month:(first_month + 11)]
-            values = rep_len(values, nrow(reser))
+            time_step = attr(reser, "time_step")
+            if (time_step == "hour")
+                stop("Variable ", var_names[variable], " cannot be set by 12 values for hourly data.")
+            else if (time_step == "day" && is.null(reser$DTM))
+                stop("Variable ", var_names[variable], " cannot be set for daily data without specified date.")
+            months = as.integer(format(reser$DTM, "%m"))
+            values = values[months]
+            if (time_step == "day")
+                values = values / days_for_months(reser$DTM)
         }
         else {
             text_const = ifelse(variable == "W", " or one constant value", "")
@@ -23,10 +27,10 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 
 #' Evaporation setting or calculation
 #'
-#' For monthly data, sets or calculates time series of evaporation from the reservoir.
+#' For monthly or daily data, sets or calculates time series of evaporation from the reservoir.
 #'
 #' @param reser A \code{wateres} object.
-#' @param values A vector of monthly evaporation values in mm, either of length of reservoir time series, or 12 monthly values starting by January.
+#' @param values A vector of evaporation values in mm, either monthly or daily values of length of reservoir time series, or 12 monthly values starting by January.
 #' @param altitude Reservoir altitude (m.a.s.l.) used for calculation of monthly evaporation values according to the Czech Technical Standard
 #'   ČSN 75 2405, where evaporation is a function of altitude for range from 100 to 1200 m.
 #' @return A modified \code{wateres} object with evaporation time series added (denoted as \code{E}).
@@ -34,7 +38,7 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #'   evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
 #'   linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
 #'
-#'   An error occurs if data in \code{reser} are not monhtly.
+#'   An error occurs if data in \code{reser} are not monthly or daily or if no dates are associated with daily data.
 #' @references ČSN 72 2405
 #' @export
 #' @examples
@@ -48,8 +52,8 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #' reser = set_evaporation(reser, altitude = 529)
 #' sry(reser, storage = 21e3, yield = 0.14)
 set_evaporation.wateres <- function(reser, values = NULL, altitude = NULL) {
-    if (attr(reser, "time_step") != "month")
-        stop("Evaporation can be set only for monthly data.")
+    if (attr(reser, "time_step") == "hour")
+        stop("Evaporation cannot be set for hourly data.")
     if (!is.null(altitude)) {
         E_annual = 4.957651e-5 * altitude ^ 2 - 0.3855958 * altitude + 871.19424
         E_monthly = c(0.01, 0.02, 0.06, 0.09, 0.12, 0.14, 0.16, 0.15, 0.11, 0.07, 0.05, 0.02)
@@ -68,8 +72,8 @@ set_withdrawal <- function(reser, values) UseMethod("set_withdrawal")
 #' Sets time series of withdrawal from the reservoir.
 #'
 #' @param reser A \code{wateres} object.
-#' @param values A vector of withdrawal values in m3, either of length of reservoir time series, or 12 monthly values starting by January
-#'    (for monthly data only), or one constant value.
+#' @param values A vector of withdrawal values in m3, either monthly or daily of length of reservoir time series, or 12 monthly values
+#'   starting by January (for monthly or daily data only), or one constant value.
 #' @return A modified \code{wateres} object with withdrawal time series added (denoted as \code{W}).
 #' @details Withdrawal is applied when calculating reservoir water balance after the yield and evaporation demands are satisfied.
 #' @export
@@ -98,7 +102,8 @@ set_precipitation <- function(reser, values) UseMethod("set_precipitation")
 #' Sets time series of precipitation on the reservoir area.
 #'
 #' @param reser A \code{wateres} object.
-#' @param values A vector of precipitation values in mm, either of length of reservoir time series, or 12 monthly values starting by January
+#' @param values A vector of precipitation values in mm, either monthly or daily of length of reservoir time series, or 12 monthly values
+#'   starting by January (for monthly or daily data only).
 #'    (for monthly data only).
 #' @return A modified \code{wateres} object with precipitation time series added (denoted as \code{P}).
 #' @details Precipitation is applied when calculating reservoir water balance. When calculating precipitation volume, the flooded area related

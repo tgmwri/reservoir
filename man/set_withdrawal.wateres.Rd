@@ -12,8 +12,8 @@ set_withdrawal(reser, values)
 \arguments{
 \item{reser}{A \code{wateres} object.}
 
-\item{values}{A vector of withdrawal values in m3, either of length of reservoir time series, or 12 monthly values starting by January
-(for monthly data only), or one constant value.}
+\item{values}{A vector of withdrawal values in m3, either monthly or daily of length of reservoir time series, or 12 monthly values
+starting by January (for monthly or daily data only), or one constant value.}
 }
 \value{
 A modified \code{wateres} object with withdrawal time series added (denoted as \code{W}).

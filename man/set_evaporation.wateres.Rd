@@ -12,7 +12,7 @@ set_evaporation(reser, values, altitude)
 \arguments{
 \item{reser}{A \code{wateres} object.}
 
-\item{values}{A vector of monthly evaporation values in mm, either of length of reservoir time series, or 12 monthly values starting by January.}
+\item{values}{A vector of evaporation values in mm, either monthly or daily values of length of reservoir time series, or 12 monthly values starting by January.}
 
 \item{altitude}{Reservoir altitude (m.a.s.l.) used for calculation of monthly evaporation values according to the Czech Technical Standard
 ČSN 75 2405, where evaporation is a function of altitude for range from 100 to 1200 m.}
@@ -21,14 +21,14 @@ set_evaporation(reser, values, altitude)
 A modified \code{wateres} object with evaporation time series added (denoted as \code{E}).
 }
 \description{
-For monthly data, sets or calculates time series of evaporation from the reservoir.
+For monthly or daily data, sets or calculates time series of evaporation from the reservoir.
 }
 \details{
 Evaporation is applied when calculating reservoir water balance. If no elevation-area-storage relationship is provided for the reservoir,
   evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
   linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
 
-  An error occurs if data in \code{reser} are not monhtly.
+  An error occurs if data in \code{reser} are not monthly or daily or if no dates are associated with daily data.
 }
 \examples{
 reser = data.frame(

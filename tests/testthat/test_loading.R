@@ -8,6 +8,17 @@ test_that("data are loaded from Bilan object", {
     expect_equivalent(riv$Q[1:12], c(0.07799990666, 0.06500006200, 0.16799987866, 0.71100096451,
         0.15399985999, 0.10699987461, 0.06800014001, 0.05699987866, 0.06999987461, 0.48499990666,
         0.25200004823, 0.23600001867))
+    expect_equivalent(riv$DTM[1:12], seq(as.Date("1901-01-01"), by = "month", length.out = 12))
+    expect_equivalent(riv$minutes[1:12], c(44640, 40320, 44640, 43200, 44640, 43200, 44640, 44640, 43200, 44640, 43200, 44640))
+
+    bild = bil.new("d")
+    bil.read.file(bild, "rivendell.dat", c("P", "R", "T")) # monthly data to daily just to test loading
+    rivd = as.wateres(bild, 14.4e6, 754e3, observed = TRUE)
+    expect_equivalent(rivd$Q[1:12], c(2.41799710648148, 1.82000173611111, 5.20799623842593, 21.3300289351852,
+        4.77399565972222, 3.20999623842593, 2.10800434027778, 1.76699623842593, 2.09999623842593, 15.0349971064815,
+        7.56000144675926, 7.3160005787037))
+    expect_equivalent(rivd$DTM[1:12], seq(as.Date("1901-01-01"), by = "day", length.out = 12))
+    expect_equivalent(rivd$minutes[1:12], rep(1440, 12))
 })
 
 test_that("data are loaded from data table", {

@@ -9,8 +9,8 @@ as.wateres(dframe, storage, area, eas = NULL, observed = FALSE,
 }
 \arguments{
 \item{dframe}{A name of file containing table with data (including header) or directly data frame or data table.
-The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, for monthly time step only).
-Alternatively, this can be a Bilan object where the dates and modelled or observed runoffs are read from.
+The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, required for monthly time step only).
+Alternatively, this can be a Bilan object (in daily or monthly time step) where the dates and modelled or observed runoffs are read from.
 In that case, catchment area needs to be specified within the Bilan object.}
 
 \item{storage}{Potential storage of the reservoir in m3.}
@@ -23,7 +23,7 @@ differ or if they contain any NA value, this argument will be ignored.}
 
 \item{observed}{Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).}
 
-\item{time_step}{Time step length, currently \dQuote{month} and \dQuote{hour} values are supported.}
+\item{time_step}{Time step length, currently \dQuote{month}, \dQuote{day} and \dQuote{hour} values are supported.}
 
 \item{id}{An identifier of the reservoir used for calculation of systems.}
 
@@ -38,7 +38,7 @@ A wateres object which is also of data.frame and data.table classes.
 Creates a wateres object from provided time series.
 }
 \details{
-An error occurs if \dQuote{Q} or \dQuote{DTM} column is missing or \code{dframe} is of another class
+An error occurs if any of the required columns is missing or \code{dframe} is of another class
   than \code{data.frame} or \code{data.table}.
 }
 \examples{
