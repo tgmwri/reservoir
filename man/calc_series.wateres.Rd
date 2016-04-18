@@ -3,7 +3,7 @@
 \name{calc_series}
 \alias{calc_series}
 \alias{calc_series.wateres}
-\title{Calcuation of reservoir time series}
+\title{Calculation of reservoir time series}
 \usage{
 calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
   get_level)

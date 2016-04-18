@@ -329,7 +329,7 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
 #' @export
 calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, initial_level, get_level) UseMethod("calc_series")
 
-#' Calcuation of reservoir time series
+#' Calculation of reservoir time series
 #'
 #' Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation
 #' or withdrawal variables are applied.
