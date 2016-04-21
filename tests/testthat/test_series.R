@@ -102,3 +102,15 @@ test_that("series with transfer are calculated", {
     thar_resul = calc_series(thar, yield = thar_mrf)
     expect_equivalent(thar_resul, resul_orig$thar)
 })
+
+test_that("transfer greater than storage is decreased", {
+    riv_data = read.table("rivendell.txt", colClasses = c("Date", "numeric"), header = TRUE)
+    riv_data = riv_data[riv_data$DTM > as.Date("1981-01-01") & riv_data$DTM < as.Date("1981-12-01"), ]
+    riv = as.wateres(riv_data, storage = 14.4e6, area = 754e3)
+    riv = set_withdrawal(riv, rep(4e5, nrow(riv)))
+    riv$T = c(-15249091, rep(0, nrow(riv) - 1))
+    riv_resul = calc_series(riv, yield = 0.033)
+    expect_equivalent(c(0, 0.033, 0, 0, 400000, 0, -14249091), as.numeric(riv_resul[1, ]))
+    expect_equivalent(c(0, 0.033, 0, 0, 309657.6, 90342.4, 0), as.numeric(riv_resul[2, ]))
+})
+

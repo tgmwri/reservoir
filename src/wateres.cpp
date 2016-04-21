@@ -170,7 +170,10 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
   }
   storage[ts + 1] += var[var_n][ts] * tmp_coeff;
   if (storage[ts + 1] < 0) {
-    var[var_n][ts] = var[var_n][ts] + storage[ts + 1];
+    if (var_n == TRANSFER)
+      var[var_n][ts] -= storage[ts + 1];
+    else
+      var[var_n][ts] += storage[ts + 1];
     storage[ts + 1] = 0;
     switch (var_n) {
       case EVAPORATION:
