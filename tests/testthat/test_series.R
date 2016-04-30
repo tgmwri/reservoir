@@ -80,9 +80,8 @@ test_that("series with transfer are calculated", {
     transfer = c(988841.6, 883737.6, 32864.0)
     transfer_pos = c(108, 118, 131)
     riv_wateruse = 4e5
-    riv_data = read.table("rivendell.txt", colClasses = c("Date", "numeric"), header = TRUE)
-    riv_data = riv_data[riv_data$DTM > as.Date("1981-01-01"), ]
-    riv = as.wateres(riv_data, storage = 14.4e6, area = 754e3, id = "riv", down_id = "thar")
+    riv = as.wateres("rivendell.txt", storage = 14.4e6, area = 754e3, id = "riv", down_id = "thar")
+    riv = resize_input(riv, "1981-01-01")
     riv = set_withdrawal(riv, rep(riv_wateruse, nrow(riv)))
     riv$T = rep(0, nrow(riv))
     riv$T[transfer_pos] = -transfer
@@ -92,9 +91,8 @@ test_that("series with transfer are calculated", {
     expect_equivalent(riv_resul, resul_orig$riv)
 
     thar_wateruse = 1e7
-    thar_data = read.table("tharbad.txt", colClasses = c("Date", "numeric"), header = TRUE)
-    thar_data = thar_data[thar_data$DTM > as.Date("1981-01-01"), ]
-    thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
+    thar = as.wateres("tharbad.txt", 41.3e6, 2672e3, id = "thar")
+    thar = resize_input(thar, "1981-01-01")
     thar = set_withdrawal(thar, rep(thar_wateruse, nrow(thar)))
     thar$T = rep(0, nrow(riv))
     thar$T[transfer_pos] = transfer
@@ -104,9 +102,8 @@ test_that("series with transfer are calculated", {
 })
 
 test_that("transfer greater than storage is decreased", {
-    riv_data = read.table("rivendell.txt", colClasses = c("Date", "numeric"), header = TRUE)
-    riv_data = riv_data[riv_data$DTM > as.Date("1981-01-01") & riv_data$DTM < as.Date("1981-12-01"), ]
-    riv = as.wateres(riv_data, storage = 14.4e6, area = 754e3)
+    riv = as.wateres("rivendell.txt", storage = 14.4e6, area = 754e3)
+    riv = resize_input(riv, "1981-01-01", "1981-12-01")
     riv = set_withdrawal(riv, rep(4e5, nrow(riv)))
     riv$T = c(-15249091, rep(0, nrow(riv) - 1))
     riv_resul = calc_series(riv, yield = 0.033)

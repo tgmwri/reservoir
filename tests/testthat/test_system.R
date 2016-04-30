@@ -69,9 +69,8 @@ riv2 = set_withdrawal(riv2, rep(riv2_wateruse, nrow(riv2)))
 riv2_mrf = 0.033
 
 thar_wateruse = 1e7
-thar_data = read.table("tharbad.txt", colClasses = c("Date", "numeric"), header = TRUE)
-thar_data = thar_data[thar_data$DTM > as.Date("1981-01-01"), ]
-thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "C")
+thar = as.wateres("tharbad.txt", 41.3e6, 2672e3, id = "C")
+thar = resize_input(thar, "1981-01-01")
 thar = set_withdrawal(thar, rep(thar_wateruse, nrow(thar)))
 thar_mrf = 2.718
 

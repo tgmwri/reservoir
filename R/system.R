@@ -141,9 +141,7 @@ check.wateres_system <- function(system) {
     for (res in 1:length(system)) {
         if (length(system[[res]]$DTM) != length(common_ts)) {
             warning(paste0("Time series for reservoir '", attr(system[[res]], "id"), "' will be shortened to common period for all reservoirs."))
-            tmp_attrs = attributes(system[[res]])
-            system[[res]] = system[[res]][system[[res]]$DTM %in% as.Date(common_ts), ]
-            attributes(system[[res]]) = tmp_attrs
+            system[[res]] = resize_input(system[[res]], common_ts[1], common_ts[length(common_ts)])
         }
     }
     return(system)
