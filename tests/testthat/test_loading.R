@@ -47,3 +47,37 @@ test_that("elevation-area-storage relationship is set", {
     riv = as.wateres("rivendell.txt", 14.4e6, 754e3, eas = eas)
     expect_equivalent(attr(riv, "eas"), orig_eas)
 })
+
+test_that("reservoir input time series are resized", {
+    dtm = seq(as.Date("1901-01-15"), as.Date("1903-12-15"), "month")
+    reser_data = data.frame(Q = rep(4.46, length(dtm)), DTM = dtm)
+    reser = as.wateres(reser_data, 14e6, 7e3)
+    reserh = as.wateres(data.frame(Q = reser_data$Q), 14e6, 7e3, time_step = "hour")
+
+    expect_error(resize_input(reser, "a"), "date or index needed")
+    expect_error(resize_input(reserh, "1981-01-01"), "series do not include dates")
+    expect_error(resize_input(reser, "1981-01-01", "1979-01-01"), "cannot be less than begin")
+
+    resul = resize_input(reser, -5)
+    expect_equivalent(resul$DTM, seq(as.Date("1900-07-15"), by = "month", length.out = 42))
+    expect_equivalent(resul$Q, c(rep(0, 6), rep(4.46, 36)))
+    expect_equal(class(resul), c("wateres", "data.table", "data.frame"))
+    expect_equal(names(attributes(resul)), c("names", "class", "row.names", ".internal.selfref",
+        "time_step", "storage", "area", "id", "down_id", "title"))
+
+    resul = resize_input(reser, "1902-01-01", "1903-04-01")
+    expect_equivalent(resul$DTM, seq(as.Date("1902-01-15"), by = "month", length.out = 15))
+    expect_equivalent(resul$Q, rep(4.46, 15))
+
+    resul = resize_input(reser, "1900-01-01", "1903-04-01")
+    expect_equivalent(resul$DTM, seq(as.Date("1900-01-15"), by = "month", length.out = 39))
+    expect_equivalent(resul$Q, c(rep(0, 12), rep(4.46, 27)))
+
+    resul = resize_input(reser, "1901-01-01", "1905-01-01")
+    expect_equivalent(resul$DTM, seq(as.Date("1901-01-15"), by = "month", length.out = 48))
+    expect_equivalent(resul$Q, c(rep(4.46, 36), rep(0, 12)))
+
+    resul = resize_input(reser, "1904-01-01", "1907-06-01")
+    expect_equivalent(resul$DTM, seq(as.Date("1904-01-15"), by = "month", length.out = 41))
+    expect_equivalent(resul$Q, rep(0, 41))
+})
