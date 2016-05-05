@@ -5,9 +5,10 @@
 \alias{resize_input.wateres}
 \title{Reservoir input time series resize}
 \usage{
-resize_input(reser, begin, end)
+resize_input(reser, begin, end, type)
 
-\method{resize_input}{wateres}(reser, begin = 1, end = nrow(reser))
+\method{resize_input}{wateres}(reser, begin = 1, end = nrow(reser),
+  type = NULL)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
@@ -17,6 +18,8 @@ resize_input(reser, begin, end)
 for hourly data).}
 
 \item{end}{New time series end entered the same way as \code{begin}. The end value cannot be less than the begin value.}
+
+\item{type}{Optional type of \code{begin} and \code{end} (one of \dQuote{index} or \dQuote{date}) to speed up the resize.}
 }
 \value{
 A \code{wateres} object with the resized series.

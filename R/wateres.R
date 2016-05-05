@@ -152,9 +152,15 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
 }
 
 # converts input (date or index) to index of the given time series of dates
-value_to_position <- function(value, DTM, time_step, type) {
-    value_date = try(as.Date(value), silent = TRUE)
-    if (class(value_date) == "try-error") {
+value_to_position <- function(value, DTM, time_step, type, value_type) {
+    if (is.null(value_type)) {
+        value_date = try(as.Date(value), silent = TRUE)
+        value_type = if (class(value_date) == "try-error") "index" else "date"
+    }
+    else if (value_type == "date") {
+        value_date = as.Date(value)
+    }
+    if (value_type == "index") {
         value_pos = suppressWarnings(as.integer(value))
         if (is.na(value_pos))
             stop("Invalid ", type, " '", value, "' (date or index needed).")
@@ -189,7 +195,7 @@ value_to_position <- function(value, DTM, time_step, type) {
 
 #' @rdname resize_input.wateres
 #' @export
-resize_input <- function(reser, begin, end) UseMethod("resize_input")
+resize_input <- function(reser, begin, end, type) UseMethod("resize_input")
 
 #' Reservoir input time series resize
 #'
@@ -201,6 +207,7 @@ resize_input <- function(reser, begin, end) UseMethod("resize_input")
 #'   (can be less than 1 for expanding before the current series). Dates cannot be used if the \code{wateres} object does not contain dates (e.g.
 #'   for hourly data).
 #' @param end New time series end entered the same way as \code{begin}. The end value cannot be less than the begin value.
+#' @param type Optional type of \code{begin} and \code{end} (one of \dQuote{index} or \dQuote{date}) to speed up the resize.
 #' @return A \code{wateres} object with the resized series.
 #' @export
 #' @examples
@@ -210,44 +217,47 @@ resize_input <- function(reser, begin, end) UseMethod("resize_input")
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, storage = 4e5, area = 754e3)
 #' reser = resize_input(reser, "2000-02-15", 20)
-resize_input.wateres <- function(reser, begin = 1, end = nrow(reser)) {
-    begin_pos = value_to_position(begin, reser$DTM, attr(reser, "time_step"), "begin")
-    end_pos = value_to_position(end, reser$DTM, attr(reser, "time_step"), "end")
+resize_input.wateres <- function(reser, begin = 1, end = nrow(reser), type = NULL) {
+    begin_pos = value_to_position(begin, reser$DTM, attr(reser, "time_step"), "begin", type)
+    end_pos = value_to_position(end, reser$DTM, attr(reser, "time_step"), "end", type)
     if (end_pos < begin_pos)
         stop("End for reservoir resizing cannot be less than begin.")
 
-    tmp_coeff = begin_pos / abs(begin_pos)
-    tmp_len = if (begin_pos < 1) abs(begin_pos) + 2 else begin_pos
-    begin_date = seq(reser$DTM[1], by = paste(tmp_coeff, attr(reser, "time_step")), length.out = tmp_len)[tmp_len]
-
     attrs_orig = attributes(reser)
+    begin_pos_orig = begin_pos
     rows_before = if (begin_pos < 0) 1 - begin_pos else 0
     begin_pos = begin_pos + rows_before
     rows_after = if (end_pos > nrow(reser)) end_pos - nrow(reser) else 0
     end_pos = end_pos + rows_before
 
-    for (type in c("before", "after")) {
-        dt_name = paste0("dt_", type)
-        assign(dt_name, data.table(matrix(0, nrow = get(paste0("rows_", type)), ncol = ncol(reser))))
-        setnames(get(dt_name), colnames(reser))
-    }
-    if (!is.null(reser$DTM)) {
-        class(dt_before$DTM) = class(dt_after$DTM) = "Date"
-    }
+    if (rows_before > 0 || rows_after > 0) {
+        tmp_coeff = begin_pos_orig / abs(begin_pos_orig)
+        tmp_len = if (begin_pos_orig < 1) abs(begin_pos_orig) + 2 else begin_pos_orig
+        begin_date = seq(reser$DTM[1], by = paste(tmp_coeff, attr(reser, "time_step")), length.out = tmp_len)[tmp_len]
 
-    reser = rbindlist(list(dt_before, reser, dt_after))
+        for (type in c("before", "after")) {
+            dt_name = paste0("dt_", type)
+            assign(dt_name, data.table(matrix(0, nrow = get(paste0("rows_", type)), ncol = ncol(reser))))
+            setnames(get(dt_name), colnames(reser))
+        }
+        if (!is.null(reser$DTM)) {
+            class(dt_before$DTM) = class(dt_after$DTM) = "Date"
+        }
+        reser = rbindlist(list(dt_before, reser, dt_after))
+    }
     reser = reser[begin_pos:end_pos, ]
+
     for (attr_name in names(attrs_orig)) {
         if (!attr_name %in% names(attributes(reser)))
             attr(reser, attr_name) = attrs_orig[[attr_name]]
     }
     class(reser) = c("wateres", class(reser))
 
-    # fill in dates and minutes
-    if (!is.null(reser$DTM) && (rows_before > 0 || rows_after > 0)) {
-        reser$DTM = seq(begin_date, by = attr(reser, "time_step"), length.out = nrow(reser))
+    if (rows_before > 0 || rows_after > 0) {
+        if (!is.null(reser$DTM))
+            reser$DTM = seq(begin_date, by = attr(reser, "time_step"), length.out = nrow(reser))
+        reser$minutes = calc_minutes(attr(reser, "time_step"), nrow(reser), reser$DTM)
     }
-    reser$minutes = calc_minutes(attr(reser, "time_step"), nrow(reser), reser$DTM)
     return(reser)
 }
 
