@@ -148,11 +148,26 @@ check.wateres_system <- function(system) {
 }
 
 # calculates simply each reservoir in the system by using its input data
-calc_single <- function(system, yields) {
-    resul = list()
+calc_single <- function(system, yields, init_pos = 1, resul = NULL) {
+    if (is.null(resul))
+        resul = list()
     for (res in 1:length(system)) {
         curr_id = attr(system[[res]], "id")
-        resul[[curr_id]] = calc_series(system[[res]], yield = yields[curr_id])
+        if (init_pos > 1) {
+            tmp_resul = calc_series(
+                system[[res]], yield = yields[curr_id], initial_storage = resul[[curr_id]]$storage[init_pos - 2], initial_pos = init_pos - 1)
+
+            if (ncol(tmp_resul) > ncol(resul[[curr_id]])) {
+                resul[[curr_id]]$transfer = rep(0, nrow(resul[[curr_id]]))
+            }
+            else if (ncol(tmp_resul) < ncol(resul[[curr_id]])) {
+                tmp_resul$transfer = rep(0, nrow(tmp_resul))
+            }
+            resul[[curr_id]][(init_pos - 1):nrow(resul[[curr_id]]), ] = tmp_resul
+        }
+        else {
+            resul[[curr_id]] = calc_series(system[[res]], yield = yields[curr_id])
+        }
     }
     return(resul)
 }
@@ -207,8 +222,8 @@ calc_max_transfer <- function(system, resers_done, series, def_pos) {
 }
 
 # set transfers recursively for time steps with deficit from given time step to the end
-set_transfers_from_pos <- function(system, yields, init_pos) {
-    series = calc_single(system, yields)
+set_transfers_from_pos <- function(system, yields, init_pos, series = NULL) {
+    series = calc_single(system, yields, init_pos, series)
     defs_sum = rowSums(as.data.frame(lapply(series, function(x) { x$deficit })))
     def_pos = which(defs_sum > 0)
     def_pos = def_pos[def_pos >= init_pos]
@@ -238,7 +253,7 @@ set_transfers_from_pos <- function(system, yields, init_pos) {
                 }
             }
         }
-        set_transfers_from_pos(system, yields, def_pos + 1)
+        set_transfers_from_pos(system, yields, def_pos + 1, series)
     }
     else {
         return(system)
