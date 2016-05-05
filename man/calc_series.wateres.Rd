@@ -6,11 +6,11 @@
 \title{Calculation of reservoir time series}
 \usage{
 calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
-  get_level)
+  initial_pos, get_level)
 
 \method{calc_series}{wateres}(reser, storage = attr(reser, "storage"), yield,
   throw_exceed = FALSE, initial_storage = storage, initial_level,
-  get_level = FALSE)
+  initial_pos = 1, get_level = FALSE)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
@@ -25,6 +25,8 @@ calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
 
 \item{initial_level}{A value of initial water level in m.a.s.l. If specified and elevation-area-storage relationship is not provided within the
 \code{reser} object, it will be ignored; otherwise the \code{initial_storage} argument will be ignored.}
+
+\item{initial_pos}{An index of time series where the calculation starts. If greater than one, returned time series will be shorter than the input.}
 
 \item{get_level}{Whether to obtain water level series for calculated storages. It is ignored if no elevation-area-storage relationship
 is provided within the \code{reser} object.}

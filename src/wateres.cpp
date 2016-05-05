@@ -229,15 +229,17 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
   * @param Ryield_req time series of required yield (reservoir outflow) in m3.s-1
   * @param Rvolume reservoir potential volume in m3
   * @param Rinitial_storage initial storage in the reservoir in m3
+  * @param Rinitial_pos initial time step of calculation
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
   * @return list consisting of storage (in m3), yield (m3.s-1), precipitation (m3), evaporation (m3) and withdrawal (m3)
   */
-RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage, SEXP Rthrow_exceed)
+RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage, SEXP Rinitial_pos, SEXP Rthrow_exceed)
 {
   DataFrame reser = as<DataFrame>(Rreser);
   vector<double> yield_req = as<vector<double> >(Ryield_req);
   double volume = as<double>(Rvolume);
   double initial_storage = as<double>(Rinitial_storage);
+  unsigned initial_pos = as<unsigned>(Rinitial_pos) - 1; //from R to C++ indexing
   bool throw_exceed = as<bool>(Rthrow_exceed);
 
   unsigned ts;
@@ -246,13 +248,13 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
   unsigned time_steps = as<NumericVector>(reser["minutes"]).size();
 
   vector<double> storage(time_steps + 1, 0);
-  storage[0] = initial_storage;
+  storage[initial_pos] = initial_storage;
 
   wateres reservoir(reser, storage, throw_exceed, volume);
   convert_m3(yield_req, reservoir.minutes, true);
   convert_m3(reservoir.var[wateres::INFLOW], reservoir.minutes, true);
   bool is_transfer = false;
-  for (ts = 0; ts < time_steps; ts++) {
+  for (ts = initial_pos; ts < time_steps; ts++) {
     reservoir.var[wateres::YIELD][ts] = yield_req[ts];
     reservoir.storage[ts + 1] = reservoir.storage[ts] + reservoir.var[wateres::INFLOW][ts];
     double withdrawal_req = reservoir.var[wateres::WITHDRAWAL][ts];
@@ -267,16 +269,26 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
     if (abs(reservoir.var[wateres::TRANSFER][ts]) > numeric_limits<double>::epsilon())
       is_transfer = true;
   }
-  List resul;
-  resul["storage"] = reservoir.storage;
   convert_m3(reservoir.var[wateres::YIELD], reservoir.minutes, false);
-  resul["yield"] = reservoir.var[wateres::YIELD];
-  resul["precipitation"] = reservoir.var[wateres::PRECIPITATION];
-  resul["evaporation"] = reservoir.var[wateres::EVAPORATION];
-  resul["withdrawal"] = reservoir.var[wateres::WITHDRAWAL];
-  resul["deficit"] = reservoir.var[wateres::DEFICIT];
-  if (is_transfer)
-    resul["transfer"] = reservoir.var[wateres::TRANSFER];
 
+  vector<double> resul_var;
+  unsigned var_count = reservoir.var_count - 1 + is_transfer;
+  resul_var.resize(time_steps - initial_pos);
+
+  string output_var_names[7] = { "storage", "yield", "precipitation", "evaporation", "withdrawal", "deficit", "transfer" };
+  wateres::var_name output_vars[7] = {
+    wateres::YIELD, wateres::YIELD, wateres::PRECIPITATION, wateres::EVAPORATION,
+    wateres::WITHDRAWAL, wateres::DEFICIT, wateres::TRANSFER };
+
+  List resul;
+  for (unsigned v = 0; v < var_count; v++) {
+    for (ts = initial_pos; ts < time_steps; ts++) {
+      if (v == 0)
+        resul_var[ts - initial_pos] = reservoir.storage[ts + 1]; //initial storage not returned
+      else
+        resul_var[ts - initial_pos] = reservoir.var[output_vars[v]][ts];
+    }
+    resul[output_var_names[v]] = resul_var;
+  }
   return resul;
 }
