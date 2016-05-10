@@ -175,10 +175,10 @@ calc_single <- function(system, yields, init_pos = 1, resul = NULL, only_part_ts
             }
             else {
                 if (ncol(tmp_resul) > ncol(resul[[curr_id]])) {
-                    resul[[curr_id]]$transfer = rep(0, nrow(resul[[curr_id]]))
+                    resul[[curr_id]]$transfer = 0
                 }
                 else if (ncol(tmp_resul) < ncol(resul[[curr_id]])) {
-                    tmp_resul$transfer = rep(0, nrow(tmp_resul))
+                    tmp_resul$transfer = 0
                 }
                 resul[[curr_id]][init_pos_prev:last_pos] = tmp_resul
             }
@@ -262,8 +262,6 @@ set_transfers_from_pos <- function(system, yields, init_pos, series = NULL) {
             attr(system[[bottom_res]], "from_up") = attr(system[[bottom_res]], "from_up") * min(1, series[[bottom_res]]$deficit[def_pos] / sum_from_up)
 
         # add transfers to input time series
-        for (res_id in names(system))
-            system[[res_id]]$T[def_pos] = 0
         for (res_id in names(system)) {
             for (from_res_id in names(attr(system[[res_id]], "from_up"))) {
                 curr_from_up = attr(system[[res_id]], "from_up")[from_res_id]
@@ -351,7 +349,7 @@ calc_deficits.wateres_system <- function(system, yields) {
 
     # set transfer variable to be filled in set_transfers_from_pos
     for (res in 1:length(system)) {
-        system[[res]]$T = rep(0, nrow(system[[res]]))
+        system[[res]]$T = 0
     }
     system = set_transfers_from_pos(system, yields, 1)
     resul$system = calc_single(system, yields = yields)
