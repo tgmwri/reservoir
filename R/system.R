@@ -148,22 +148,42 @@ check.wateres_system <- function(system) {
 }
 
 # calculates simply each reservoir in the system by using its input data
-calc_single <- function(system, yields, init_pos = 1, resul = NULL) {
+calc_single <- function(system, yields, init_pos = 1, resul = NULL, only_part_ts = FALSE) {
     if (is.null(resul))
         resul = list()
+    min_last_pos = nrow(system[[1]])
     for (res in 1:length(system)) {
         curr_id = attr(system[[res]], "id")
-        if (init_pos > 1) {
+        if (only_part_ts) {
+            # previous time step needs to be calculated because transfers were set there but the balance was not recalculated with them
+            # therefore the next deficit which will stop the calculation (first_def_pos) cannot be in the same time
+            init_pos_prev = if (init_pos == 1) 1 else init_pos - 1
             tmp_resul = calc_series(
-                system[[res]], yield = yields[curr_id], initial_storage = resul[[curr_id]]$storage[init_pos - 2], initial_pos = init_pos - 1)
+                system[[res]], yield = yields[curr_id],
+                initial_storage = if (init_pos > 2) resul[[curr_id]]$storage[init_pos - 2] else attr(system[[res]], "storage"),
+                initial_pos = init_pos_prev,
+                last_pos = min_last_pos, till_def = TRUE, first_def_pos = init_pos)
 
-            if (ncol(tmp_resul) > ncol(resul[[curr_id]])) {
-                resul[[curr_id]]$transfer = rep(0, nrow(resul[[curr_id]]))
+            last_pos = init_pos_prev - 1 + nrow(tmp_resul)
+            if (is.null(resul[[curr_id]])) {
+                resul[[curr_id]] = tmp_resul
+                if (nrow(resul[[curr_id]]) < nrow(system[[res]])) {
+                    tmp_dt = as.data.table(matrix(nrow = nrow(system[[res]]) - nrow(tmp_resul), ncol = ncol(tmp_resul)))
+                    setnames(tmp_dt, names(tmp_resul))
+                    resul[[curr_id]] = rbind(resul[[curr_id]], tmp_dt)
+                }
             }
-            else if (ncol(tmp_resul) < ncol(resul[[curr_id]])) {
-                tmp_resul$transfer = rep(0, nrow(tmp_resul))
+            else {
+                if (ncol(tmp_resul) > ncol(resul[[curr_id]])) {
+                    resul[[curr_id]]$transfer = rep(0, nrow(resul[[curr_id]]))
+                }
+                else if (ncol(tmp_resul) < ncol(resul[[curr_id]])) {
+                    tmp_resul$transfer = rep(0, nrow(tmp_resul))
+                }
+                resul[[curr_id]][init_pos_prev:last_pos] = tmp_resul
             }
-            resul[[curr_id]][(init_pos - 1):nrow(resul[[curr_id]]), ] = tmp_resul
+            if (last_pos < min_last_pos)
+                min_last_pos = last_pos
         }
         else {
             resul[[curr_id]] = calc_series(system[[res]], yield = yields[curr_id])
@@ -223,7 +243,7 @@ calc_max_transfer <- function(system, resers_done, series, def_pos) {
 
 # set transfers recursively for time steps with deficit from given time step to the end
 set_transfers_from_pos <- function(system, yields, init_pos, series = NULL) {
-    series = calc_single(system, yields, init_pos, series)
+    series = calc_single(system, yields, init_pos, series, only_part_ts = TRUE)
     defs_sum = rowSums(as.data.frame(lapply(series, function(x) { x$deficit })))
     def_pos = which(defs_sum > 0)
     def_pos = def_pos[def_pos >= init_pos]

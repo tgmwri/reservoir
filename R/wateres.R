@@ -442,7 +442,8 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
 
 #' @rdname calc_series.wateres
 #' @export
-calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, initial_level, initial_pos, get_level) UseMethod("calc_series")
+calc_series <- function(
+    reser, storage, yield, throw_exceed, initial_storage, initial_level, initial_pos, last_pos, get_level, till_def, first_def_pos) UseMethod("calc_series")
 
 #' Calculation of reservoir time series
 #'
@@ -457,8 +458,11 @@ calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, in
 #' @param initial_level A value of initial water level in m.a.s.l. If specified and elevation-area-storage relationship is not provided within the
 #'   \code{reser} object, it will be ignored; otherwise the \code{initial_storage} argument will be ignored.
 #' @param initial_pos An index of time series where the calculation starts. If greater than one, returned time series will be shorter than the input.
+#' @param last_pos An index of time series where the calculation stops.
 #' @param get_level Whether to obtain water level series for calculated storages. It is ignored if no elevation-area-storage relationship
 #'   is provided within the \code{reser} object.
+#' @param till_def If TRUE, the calculation will stop at time step when any deficit occurs provided that this time step is greater or equal to \code{first_def_pos}.
+#' @param first_def_pos If the \code{till_def} argument is TRUE, it means the first index of time step when a deficit will stop the calculation.
 #' @return A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
 #'   precipitation, evaporation, withdrawal, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
 #'   sum of yield and withdrawal demands. There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system.
@@ -475,7 +479,9 @@ calc_series <- function(reser, storage, yield, throw_exceed, initial_storage, in
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' resul = calc_series(reser, 14.4e6, 0.14)
-calc_series.wateres <- function(reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage, initial_level, initial_pos = 1, get_level = FALSE) {
+calc_series.wateres <- function(
+    reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage, initial_level, initial_pos = 1,
+    last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos) {
     if (length(yield) == 1)
         yield = rep(yield, nrow(reser))
     else if (length(yield) != nrow(reser))
@@ -488,7 +494,7 @@ calc_series.wateres <- function(reser, storage = attr(reser, "storage"), yield, 
             initial_storage = approx(eas$elevation, eas$storage, initial_level, rule = 2)$y
     }
 
-    resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, storage, initial_storage, initial_pos, throw_exceed)
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, storage, initial_storage, initial_pos, last_pos, throw_exceed, till_def, first_def_pos)
     resul = as.data.table(resul)
     if (get_level && !is.null(eas)) {
         resul = cbind(resul, level = approx(eas$storage, eas$elevation, resul$storage, rule = 2)$y)

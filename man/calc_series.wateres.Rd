@@ -6,11 +6,12 @@
 \title{Calculation of reservoir time series}
 \usage{
 calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
-  initial_pos, get_level)
+  initial_pos, last_pos, get_level, till_def, first_def_pos)
 
 \method{calc_series}{wateres}(reser, storage = attr(reser, "storage"), yield,
   throw_exceed = FALSE, initial_storage = storage, initial_level,
-  initial_pos = 1, get_level = FALSE)
+  initial_pos = 1, last_pos = nrow(reser), get_level = FALSE,
+  till_def = FALSE, first_def_pos = initial_pos)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
@@ -28,8 +29,14 @@ calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
 
 \item{initial_pos}{An index of time series where the calculation starts. If greater than one, returned time series will be shorter than the input.}
 
+\item{last_pos}{An index of time series where the calculation stops.}
+
 \item{get_level}{Whether to obtain water level series for calculated storages. It is ignored if no elevation-area-storage relationship
 is provided within the \code{reser} object.}
+
+\item{till_def}{If TRUE, the calculation will stop at time step when any deficit occurs provided that this time step is greater or equal to \code{first_def_pos}.}
+
+\item{first_def_pos}{If the \code{till_def} argument is TRUE, it means the first index of time step when a deficit will stop the calculation.}
 }
 \value{
 A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),

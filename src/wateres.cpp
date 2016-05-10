@@ -230,17 +230,25 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
   * @param Rvolume reservoir potential volume in m3
   * @param Rinitial_storage initial storage in the reservoir in m3
   * @param Rinitial_pos initial time step of calculation
+  * @param Rlast_pos last time step of calculation
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
+  * @param Rtill_deficit whether the calculation will end in the first time step with deficit
+  * @param Rfirst_deficit_pos if enabled Rtill_deficit, also time step needs to be at least this one to stop the calculation
   * @return list consisting of storage (in m3), yield (m3.s-1), precipitation (m3), evaporation (m3) and withdrawal (m3)
   */
-RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage, SEXP Rinitial_pos, SEXP Rthrow_exceed)
+RcppExport SEXP calc_storage(
+  SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage, SEXP Rinitial_pos, SEXP Rlast_pos, SEXP Rthrow_exceed,
+  SEXP Rtill_deficit, SEXP Rfirst_deficit_pos)
 {
   DataFrame reser = as<DataFrame>(Rreser);
   vector<double> yield_req = as<vector<double> >(Ryield_req);
   double volume = as<double>(Rvolume);
   double initial_storage = as<double>(Rinitial_storage);
   unsigned initial_pos = as<unsigned>(Rinitial_pos) - 1; //from R to C++ indexing
+  unsigned last_pos = as<unsigned>(Rlast_pos) - 1;
   bool throw_exceed = as<bool>(Rthrow_exceed);
+  bool till_deficit = as<bool>(Rtill_deficit);
+  unsigned first_deficit_pos = as<unsigned>(Rfirst_deficit_pos) - 1;
 
   unsigned ts;
   //reser.nrows() incorrect when subset of data.table used and its attributes are copied afterwards
@@ -268,6 +276,9 @@ RcppExport SEXP calc_storage(SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Ri
       reservoir.var[wateres::DEFICIT][ts] += diff_withdrawal;
     if (abs(reservoir.var[wateres::TRANSFER][ts]) > numeric_limits<double>::epsilon())
       is_transfer = true;
+    if (till_deficit && ts >= first_deficit_pos && reservoir.var[wateres::DEFICIT][ts] > numeric_limits<double>::epsilon()) {
+      time_steps = ts + 1;
+    }
   }
   convert_m3(reservoir.var[wateres::YIELD], reservoir.minutes, false);
 
