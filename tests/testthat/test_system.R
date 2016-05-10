@@ -90,3 +90,22 @@ test_that("deficits for system of four reservoirs are calculated", {
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B = riv2_mrf, C = thar_mrf)
     expect_equivalent(calc_deficits(system, yields), readRDS("system4_deficits_B.rds"))
 })
+
+test_that("deficits for system with deficit in the first time are calculated", {
+    reser_data = data.frame(Q =  rep(1, 6), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 6))
+    reser_A = as.wateres(reser_data, 14.4e6, 754e3, id = "A", down_id = "B")
+    reser_B = as.wateres(reser_data, 0, 754e3, id = "B")
+    system = as.system(reser_A, reser_B)
+    resul = calc_deficits(system, yields = c(A = 2, B = 2))
+
+    expect_equivalent(resul$single$A$storage, c(11721600, 9216000, 6537600, 3945600, 1267200, 0))
+    expect_equivalent(resul$single$A$deficit, c(rep(0, 5), 1324800))
+    expect_equivalent(resul$single$B$storage, rep(0, 6))
+    expect_equivalent(resul$single$B$deficit, c(2678400, 2505600, 2678400, 2592000, 2678400, 2592000))
+    expect_equivalent(resul$system$A$storage, c(9043200, 4032000, rep(0, 4)))
+    expect_equivalent(resul$system$A$deficit, c(rep(0, 3), 2592000, 2678400, 2592000))
+    expect_equivalent(resul$system$A$transfer, c(-2678400, -2505600, -1353600, rep(0, 3)))
+    expect_equivalent(resul$system$B$storage, rep(0, 6))
+    expect_equivalent(resul$system$B$deficit, c(rep(0, 2), 1324800, 2592000, 2678400, 2592000))
+    expect_equivalent(resul$system$B$transfer, c(2678400, 2505600, 1353600, rep(0, 3)))
+})
