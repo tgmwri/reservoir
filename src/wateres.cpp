@@ -116,7 +116,7 @@ double wateres::get_area(double storage_req)
  */
 void wateres::set_var_zero(unsigned ts, var_name var_n)
 {
-  if (!(var_n == TRANSFER && var[var_n][ts] > 0))
+  if (!(var_n == TRANSFER && var[var_n][ts] > 0) && !(var_n == WITHDRAWAL && var[var_n][ts] < 0))
     var[var_n][ts] = 0;
   switch (var_n) {
     case YIELD:
@@ -130,23 +130,42 @@ void wateres::set_var_zero(unsigned ts, var_name var_n)
 }
 
 /**
+ * - checks if variable value has corresponding sign for adding/subtracting
+ * - if it is the case, nothing happens
+ * - otherwise water balance (other variables) is calculated for the time step
+ * @param ts time step
+ * @param var_n identification of the variable
+ * @param next_var_n identification of the next variable in the calculated sequence
+ * @param adding whether to consider adding or subtracting (will be changed eventually)
+ * @return true if values are effective and nothing has happened
+ */
+bool wateres::check_value_sign(unsigned ts, var_name var_n, var_name next_var_n, bool &adding)
+{
+  if ((var_n == WITHDRAWAL && adding && var[var_n][ts] > 0) || (var_n == TRANSFER && adding && var[var_n][ts] < 0)) {
+    adding = false;
+    calc_balance_var(ts, next_var_n);
+    return false;
+  }
+  else if ((var_n == WITHDRAWAL && !adding && var[var_n][ts] < 0) || (var_n == TRANSFER && !adding && var[var_n][ts] > 0)) {
+    if (var_n != TRANSFER) //negative transfer the last in the sequence
+      calc_balance_var(ts, next_var_n);
+    return false;
+  }
+  return true;
+}
+
+/**
  * - calculates reservoir water balance for a time step starting from given variable
- * - the following sequence applied: transfer added -> evaporation -> yield -> withdrawal -> transfer removed
+ * - the following sequence applied: wateruse added -> transfer added -> evaporation -> yield -> wateruse removed -> transfer removed
  * @param ts time step to be calculated
  * @param var_n identification of the variable to start with
  */
 void wateres::calc_balance_var(unsigned ts, var_name var_n)
 {
-  //only positive transfer is added (firstly) and negative transfer is removed (lastly)
-  if (var_n == TRANSFER) {
-    if (transfer_add && var[var_n][ts] < 0) {
-      transfer_add = false;
-      calc_balance_var(ts, PRECIPITATION);
+  //only positive wateruse/transfer is added (firstly) and negative wateruse/transfer is removed (lastly)
+  if (var_n == WITHDRAWAL || var_n == TRANSFER) {
+    if (!check_value_sign(ts, var_n, var_n == WITHDRAWAL ? TRANSFER : PRECIPITATION, var_n == WITHDRAWAL ? wateruse_add : transfer_add))
       return;
-    }
-    else if (!transfer_add && var[var_n][ts] > 0) {
-      return;
-    }
   }
   int tmp_coeff = -1; //whether to add or subtract in the balance
   switch (var_n) {
@@ -201,6 +220,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
         calc_balance_var(ts, WITHDRAWAL);
         break;
       case WITHDRAWAL:
+        wateruse_add = false;
         calc_balance_var(ts, TRANSFER);
         break;
       case TRANSFER:
@@ -266,8 +286,8 @@ RcppExport SEXP calc_storage(
     reservoir.var[wateres::YIELD][ts] = yield_req[ts];
     reservoir.storage[ts + 1] = reservoir.storage[ts] + reservoir.var[wateres::INFLOW][ts];
     double withdrawal_req = reservoir.var[wateres::WITHDRAWAL][ts];
-    reservoir.transfer_add = true;
-    reservoir.calc_balance_var(ts, wateres::TRANSFER);
+    reservoir.transfer_add = reservoir.wateruse_add = true;
+    reservoir.calc_balance_var(ts, wateres::WITHDRAWAL);
     double diff_yield = yield_req[ts] - reservoir.var[wateres::YIELD][ts];
     if (diff_yield > 0)
       reservoir.var[wateres::DEFICIT][ts] += diff_yield;

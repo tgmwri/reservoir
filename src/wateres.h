@@ -18,6 +18,7 @@ class wateres
     std::vector<unsigned> minutes; //!< number of minutes for time steps
     Rcpp::DataFrame eas; //!< elevation-area-storage relationship (m, m2 and m3)
     bool transfer_add; //!< whether transfer variable will be added (beginning of reservoir balance) or removed (end)
+    bool wateruse_add;
 
     void calc_balance_var(unsigned ts, var_name var); //!< calculates water balance for given variable and time step
 
@@ -28,6 +29,7 @@ class wateres
 
     double get_area(double storage_req); //!< gets area for given storage
     void set_var_zero(unsigned ts, var_name var_n); //!< sets values of variables in a time step to zero
+    bool check_value_sign(unsigned ts, var_name var_n, var_name next_var_n, bool &adding); //!< handles if variable value has corresponding sign
 };
 
 #endif // WATERES_H_INCLUDED

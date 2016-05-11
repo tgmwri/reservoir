@@ -111,3 +111,14 @@ test_that("transfer greater than storage is decreased", {
     expect_equivalent(c(0, 0.033, 0, 0, 309657.6, 90342.4, 0), as.numeric(riv_resul[2, ]))
 })
 
+test_that("negative wateruse is effective also if storage is zero", {
+    reser_data = data.frame(Q =  rep(1, 6), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 6))
+    reser = as.wateres(reser_data, 7e6, 754e3)
+    reser = set_withdrawal(reser, -1e6)
+    resul = calc_series(reser, yield = 2)
+
+    expect_equivalent(resul$storage, c(5321600, 3816000, 2137600, 545600, 0, 0))
+    expect_equivalent(resul$yield, c(rep(2, 4), 1.577060932, 1.385802469))
+    expect_equivalent(resul$withdrawal, rep(-1e6, 6))
+    expect_equivalent(resul$deficit, c(rep(0, 4), 1132800, 1592000))
+})
