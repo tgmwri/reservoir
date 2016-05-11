@@ -15,7 +15,7 @@ test_that("storage, yield, precipitation, evaporation and withdrawal time series
     riv = set_evaporation(riv, altitude = 529)
     resul_evaporation = calc_series(riv, 14.4e6, 0.14, FALSE)
     expect_equivalent(resul_evaporation, readRDS("series_evaporation.rds"))
-    riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
+    riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * -1e3)
     resul_with = calc_series(riv, 14.4e6, 0.14, FALSE)
     expect_equivalent(resul_with, readRDS("series_withdrawal.rds"))
     riv = set_precipitation(riv, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
@@ -70,31 +70,31 @@ reser = data.frame(
 reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 
 test_that("withdrawal without evaporation is calculated", {
-    reser = set_withdrawal(reser, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * 1e3)
+    reser = set_withdrawal(reser, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * -1e3)
     resul = calc_series(reser, 21e3, 0.14, FALSE)
     expect_equivalent(resul$withdrawal,
-        c(0, 0, 35000, 33000, 30000, 0, 0, 0, 0, 22000, 24000, 32000, 23000, 31000, 35000, 33000, 30000, 42000, 0, 0, 0, 22000, 24000, 0))
+        -1 * c(0, 0, 35000, 33000, 30000, 0, 0, 0, 0, 22000, 24000, 32000, 23000, 31000, 35000, 33000, 30000, 42000, 0, 0, 0, 22000, 24000, 0))
 })
 
 test_that("series with transfer are calculated", {
     transfer = c(988841.6, 883737.6, 32864.0)
     transfer_pos = c(108, 118, 131)
-    riv_wateruse = 4e5
+    riv_wateruse = -4e5
     riv = as.wateres("rivendell.txt", storage = 14.4e6, area = 754e3, id = "riv", down_id = "thar")
     riv = resize_input(riv, "1981-01-01")
     riv = set_withdrawal(riv, rep(riv_wateruse, nrow(riv)))
-    riv$T = rep(0, nrow(riv))
+    riv$T = 0
     riv$T[transfer_pos] = -transfer
     riv_mrf = 0.033
     riv_resul = calc_series(riv, yield = riv_mrf)
     resul_orig = readRDS("series_transfer.rds")
     expect_equivalent(riv_resul, resul_orig$riv)
 
-    thar_wateruse = 1e7
+    thar_wateruse = -1e7
     thar = as.wateres("tharbad.txt", 41.3e6, 2672e3, id = "thar")
     thar = resize_input(thar, "1981-01-01")
     thar = set_withdrawal(thar, rep(thar_wateruse, nrow(thar)))
-    thar$T = rep(0, nrow(riv))
+    thar$T = 0
     thar$T[transfer_pos] = transfer
     thar_mrf = 2.718
     thar_resul = calc_series(thar, yield = thar_mrf)
@@ -104,21 +104,21 @@ test_that("series with transfer are calculated", {
 test_that("transfer greater than storage is decreased", {
     riv = as.wateres("rivendell.txt", storage = 14.4e6, area = 754e3)
     riv = resize_input(riv, "1981-01-01", "1981-12-01")
-    riv = set_withdrawal(riv, rep(4e5, nrow(riv)))
+    riv = set_withdrawal(riv, -4e5)
     riv$T = c(-15249091, rep(0, nrow(riv) - 1))
     riv_resul = calc_series(riv, yield = 0.033)
-    expect_equivalent(c(0, 0.033, 0, 0, 400000, 0, -14249091), as.numeric(riv_resul[1, ]))
-    expect_equivalent(c(0, 0.033, 0, 0, 309657.6, 90342.4, 0), as.numeric(riv_resul[2, ]))
+    expect_equivalent(c(0, 0.033, 0, 0, -400000, 0, -14249091), as.numeric(riv_resul[1, ]))
+    expect_equivalent(c(0, 0.033, 0, 0, -309657.6, 90342.4, 0), as.numeric(riv_resul[2, ]))
 })
 
 test_that("negative wateruse is effective also if storage is zero", {
     reser_data = data.frame(Q =  rep(1, 6), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 6))
     reser = as.wateres(reser_data, 7e6, 754e3)
-    reser = set_withdrawal(reser, -1e6)
+    reser = set_withdrawal(reser, 1e6)
     resul = calc_series(reser, yield = 2)
 
     expect_equivalent(resul$storage, c(5321600, 3816000, 2137600, 545600, 0, 0))
     expect_equivalent(resul$yield, c(rep(2, 4), 1.577060932, 1.385802469))
-    expect_equivalent(resul$withdrawal, rep(-1e6, 6))
+    expect_equivalent(resul$withdrawal, rep(1e6, 6))
     expect_equivalent(resul$deficit, c(rep(0, 4), 1132800, 1592000))
 })

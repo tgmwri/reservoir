@@ -116,7 +116,7 @@ double wateres::get_area(double storage_req)
  */
 void wateres::set_var_zero(unsigned ts, var_name var_n)
 {
-  if (!(var_n == TRANSFER && var[var_n][ts] > 0) && !(var_n == WITHDRAWAL && var[var_n][ts] < 0))
+  if (!((var_n == WITHDRAWAL || var_n == TRANSFER) && var[var_n][ts] > 0))
     var[var_n][ts] = 0;
   switch (var_n) {
     case YIELD:
@@ -141,12 +141,12 @@ void wateres::set_var_zero(unsigned ts, var_name var_n)
  */
 bool wateres::check_value_sign(unsigned ts, var_name var_n, var_name next_var_n, bool &adding)
 {
-  if ((var_n == WITHDRAWAL && adding && var[var_n][ts] > 0) || (var_n == TRANSFER && adding && var[var_n][ts] < 0)) {
+  if (adding && var[var_n][ts] < 0) {
     adding = false;
     calc_balance_var(ts, next_var_n);
     return false;
   }
-  else if ((var_n == WITHDRAWAL && !adding && var[var_n][ts] < 0) || (var_n == TRANSFER && !adding && var[var_n][ts] > 0)) {
+  else if (!adding && var[var_n][ts] > 0) {
     if (var_n != TRANSFER) //negative transfer the last in the sequence
       calc_balance_var(ts, next_var_n);
     return false;
@@ -181,6 +181,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
         tmp_area = get_area(storage[ts]);
       var[var_n][ts] = convert_mm(var[var_n][ts], tmp_area);
       break;
+    case WITHDRAWAL:
     case TRANSFER:
       tmp_coeff = 1;
       break;
@@ -189,7 +190,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
   }
   storage[ts + 1] += var[var_n][ts] * tmp_coeff;
   if (storage[ts + 1] < 0) {
-    if (var_n == TRANSFER)
+    if (var_n == WITHDRAWAL || var_n == TRANSFER)
       var[var_n][ts] -= storage[ts + 1];
     else
       var[var_n][ts] += storage[ts + 1];
@@ -291,7 +292,7 @@ RcppExport SEXP calc_storage(
     double diff_yield = yield_req[ts] - reservoir.var[wateres::YIELD][ts];
     if (diff_yield > 0)
       reservoir.var[wateres::DEFICIT][ts] += diff_yield;
-    double diff_withdrawal = withdrawal_req - reservoir.var[wateres::WITHDRAWAL][ts];
+    double diff_withdrawal = reservoir.var[wateres::WITHDRAWAL][ts] - withdrawal_req;
     if (diff_withdrawal > 0)
       reservoir.var[wateres::DEFICIT][ts] += diff_withdrawal;
     if (abs(reservoir.var[wateres::TRANSFER][ts]) > numeric_limits<double>::epsilon())

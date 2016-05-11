@@ -51,7 +51,7 @@ test_that("system is adjusted after check", {
     expect_equivalent(check(sys), readRDS("system_check.rds"))
 })
 
-riv_wateruse = 4e5
+riv_wateruse = -4e5
 riv_data = read.table("rivendell.txt", colClasses = c("Date", "numeric"), header = TRUE)
 riv_data = riv_data[riv_data$DTM > as.Date("1981-01-01"), ]
 riv = as.wateres(riv_data, 14.4e6, 754e3, id = "A1", down_id = "B")
@@ -68,7 +68,7 @@ riv2 = as.wateres(riv2_data, 14.4e6, 754e3, id = "B", down_id = "C")
 riv2 = set_withdrawal(riv2, rep(riv2_wateruse, nrow(riv2)))
 riv2_mrf = 0.033
 
-thar_wateruse = 1e7
+thar_wateruse = -1e7
 thar = as.wateres("tharbad.txt", 41.3e6, 2672e3, id = "C")
 thar = resize_input(thar, "1981-01-01")
 thar = set_withdrawal(thar, rep(thar_wateruse, nrow(thar)))
@@ -85,7 +85,7 @@ test_that("deficits for system of four reservoirs are calculated", {
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B = riv2_mrf, C = thar_mrf)
     expect_equivalent(calc_deficits(system, yields), readRDS("system4_deficits.rds"))
 
-    riv2$W[108] = riv2$W[108] + 5845586.9 # increase water use to get deficit 9e5 in reservoir B
+    riv2$W[108] = riv2$W[108] - 5845586.9 # decrease water use to get deficit -9e5 in reservoir B
     system = as.system(riv, riv_paralel, riv2, thar)
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B = riv2_mrf, C = thar_mrf)
     expect_equivalent(calc_deficits(system, yields), readRDS("system4_deficits_B.rds"))
