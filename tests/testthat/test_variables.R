@@ -26,20 +26,20 @@ test_that("evaporation values of incorrect length are rejected", {
     expect_error(set_evaporation(riv, monthly_evap[1:5]))
 })
 
-test_that("withdrawal values are set", {
+test_that("water use values are set", {
     # time series
-    riv = set_withdrawal(riv, rep_len(monthly_with, nrow(riv)))
+    riv = set_wateruse(riv, rep_len(monthly_with, nrow(riv)))
     expect_equivalent(riv$W, rep_len(monthly_with, nrow(riv)))
     # monthly values
-    riv = set_withdrawal(riv, monthly_with)
+    riv = set_wateruse(riv, monthly_with)
     expect_equivalent(riv$W, rep_len(monthly_with, nrow(riv)))
     # constant value
-    riv = set_withdrawal(riv, monthly_with[1])
+    riv = set_wateruse(riv, monthly_with[1])
     expect_equivalent(riv$W, rep(monthly_with[1], nrow(riv)))
 })
 
-test_that("withdrawal values of incorrect length are rejected", {
-    expect_error(set_withdrawal(riv, monthly_with[1:5]))
+test_that("water use values of incorrect length are rejected", {
+    expect_error(set_wateruse(riv, monthly_with[1:5]))
 })
 
 monthly_precip = c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58)

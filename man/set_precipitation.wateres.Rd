@@ -34,6 +34,6 @@ reser = data.frame(
 reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 sry(reser, storage = 21e3, yield = 0.17)
 reser = set_precipitation(reser, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
-sry(reser, storage = 21e3, yield = 0.17)
+resul = calc_series(reser, storage = 21e3, yield = 0.17)
 }
 

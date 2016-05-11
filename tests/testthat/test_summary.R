@@ -127,8 +127,8 @@ test_that("reliability for storage and yield is calculated", {
     expect_equivalent(sry$reliability, 0.433732202363)
     expect_equivalent(sry$yield, 0.14)
 
-    # withdrawal applied
-    riv = set_withdrawal(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * -1e3)
+    # water use applied
+    riv = set_wateruse(riv, c(23, 31, 35, 33, 30, 42, 47, 33, 27, 22, 24, 32) * -1e3)
     sry = sry(riv, storage = 41e3, yield = 0.14, prob_type = "ch")
     expect_equivalent(sry$storage, 41e3)
     expect_equivalent(sry$reliability, 0.430702817328)

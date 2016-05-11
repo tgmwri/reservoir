@@ -447,8 +447,8 @@ calc_series <- function(
 
 #' Calculation of reservoir time series
 #'
-#' Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation
-#' or withdrawal variables are applied.
+#' Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation,
+#' water use or transfer variables are applied.
 #'
 #' @param reser A \code{wateres} object.
 #' @param storage A maximum reservoir storage in m3, if not given, take from the \code{reser} object.
@@ -464,7 +464,7 @@ calc_series <- function(
 #' @param till_def If TRUE, the calculation will stop at time step when any deficit occurs provided that this time step is greater or equal to \code{first_def_pos}.
 #' @param first_def_pos If the \code{till_def} argument is TRUE, it means the first index of time step when a deficit will stop the calculation.
 #' @return A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
-#'   precipitation, evaporation, withdrawal, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
+#'   precipitation, evaporation, water use, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
 #'   sum of yield and withdrawal demands. There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system.
 #'   Positive values of transfer mean additional inflow whereas negative represent additional withdrawal.
 #'   Additionally, water levels are included if the \code{get_level} argument is TRUE.
@@ -570,8 +570,8 @@ sry <- function(reser, storage, reliability, yield, prob_type, upper_limit, thro
 #'   \item{storage}{storage value, optimized, equal to the \code{storage} argument or default (potential volume of \code{reser})}
 #'   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
 #'   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
-#'   \item{series}{only if \code{get_series} is enabled, a list consisting of reservoir storage (m3), yield (m3.s-1), evaporation (m3)
-#'     and withdrawal (m3) time series}
+#'   \item{series}{only if \code{get_series} is enabled, time series of water balance variables as returned by the
+#'     \code{\link{calc_series.wateres}} function}
 #' @details If all the three values are provided, the reliability value will be ignored and it will be calculated for the provided
 #'   storage and yield.
 #'

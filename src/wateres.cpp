@@ -59,7 +59,7 @@ double convert_mm(double value, double area)
   return value / 1e3 * area;
 }
 
-//!variable names: inflow, evaporation, withdrawal, precipitation, yield, deficit (not input variable), transfer
+//!variable names: inflow, evaporation, water use, precipitation, yield, deficit (not input variable), transfer
 const string wateres::var_names[wateres::var_count] = {"Q", "E", "W", "P", "Y", "D", "T"};
 
 /**
@@ -110,19 +110,19 @@ double wateres::get_area(double storage_req)
 
 /**
  * - sets values of variables in a time step to zero
- * - the following sequence applied: yield -> withdrawal -> transfer (if negative)
+ * - the following sequence applied: yield -> water use (if negative) -> transfer (if negative)
  * @param ts time step to be calculated
  * @param var_n identification of the variable to start with
  */
 void wateres::set_var_zero(unsigned ts, var_name var_n)
 {
-  if (!((var_n == WITHDRAWAL || var_n == TRANSFER) && var[var_n][ts] > 0))
+  if (!((var_n == WATERUSE || var_n == TRANSFER) && var[var_n][ts] > 0))
     var[var_n][ts] = 0;
   switch (var_n) {
     case YIELD:
-      set_var_zero(ts, WITHDRAWAL);
+      set_var_zero(ts, WATERUSE);
       break;
-    case WITHDRAWAL:
+    case WATERUSE:
       set_var_zero(ts, TRANSFER);
     default:
       break;
@@ -156,15 +156,15 @@ bool wateres::check_value_sign(unsigned ts, var_name var_n, var_name next_var_n,
 
 /**
  * - calculates reservoir water balance for a time step starting from given variable
- * - the following sequence applied: wateruse added -> transfer added -> evaporation -> yield -> wateruse removed -> transfer removed
+ * - the following sequence applied: water use added -> transfer added -> evaporation -> yield -> water use removed -> transfer removed
  * @param ts time step to be calculated
  * @param var_n identification of the variable to start with
  */
 void wateres::calc_balance_var(unsigned ts, var_name var_n)
 {
-  //only positive wateruse/transfer is added (firstly) and negative wateruse/transfer is removed (lastly)
-  if (var_n == WITHDRAWAL || var_n == TRANSFER) {
-    if (!check_value_sign(ts, var_n, var_n == WITHDRAWAL ? TRANSFER : PRECIPITATION, var_n == WITHDRAWAL ? wateruse_add : transfer_add))
+  //only positive water use/transfer is added (firstly) and negative water use/transfer is removed (lastly)
+  if (var_n == WATERUSE || var_n == TRANSFER) {
+    if (!check_value_sign(ts, var_n, var_n == WATERUSE ? TRANSFER : PRECIPITATION, var_n == WATERUSE ? wateruse_add : transfer_add))
       return;
   }
   int tmp_coeff = -1; //whether to add or subtract in the balance
@@ -181,7 +181,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
         tmp_area = get_area(storage[ts]);
       var[var_n][ts] = convert_mm(var[var_n][ts], tmp_area);
       break;
-    case WITHDRAWAL:
+    case WATERUSE:
     case TRANSFER:
       tmp_coeff = 1;
       break;
@@ -190,7 +190,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
   }
   storage[ts + 1] += var[var_n][ts] * tmp_coeff;
   if (storage[ts + 1] < 0) {
-    if (var_n == WITHDRAWAL || var_n == TRANSFER)
+    if (var_n == WATERUSE || var_n == TRANSFER)
       var[var_n][ts] -= storage[ts + 1];
     else
       var[var_n][ts] += storage[ts + 1];
@@ -200,9 +200,9 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
         set_var_zero(ts, YIELD);
         break;
       case YIELD:
-        set_var_zero(ts, WITHDRAWAL);
+        set_var_zero(ts, WATERUSE);
         break;
-      case WITHDRAWAL:
+      case WATERUSE:
         set_var_zero(ts, TRANSFER);
         break;
       default:
@@ -218,9 +218,9 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
         calc_balance_var(ts, YIELD);
         break;
       case YIELD:
-        calc_balance_var(ts, WITHDRAWAL);
+        calc_balance_var(ts, WATERUSE);
         break;
-      case WITHDRAWAL:
+      case WATERUSE:
         wateruse_add = false;
         calc_balance_var(ts, TRANSFER);
         break;
@@ -244,7 +244,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
 /**
   * - calculates monthly time series of reservoir storage and yield
   * @param Rreser reservoir object with time series of inflows (Q) in m3.s-1, precipitation (R) in mm, evaporation (E) in mm,
-    withdrawal in m3, number of minutes in time steps (minutes) and with attributes (area - flooded by reservoir in m2,
+    water use in m3, number of minutes in time steps (minutes) and with attributes (area - flooded by reservoir in m2,
     eas - elevation-area-storage relationship (in m.a.s.l., m2 and m3)
   * @param Rinflow time series of inflows in m3.s-1
   * @param Ryield_req time series of required yield (reservoir outflow) in m3.s-1
@@ -255,7 +255,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
   * @param Rtill_deficit whether the calculation will end in the first time step with deficit
   * @param Rfirst_deficit_pos if enabled Rtill_deficit, also time step needs to be at least this one to stop the calculation
-  * @return list consisting of storage (in m3), yield (m3.s-1), precipitation (m3), evaporation (m3) and withdrawal (m3)
+  * @return list consisting of storage (in m3), yield (m3.s-1), precipitation (m3), evaporation (m3) and water use (m3)
   */
 RcppExport SEXP calc_storage(
   SEXP Rreser, SEXP Ryield_req, SEXP Rvolume, SEXP Rinitial_storage, SEXP Rinitial_pos, SEXP Rlast_pos, SEXP Rthrow_exceed,
@@ -286,13 +286,13 @@ RcppExport SEXP calc_storage(
   for (ts = initial_pos; ts < time_steps; ts++) {
     reservoir.var[wateres::YIELD][ts] = yield_req[ts];
     reservoir.storage[ts + 1] = reservoir.storage[ts] + reservoir.var[wateres::INFLOW][ts];
-    double withdrawal_req = reservoir.var[wateres::WITHDRAWAL][ts];
+    double withdrawal_req = reservoir.var[wateres::WATERUSE][ts];
     reservoir.transfer_add = reservoir.wateruse_add = true;
-    reservoir.calc_balance_var(ts, wateres::WITHDRAWAL);
+    reservoir.calc_balance_var(ts, wateres::WATERUSE);
     double diff_yield = yield_req[ts] - reservoir.var[wateres::YIELD][ts];
     if (diff_yield > 0)
       reservoir.var[wateres::DEFICIT][ts] += diff_yield;
-    double diff_withdrawal = reservoir.var[wateres::WITHDRAWAL][ts] - withdrawal_req;
+    double diff_withdrawal = reservoir.var[wateres::WATERUSE][ts] - withdrawal_req;
     if (diff_withdrawal > 0)
       reservoir.var[wateres::DEFICIT][ts] += diff_withdrawal;
     if (abs(reservoir.var[wateres::TRANSFER][ts]) > numeric_limits<double>::epsilon())
@@ -307,10 +307,10 @@ RcppExport SEXP calc_storage(
   unsigned var_count = reservoir.var_count - 1 + is_transfer;
   resul_var.resize(time_steps - initial_pos);
 
-  string output_var_names[7] = { "storage", "yield", "precipitation", "evaporation", "withdrawal", "deficit", "transfer" };
+  string output_var_names[7] = { "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit", "transfer" };
   wateres::var_name output_vars[7] = {
     wateres::YIELD, wateres::YIELD, wateres::PRECIPITATION, wateres::EVAPORATION,
-    wateres::WITHDRAWAL, wateres::DEFICIT, wateres::TRANSFER };
+    wateres::WATERUSE, wateres::DEFICIT, wateres::TRANSFER };
 
   List resul;
   for (unsigned v = 0; v < var_count; v++) {

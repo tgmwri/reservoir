@@ -1,6 +1,6 @@
 set_variable <- function(reser, values, variable) {
     if (length(values) != nrow(reser)) {
-        var_names = c(E = "evaporation", W = "withdrawal", P = "precipitation")
+        var_names = c(E = "evaporation", W = "wateruse", P = "precipitation")
         if (length(values) == 12) {
             time_step = attr(reser, "time_step")
             if (time_step == "hour")
@@ -50,7 +50,7 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #' sry(reser, storage = 21e3, yield = 0.14)
 #' reser = set_evaporation(reser, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
 #' reser = set_evaporation(reser, altitude = 529)
-#' sry(reser, storage = 21e3, yield = 0.14)
+#' resul = calc_series(reser, storage = 21e3, yield = 0.14)
 set_evaporation.wateres <- function(reser, values = NULL, altitude = NULL) {
     if (attr(reser, "time_step") == "hour")
         stop("Evaporation cannot be set for hourly data.")
@@ -63,19 +63,21 @@ set_evaporation.wateres <- function(reser, values = NULL, altitude = NULL) {
     return(reser)
 }
 
-#' @rdname set_withdrawal.wateres
+#' @rdname set_wateruse.wateres
 #' @export
-set_withdrawal <- function(reser, values) UseMethod("set_withdrawal")
+set_wateruse <- function(reser, values) UseMethod("set_wateruse")
 
-#' Withdrawal setting
+#' Water use setting
 #'
-#' Sets time series of withdrawal from the reservoir.
+#' Sets time series of water use for the reservoir.
 #'
+#' Water use is applied when calculating reservoir water balance in two ways: positive water use (release) is always added to the storage,
+#' whereas negative water use (withdrawal) is considered after the yield and evaporation demands are satisfied.
 #' @param reser A \code{wateres} object.
-#' @param values A vector of withdrawal values in m3, either monthly or daily of length of reservoir time series, or 12 monthly values
-#'   starting by January (for monthly or daily data only), or one constant value.
-#' @return A modified \code{wateres} object with withdrawal time series added (denoted as \code{W}).
-#' @details Withdrawal is applied when calculating reservoir water balance after the yield and evaporation demands are satisfied.
+#' @param values A vector of water use values in m3, either monthly or daily of length of reservoir time series, or 12 monthly values
+#'   starting by January (for monthly or daily data only), or one constant value. Positive values mean water release to the reservoir,
+#'   negative withdrawal from the reservoir.
+#' @return A modified \code{wateres} object with water use time series added (denoted as \code{W}).
 #' @export
 #' @examples
 #' reser = data.frame(
@@ -84,9 +86,9 @@ set_withdrawal <- function(reser, values) UseMethod("set_withdrawal")
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' sry(reser, storage = 21e3, yield = 0.14)
-#' reser = set_withdrawal(reser, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
-#' sry(reser, storage = 21e3, yield = 0.14)
-set_withdrawal.wateres <- function(reser, values) {
+#' reser = set_wateruse(reser, -1 * c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
+#' resul = calc_series(reser, storage = 21e3, yield = 0.14)
+set_wateruse.wateres <- function(reser, values) {
     if (length(values) == 1)
         values = rep(values, 12)
     reser = set_variable(reser, values, "W")
@@ -117,7 +119,7 @@ set_precipitation <- function(reser, values) UseMethod("set_precipitation")
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' sry(reser, storage = 21e3, yield = 0.17)
 #' reser = set_precipitation(reser, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
-#' sry(reser, storage = 21e3, yield = 0.17)
+#' resul = calc_series(reser, storage = 21e3, yield = 0.17)
 set_precipitation.wateres <- function(reser, values) {
     reser = set_variable(reser, values, "P")
     return(reser)

@@ -39,7 +39,7 @@ reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 sry(reser, storage = 21e3, yield = 0.14)
 reser = set_evaporation(reser, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
 reser = set_evaporation(reser, altitude = 529)
-sry(reser, storage = 21e3, yield = 0.14)
+resul = calc_series(reser, storage = 21e3, yield = 0.14)
 }
 \references{
 ČSN 72 2405

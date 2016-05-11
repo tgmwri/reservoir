@@ -40,14 +40,14 @@ is provided within the \code{reser} object.}
 }
 \value{
 A \code{wateres_series} object which is a data table with water balance variables: storage (in m3), yield (in m3.s-1),
-  precipitation, evaporation, withdrawal, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
+  precipitation, evaporation, water use, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
   sum of yield and withdrawal demands. There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system.
   Positive values of transfer mean additional inflow whereas negative represent additional withdrawal.
   Additionally, water levels are included if the \code{get_level} argument is TRUE.
 }
 \description{
-Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation
-or withdrawal variables are applied.
+Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation,
+water use or transfer variables are applied.
 }
 \details{
 When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted

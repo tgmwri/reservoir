@@ -55,23 +55,23 @@ riv_wateruse = -4e5
 riv_data = read.table("rivendell.txt", colClasses = c("Date", "numeric"), header = TRUE)
 riv_data = riv_data[riv_data$DTM > as.Date("1981-01-01"), ]
 riv = as.wateres(riv_data, 14.4e6, 754e3, id = "A1", down_id = "B")
-riv = set_withdrawal(riv, rep(riv_wateruse, nrow(riv)))
+riv = set_wateruse(riv, rep(riv_wateruse, nrow(riv)))
 riv_mrf = 0.033
 
 riv_paralel = as.wateres(riv_data, 14.4e6, 754e3, id = "A2", down_id = "B")
-riv_paralel = set_withdrawal(riv_paralel, rep(riv_wateruse, nrow(riv_paralel)))
+riv_paralel = set_wateruse(riv_paralel, rep(riv_wateruse, nrow(riv_paralel)))
 
 riv2_wateruse = riv_wateruse * 1.12
 riv2_data = riv_data
 riv2_data$Q = riv2_data$Q * 1.12
 riv2 = as.wateres(riv2_data, 14.4e6, 754e3, id = "B", down_id = "C")
-riv2 = set_withdrawal(riv2, rep(riv2_wateruse, nrow(riv2)))
+riv2 = set_wateruse(riv2, rep(riv2_wateruse, nrow(riv2)))
 riv2_mrf = 0.033
 
 thar_wateruse = -1e7
 thar = as.wateres("tharbad.txt", 41.3e6, 2672e3, id = "C")
 thar = resize_input(thar, "1981-01-01")
-thar = set_withdrawal(thar, rep(thar_wateruse, nrow(thar)))
+thar = set_wateruse(thar, rep(thar_wateruse, nrow(thar)))
 thar_mrf = 2.718
 
 test_that("system is not calculated without yields", {

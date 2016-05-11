@@ -43,8 +43,8 @@ A list consisting of:
   \item{storage}{storage value, optimized, equal to the \code{storage} argument or default (potential volume of \code{reser})}
   \item{reliability}{reliability value calculated for the given or optimized values of yield and storage}
   \item{yield}{yield value, optimized or equal to the \code{yield} argument}
-  \item{series}{only if \code{get_series} is enabled, a list consisting of reservoir storage (m3), yield (m3.s-1), evaporation (m3)
-    and withdrawal (m3) time series}
+  \item{series}{only if \code{get_series} is enabled, time series of water balance variables as returned by the
+    \code{\link{calc_series.wateres}} function}
 }
 \description{
 Calculates one of the water reservoir characteristics: storage, time-based reliability or yield (release) while the
