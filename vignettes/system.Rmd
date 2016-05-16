@@ -1,0 +1,69 @@
+---
+title: "System of Reservoirs"
+author: "Stanislav Horacek"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{System of Reservoirs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+Apart from tools for assessment of an individual reservoir, the `wateres` package can be used to calculate variables for a system of reservoirs. Currently, only a rough estimation of influence of the system on deficit volumes can be performed; other analyses are not recommended because water balance between reservoirs is not preserved (time series of inflows and outflows of the system reservoirs do not match since water redistribution with respect to deficit volumes instead of real system calculation is applied^[Hence, inflow to the reservoir does not reflect that there is a reservoir upwards that decreases inflow variability; e.g. flood events in upper catchment affect all reservoirs incorrectly.]).
+
+Let's assume the case of the Rivendell reservoir satisfying water demand in the Bruinen catchment and the Tharbad reservoir for the Greyflood catchment downwards; their data are available within the package tests. Deficit volumes for the individual catchments can be calculated and the corresponding `wateres` reservoirs can be set together with their input variables as described in the [Reservoir Characteristics vignette](reservoir.html#calculating-catchment-and-reservoir-deficit-volumes). The only differences, related to the system settings, are the arguments `id` and `down_id` of the `as.wateres` function. These arguments define the system structure:
+```{r}
+library(wateres)
+# Bruinen and Rivendell
+bru_data = read.table(
+    "../tests/testthat/bruinen.txt", header = TRUE, colClasses = c("Date", "numeric", "numeric"))
+bru = as.wateres(data.frame(DTM = bru_data$DTM, Q = bru_data$Q), storage = 0, area = 0)
+bru_mrf = 1.514
+bru_resul = calc_series(bru, yield = bru_mrf - bru_data$USE, throw = TRUE)
+
+eas = data.frame(
+    elevation = c(496, 499, 502, 505, 508, 511, 514, 517, 520, 523, 526, 529),
+    area = 1e3 * c(0, 5, 58, 90, 133, 180, 253, 347, 424, 483, 538, 754),
+    storage = 1e6 * c(0, 0.003, 0.161, 0.53, 1.085, 1.864, 2.943, 4.439, 6.362, 8.626, 11.175, 14.4))
+riv = as.wateres("../tests/testthat/rivendell.txt", 14.4e6, 754e3, eas = eas, id = "riv", down_id = "thar")
+idcs = which(riv$DTM %in% bru$DTM)
+riv = resize_input(riv, idcs[1], idcs[length(idcs)])
+riv = set_evaporation(riv, altitude = 529)
+riv = set_precipitation(riv, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
+riv = set_wateruse(riv, -bru_resul$deficit)
+
+# Greyflood and Tharbad
+grey_data = read.table(
+    "../tests/testthat/greyflood.txt", header = TRUE, colClasses = c("Date", "numeric", "numeric"))
+grey = as.wateres(data.frame(DTM = grey_data$DTM, Q = grey_data$Q), storage = 0, area = 0)
+grey_mrf = 3.711
+grey_resul = calc_series(grey, yield = grey_mrf - grey_data$USE, throw = TRUE)
+
+eas = data.frame(
+    elevation = c(245, 248, 251, 254, 257, 260, 263, 266, 269, 272, 275, 278, 281, 284, 287, 290, 293, 296),
+    area = 1e3 * c(0, 2, 30, 90, 223, 315, 447, 636, 823, 975, 1154, 1348, 1545, 1758, 1996, 2218, 2440, 2672),
+    storage = 1e6 * c(0, 0.002, 0.041, 0.202, 0.61, 1.279, 2.2, 3.525, 5.301, 7.449, 9.994, 12.99,
+        16.423, 20.333, 24.792, 29.774, 35.273, 41.3))
+thar = as.wateres("../tests/testthat/tharbad.txt", 41.3e6, 2672e3, eas = eas, id = "thar")
+thar = set_evaporation(thar, altitude = 296)
+thar = set_precipitation(thar, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
+thar = set_wateruse(thar, -grey_resul$deficit)
+```
+The system is created by the `as.system` function: individual `wateres` objects passed as its arguments are joined into a list which is of the `wateres_system` class:
+```{r}
+sys = as.system(riv, thar)
+```
+When creating a system, the `check.wateres_system` function is automatically invoked. It ensures that the system has a correct structure, inappropriate reservoirs are removed eventually.
+
+Then the deficit volumes for the system (i.e. assuming that water from the Rivendell reservoir can be passed downwards to the Tharbad reservoir) can be calculated. The water redistribution is solved for each time step with any deficit volume independently and simple principles are applied^[After satisfying whole deficit volume -- if it is possible -- all available water is moved downwards. Finally, exceeding volume for the bottom reservoir is moved back to their source reservoirs proportionally.]. To calculate the deficit volumes, the `calc_deficits` function with a vector of reservoir yields is used:
+```{r}
+sys_resul = calc_deficits(sys, yields = c(riv = 0.033, thar = 2.718))
+```
+The resulting list consists of two items (each of them contains `wateres_series` for all reservoirs): `single` with results for individual reservoirs and `system` for which water redistribution was considered. The redistribution is stored in the `transfer` column of the results:
+```{r}
+sys_resul$system$riv$transfer[22:25]
+sys_resul$system$thar$transfer[22:25]
+```
+The results show that the original total deficit volume for the Greyflood catchment (`sum(grey_resul$deficit)` = `r round(sum(grey_resul$deficit) / 1e9, 2)` × 10⁹ m³) is decreased by the Tharbad reservoir by `r round(100 * (1 - sum(sys_resul$single$thar$deficit) / sum(grey_resul$deficit)), 0)` % (to `sum(sys_resul$single$thar$deficit)` = `r round(sum(sys_resul$single$thar$deficit) / 1e9, 2)` × 10⁹ m³). Assuming water transfer from the Rivendell reservoir, this Tharbad reservoir deficit is decreased by `r round(100 * (1 - sum(sys_resul$system$thar$deficit) / sum(sys_resul$single$thar$deficit)), 0)` % to `sum(sys_resul$system$thar$deficit)` = `r round(sum(sys_resul$system$thar$deficit) / 1e9, 2)` × 10⁹ m³.
+
+Transfer to the Tharbad reservoir caused additional deficits in the Rivendell reservoir^[At time steps different from time steps of original deficits.] (increase from `sum(sys_resul$single$riv$deficit)` = `r round(sum(sys_resul$single$riv$deficit) / 1e9, 2)` × 10⁹ m³ to `sum(sys_resul$system$riv$deficit)` = `r round(sum(sys_resul$system$riv$deficit) / 1e9, 2)` × 10⁹ m³), however they are significantly lesser than the gained decrease.
