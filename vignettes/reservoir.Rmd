@@ -11,10 +11,10 @@ vignette: >
 
 The main purpose of the `wateres` package is calculation of various reservoir characteristics in order to evaluate its effectiveness. This tutorial describes the calculation steps and options for one single reservoir.
 
-The package is focused on long-term reservoir balance in monthly time step, although some calculations for hourly data are also supported.
+The package is focused on long-term reservoir balance in monthly time step, although some calculations for hourly and daily data are also supported.
 
 ## Creating a `wateres` object
-All input information about the reservoir is stored in an instance of the `wateres` class. To create this, a data frame with time series (currently date and monthly reservoir inflow in m³.s⁻¹) of input data is needed. Alternatively, a file containing the series can be used – a sample file of the Elven Rivendell is located within the tests of the package.
+All input information about the reservoir is stored in an instance of the `wateres` class. To create this, a data frame with time series (currently date and average reservoir inflow in m³.s⁻¹) of input data is needed. Alternatively, a file containing the series can be used – a sample file of the Elven Rivendell is located within the tests of the package.
 
 Together with the time series, reservoir potential storage and corresponding flooded area have to be specified:
 ```{r}
@@ -44,9 +44,9 @@ riv = set_evaporation(riv, altitude = 529)
 ```
 and can be accessed as `riv$E`.
 
-Similarly, time series of withdrawal (i.e. water demand of lower priority than yield) from the reservoir is set. The `set_withdrawal` function accepts a constant value, 12 monthly values or complete time series (in m³); the values are stored in `riv$W`.
+Similarly, time series of water use from the reservoir are set. The water use values can be both positive and negative, meaning water release to the reservoir (added to the water balance in any case) or withdrawal from the reservoir (i.e. water demand of lower priority than yield), respectivelly. The `set_wateruse` function accepts a constant value, 12 monthly values or complete time series (in m³); the values are stored in `riv$W`.
 ```{r}
-riv = set_withdrawal(riv, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
+riv = set_wateruse(riv, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
 ```
 
 Finally, precipitation values (in mm) stored in `riv$P` are supported:
@@ -73,7 +73,7 @@ p = plot(resul, riv, "level", begin = 0, end = 500)
 To optimize reservoir storage with respect to the required yield and the related time-based reliability, use the `sry` function. This function is passed by values of two of these three characteristics (storage, yield and reliability; potential reservoir storage is considered as a default storage value) while the remaining one will be:
 
 * simply calculated in case of reliability,
-* found by bisection algorithm in case of storage of yield.
+* found by bisection algorithm in case of storage or yield.
 
 For instance, the reliability value for the yield required as above is found by:
 ```{r}
@@ -114,7 +114,7 @@ p = plot(ab)
 ```
 
 ## Calculating catchment and reservoir deficit volumes
-Estimation of reservoir effectiveness with respect to water demands in the corresponding catchment is a typical use case for the `wateres` package. Suppose that we need to cover water use requirements in the Bruinen catchment by the Rivendell reservoir. The time series of the Bruinen river discharge for the catchment outlet and water use within the catchment are available in a sample file (with a distinct change in water use; negative water use means that the river is supplied by water release originating e.g. in groundwater resources):
+Estimation of reservoir effectiveness with respect to water demands in the corresponding catchment is a typical use case for the `wateres` package. Suppose that we need to cover water use requirements in the Bruinen catchment by the Rivendell reservoir. The time series of the Bruinen river discharge for the catchment outlet and water use within the catchment are available in a sample file (with a distinct change in water use; positive water use means that the river is supplied by water release originating e.g. in groundwater resources):
 ```{r fig.width = 7}
 bru_data = read.table("../tests/testthat/bruinen.txt", header = TRUE, colClasses = c("Date", "numeric", "numeric"))
 library(ggplot2)
@@ -126,9 +126,9 @@ The catchment can be represented by a `wateres` reservoir whose storage is set t
 bru = as.wateres(data.frame(DTM = bru_data$DTM, Q = bru_data$Q), storage = 0, area = 0)
 bru_mrf = 1.514
 ```
-To obtain water demand deficits, sum of minimum residual flow and water use needs to be set as yield:
+To obtain water demand deficits, yield has to be set to the minimum residual flow increased by withdrawal requirements (negative water use) or decreased by water release (positive water use).^[Water use variable cannot be used in this case because withdrawal may occur only if there is a storage greater than zero.]
 ```{r fig.width = 7}
-bru_resul = calc_series(bru, yield = bru_mrf + bru_data$USE, throw = TRUE)
+bru_resul = calc_series(bru, yield = bru_mrf - bru_data$USE, throw = TRUE)
 p = plot(bru_resul, bru, "flow")
 ```
 
@@ -141,25 +141,20 @@ ggplot(
     aes(x = DTM, y = value, colour = variable)) + geom_line()
 ```
 
-Afterwards, calculation for the reservoir can be performed. At first, a wateres object for the corresponding shorter time series is created and evaporation and precipitation are calculated:
+Afterwards, calculation for the reservoir can be performed. At first, a wateres object for the corresponding shorter time series is created -- the time series of the previous `riv` object can be shortened by the `resize_input` command which keeps the evaporation and precipitation values:
 ```{r}
 idcs = which(riv$DTM %in% bru$DTM)
-riv_short = as.wateres(
-    data.frame(
-        DTM = riv$DTM[idcs], Q = riv$Q[idcs]), storage = attr(riv, "storage"),
-        area = attr(riv, "area"), eas = attr(riv, "eas"))
-riv_short = set_evaporation(riv_short, altitude = 529)
-riv_short = set_precipitation(riv_short, riv$P[idcs])
+riv_short = resize_input(riv, idcs[1], idcs[length(idcs)])
 ```
 
-Then, set withdrawal equal to the catchment deficits and a minimum residual flow value for the reservoir profile.^[The use of this MRF produces a bias since minimum residual flow demand has been already included in the catchment deficits; however it is applied to make calculations for catchment and reservoir consistent.]
+Then, set withdrawal (i.e. negative water use) equal to the catchment deficits and a minimum residual flow value for the reservoir profile.^[The use of this MRF produces a bias since minimum residual flow demand has been already included in the catchment deficits; however it is applied to make calculations for catchment and reservoir consistent.]
 
 ```{r}
-riv_short = set_withdrawal(riv_short, bru_resul$deficit)
+riv_short = set_wateruse(riv_short, -bru_resul$deficit)
 riv_mrf = 0.033
 ```
 
-Having catchment deficits defined as withdrawal, reservoir yield is equal to the minimum residual flow:
+Having catchment deficits defined as water use, reservoir yield is equal to the minimum residual flow:
 
 ```{r, fig.width = 7}
 riv_resul = calc_series(riv_short, yield = riv_mrf)
@@ -170,7 +165,7 @@ p = plot(riv_resul, riv_short, "storage")
 implying that the deficits would be reduced by the reservoir by `1 - sum(riv_resul$deficit) / sum(bru_resul$deficit)`, i.e. by `r 100 * round(1 - sum(riv_resul$deficit) / sum(bru_resul$deficit), 2)` %.
 
 ## Using hourly data
-Use of the `wateres` package is not limited to the long-term water balance estimation. Since the package supports also hourly time step and variable yield output, it can be also applied to e.g. flood wave transformation:
+Use of the `wateres` package is not limited to the long-term water balance estimation. Since the package supports also hourly and daily time steps and variable yield output, it can be also applied to e.g. flood wave transformation:
 ```{r fig.width = 5}
 rivh = as.wateres("../tests/testthat/rivendell_1h.txt", 14.4e6, 754e3, eas = eas, time_step = "hour")
 resul = calc_series(
