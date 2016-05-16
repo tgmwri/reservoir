@@ -39,8 +39,11 @@ plot(alpha_beta(riv))
 The package can be used to calculate:
 - long-term reservoir water balance,
 - water reservoir characteristics to estimate its efectiveness,
-- catchment and reservoir deficit volumes,
+- deficit volumes for individual catchments and reservoirs
+and their systems,
 - flood wave transformation.
 
 ## Further reading
-Current capabilities of the package are described in the [Reservoir Characteristics vignette](http://lapv.vuv.cz/wateres/vignettes/reservoir.html).
+Current capabilities of the package are described in the [Reservoir Characteristics]
+(http://lapv.vuv.cz/wateres/vignettes/reservoir.html) and [System of Reservoirs]
+(http://lapv.vuv.cz/wateres/vignettes/system.html) vignettes.
