@@ -80,4 +80,7 @@ test_that("reservoir input time series are resized", {
     resul = resize_input(reser, "1904-01-01", "1907-06-01")
     expect_equivalent(resul$DTM, seq(as.Date("1904-01-15"), by = "month", length.out = 41))
     expect_equivalent(resul$Q, rep(0, 41))
+
+    resize_input(reser, begin = "1902-01-15", type = "date")
+    resize_input(reser, end = "1902-01-15", type = "date")
 })

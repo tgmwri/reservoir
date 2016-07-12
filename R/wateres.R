@@ -218,8 +218,13 @@ resize_input <- function(reser, begin, end, type) UseMethod("resize_input")
 #' reser = as.wateres(reser, storage = 4e5, area = 754e3)
 #' reser = resize_input(reser, "2000-02-15", 20)
 resize_input.wateres <- function(reser, begin = 1, end = nrow(reser), type = NULL) {
-    begin_pos = value_to_position(begin, reser$DTM, attr(reser, "time_step"), "begin", type)
-    end_pos = value_to_position(end, reser$DTM, attr(reser, "time_step"), "end", type)
+    type_begin = type_end = type
+    if (!is.null(type)) {
+        type_begin = if (missing(begin)) "index" else type
+        type_end = if (missing(end)) "index" else type
+    }
+    begin_pos = value_to_position(begin, reser$DTM, attr(reser, "time_step"), "begin", type_begin)
+    end_pos = value_to_position(end, reser$DTM, attr(reser, "time_step"), "end", type_end)
     if (end_pos < begin_pos)
         stop("End for reservoir resizing cannot be less than begin.")
 
