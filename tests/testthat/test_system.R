@@ -35,10 +35,11 @@ test_that("check of system gives appopriate errors and warnings", {
 
 test_that("downstream ID is adjusted if a reservoir is removed", {
     riv_to_rivh = as.wateres("rivendell.txt", 14.4e6, 754e3, id = "riv", down_id = "rivh")
+    riv_to_rivh = resize_input(riv_to_rivh, "1981-01-15")
     rivh = as.wateres("rivendell_1h.txt", 14.4e6, 754e3, time_step = "hour", id = "rivh", down_id = "thar")
     sys = as.system(riv_to_rivh, rivh, thar)
     expect_equal(attr(sys[["riv"]], "down_id"), "rivh")
-    sys = check(sys)
+    expect_warning(sys <- check(sys), "does not contain monthly")
     expect_equal(attr(sys[["riv"]], "down_id"), "thar")
 })
 
@@ -48,7 +49,8 @@ test_that("system is adjusted after check", {
     rivh = as.wateres("rivendell_1h.txt", 14.4e6, 754e3, time_step = "hour", id = "rivh", down_id = "thar")
     thar = as.wateres("tharbad.txt", 41.3e6, 2672e3, id = "thar")
     sys = as.system(riv, riv2, rivh, thar)
-    expect_equivalent(check(sys), readRDS("system_check.rds"))
+    expect_warning(sys <- check(sys))
+    expect_equivalent(sys, readRDS("system_check.rds"))
 })
 
 riv_wateruse = -4e5
