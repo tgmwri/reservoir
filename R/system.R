@@ -203,9 +203,8 @@ set_up_ids <- function(system) {
     return(system)
 }
 
-# calculates maximum transferred volume for reservoirs in the system
-# starting from leaves, water exceeding deficits moved downwards and accumulated in the bottom reservoir to be redistributed later
-calc_max_transfer <- function(system, resers_done, series, def_pos) {
+# goes through all of the reservoirs starting from leaves and continuing to the bottom
+traverse <- function(system, resers_done, inner_function, series, def_pos) {
     bottom_id = find_bottom_id(system, names(system)[[1]], c())
     new_resers_done = c()
     for (curr_res in system) {
@@ -214,23 +213,7 @@ calc_max_transfer <- function(system, resers_done, series, def_pos) {
             next
         curr_up = attr(curr_res, "up_ids")
         if (is.null(curr_up) || all(curr_up %in% resers_done)) {
-            if (curr_id != bottom_id) {
-                curr_down = attr(curr_res, "down_id")
-                curr_max_transfer = series[[curr_id]]$storage[def_pos] + sum(attr(system[[curr_id]], "from_up")) # current storage and transfer from upper reservoirs
-                if (curr_max_transfer > 0) {
-                    if (series[[curr_id]]$deficit[def_pos] > 0) { # storage is zero
-                        def_ratio = series[[curr_id]]$deficit[def_pos] / curr_max_transfer
-                    }
-                    else { # storage greater than zero
-                        def_ratio = 0
-                    }
-                    for (res_id in names(system)) { # only upstream reservoirs are in from_up, so it is safe to copy all of them (rest is 0)
-                        attr(system[[curr_down]], "from_up")[res_id] = attr(system[[curr_down]], "from_up")[res_id] + (1 - def_ratio) * attr(system[[curr_id]], "from_up")[res_id]
-                        attr(system[[curr_id]], "from_up")[res_id] = attr(system[[curr_id]], "from_up")[res_id] - (1 - def_ratio) * attr(system[[curr_id]], "from_up")[res_id]
-                    }
-                    attr(system[[curr_down]], "from_up")[curr_id] = attr(system[[curr_down]], "from_up")[curr_id] + series[[curr_id]]$storage[def_pos]
-                }
-            }
+            system = inner_function(system, series, def_pos, curr_res, curr_id, bottom_id)
             new_resers_done = c(new_resers_done, curr_id)
         }
     }
@@ -238,7 +221,34 @@ calc_max_transfer <- function(system, resers_done, series, def_pos) {
     if (all.equal(sort(names(system)), sort(resers_done)) == TRUE)
         return(system)
     else
-        calc_max_transfer(system, resers_done, series, def_pos)
+        traverse(system, resers_done, inner_function, series, def_pos)
+}
+
+# calculates maximum transferred volume for reservoirs in the system
+# starting from leaves, water exceeding deficits moved downwards and accumulated in the bottom reservoir to be redistributed later
+calc_max_transfer_inner <- function(system, series, def_pos, curr_res, curr_id, bottom_id) {
+    if (curr_id != bottom_id) {
+        curr_down = attr(curr_res, "down_id")
+        curr_max_transfer = series[[curr_id]]$storage[def_pos] + sum(attr(system[[curr_id]], "from_up")) # current storage and transfer from upper reservoirs
+        if (curr_max_transfer > 0) {
+            if (series[[curr_id]]$deficit[def_pos] > 0) { # storage is zero
+                def_ratio = series[[curr_id]]$deficit[def_pos] / curr_max_transfer
+            }
+            else { # storage greater than zero
+                def_ratio = 0
+            }
+            for (res_id in names(system)) { # only upstream reservoirs are in from_up, so it is safe to copy all of them (rest is 0)
+                attr(system[[curr_down]], "from_up")[res_id] = attr(system[[curr_down]], "from_up")[res_id] + (1 - def_ratio) * attr(system[[curr_id]], "from_up")[res_id]
+                attr(system[[curr_id]], "from_up")[res_id] = attr(system[[curr_id]], "from_up")[res_id] - (1 - def_ratio) * attr(system[[curr_id]], "from_up")[res_id]
+            }
+            attr(system[[curr_down]], "from_up")[curr_id] = attr(system[[curr_down]], "from_up")[curr_id] + series[[curr_id]]$storage[def_pos]
+        }
+    }
+    return(system)
+}
+
+calc_max_transfer <- function(system, resers_done, series, def_pos) {
+    traverse(system, resers_done, calc_max_transfer_inner, series, def_pos)
 }
 
 # set transfers recursively for time steps with deficit from given time step to the end
