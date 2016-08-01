@@ -5,14 +5,17 @@
 \alias{calc_deficits.wateres_system}
 \title{Calculation of system of reservoirs with respect to deficits}
 \usage{
-calc_deficits(system, yields)
+calc_deficits(system, yields, initial_storages)
 
-\method{calc_deficits}{wateres_system}(system, yields)
+\method{calc_deficits}{wateres_system}(system, yields, initial_storages)
 }
 \arguments{
 \item{system}{A \code{wateres_system} object.}
 
 \item{yields}{A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.}
+
+\item{initial_storages}{A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing, all reservoirs
+are considered to be full initially.}
 }
 \value{
 A list consisting of two items: \code{single} with the results for independently calculated reservoirs and \code{system} with the results

@@ -79,7 +79,7 @@ thar_mrf = 2.718
 test_that("system is not calculated without yields", {
     system = as.system(riv, riv_paralel, riv2, thar)
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B3 = riv2_mrf, C = thar_mrf)
-    expect_error(calc_deficits(system, yields), "Yields are not provided")
+    expect_error(calc_deficits(system, yields), "Argument 'yields' does not provide values")
 })
 
 test_that("deficits for system of four reservoirs are calculated", {

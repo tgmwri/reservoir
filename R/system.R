@@ -148,7 +148,7 @@ check.wateres_system <- function(system) {
 }
 
 # calculates simply each reservoir in the system by using its input data
-calc_single <- function(system, yields, init_pos = 1, resul = NULL, only_part_ts = FALSE) {
+calc_single <- function(system, yields, initial_storages, init_pos = 1, resul = NULL, only_part_ts = FALSE) {
     if (is.null(resul))
         resul = list()
     min_last_pos = nrow(system[[1]])
@@ -160,7 +160,7 @@ calc_single <- function(system, yields, init_pos = 1, resul = NULL, only_part_ts
             init_pos_prev = if (init_pos == 1) 1 else init_pos - 1
             tmp_resul = calc_series(
                 system[[res]], yield = yields[curr_id],
-                initial_storage = if (init_pos > 2) resul[[curr_id]]$storage[init_pos - 2] else attr(system[[res]], "storage"),
+                initial_storage = if (init_pos > 2) resul[[curr_id]]$storage[init_pos - 2] else initial_storages[curr_id],
                 initial_pos = init_pos_prev,
                 last_pos = min_last_pos, till_def = TRUE, first_def_pos = init_pos)
 
@@ -186,7 +186,7 @@ calc_single <- function(system, yields, init_pos = 1, resul = NULL, only_part_ts
                 min_last_pos = last_pos
         }
         else {
-            resul[[curr_id]] = calc_series(system[[res]], yield = yields[curr_id])
+            resul[[curr_id]] = calc_series(system[[res]], yield = yields[curr_id], initial_storage = initial_storages[curr_id])
         }
     }
     return(resul)
@@ -252,8 +252,8 @@ calc_max_transfer <- function(system, resers_done, series, def_pos) {
 }
 
 # set transfers recursively for time steps with deficit from given time step to the end
-set_transfers_from_pos <- function(system, yields, init_pos, series = NULL) {
-    series = calc_single(system, yields, init_pos, series, only_part_ts = TRUE)
+set_transfers_from_pos <- function(system, yields, initial_storages, init_pos, series = NULL) {
+    series = calc_single(system, yields, initial_storages, init_pos, series, only_part_ts = TRUE)
     defs_sum = rowSums(as.data.frame(lapply(series, function(x) { x$deficit })))
     def_pos = which(defs_sum > 0)
     def_pos = def_pos[def_pos >= init_pos]
@@ -281,7 +281,7 @@ set_transfers_from_pos <- function(system, yields, init_pos, series = NULL) {
                 }
             }
         }
-        set_transfers_from_pos(system, yields, def_pos + 1, series)
+        set_transfers_from_pos(system, yields, initial_storages, def_pos + 1, series)
     }
     else {
         return(system)
@@ -290,7 +290,7 @@ set_transfers_from_pos <- function(system, yields, init_pos, series = NULL) {
 
 #' @rdname calc_deficits.wateres_system
 #' @export
-calc_deficits <- function(system, yields) UseMethod("calc_deficits")
+calc_deficits <- function(system, yields, initial_storages) UseMethod("calc_deficits")
 
 #' Calculation of system of reservoirs with respect to deficits
 #'
@@ -326,6 +326,8 @@ calc_deficits <- function(system, yields) UseMethod("calc_deficits")
 #'
 #' @param system A \code{wateres_system} object.
 #' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.
+#' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing, all reservoirs
+#'   are considered to be full initially.
 #' @return A list consisting of two items: \code{single} with the results for independently calculated reservoirs and \code{system} with the results
 #'   for the system. Each of the items is a list of the \code{wateres_series} objects for individual reservoirs. The object contains the water
 #'   balance variables returned by the \code{\link{calc_series}} functions. Moreover, \code{transfer} variable is added for the system results if has
@@ -346,22 +348,28 @@ calc_deficits <- function(system, yields) UseMethod("calc_deficits")
 #' thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
 #' sys = as.system(riv, thar)
 #' resul = calc_deficits(sys, c(riv = 0.14, thar = 8))
-calc_deficits.wateres_system <- function(system, yields) {
+calc_deficits.wateres_system <- function(system, yields, initial_storages) {
     system = check(system)
     system = set_up_ids(system)
 
-    yields = yields[names(yields) %in% names(system)]
-    if (anyNA(yields) || length(yields) < length(system))
-        stop("Yields are not provided for all reservoirs in the system.")
+    if (missing(initial_storages)) {
+        initial_storages = sapply(names(system), function(res) { attr(system[[res]], "storage") })
+    }
+    for (arg in c("yields", "initial_storages")) {
+        values = get(arg)
+        values = values[names(values) %in% names(system)]
+        if (anyNA(values) || length(values) < length(system))
+            stop(paste0("Argument '", arg, "' does not provide values for all reservoirs in the system."))
+    }
 
     resul = list(single = list(), system = list())
-    resul$single = calc_single(system, yields = yields)
+    resul$single = calc_single(system, yields = yields, initial_storages = initial_storages)
 
     # set transfer variable to be filled in set_transfers_from_pos
     for (res in 1:length(system)) {
         system[[res]]$T = 0
     }
-    system = set_transfers_from_pos(system, yields, 1)
-    resul$system = calc_single(system, yields = yields)
+    system = set_transfers_from_pos(system, yields, initial_storages, 1)
+    resul$system = calc_single(system, yields = yields, initial_storages = initial_storages)
     return(resul)
 }
