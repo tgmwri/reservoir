@@ -81,10 +81,12 @@ check <- function(system) UseMethod("check")
 #'   \itemize{
 #'     \item{any downstream reservoir does not exist in the system (NA is set instead of the downstream ID
 #'       in the system to be returned),}
-#'     \item{a reservoir does not contain monthly data (it is removed and downstream IDs of affected reservoirs are adjusted),}
+#'     \item{a reservoir does not contain data of time step identical with the time step of the first reservoir
+#'       (then it is removed and downstream IDs of affected reservoirs are adjusted),}
 #'     \item{a reservoir is not connected to the first reservoir in the system (it is removed),}
-#'     \item{a reservoir has not dates of time series identical to the first reservoir in the system (its time series are shortened
-#'       or the reservoir is removed completely in case of no intersection).}
+#'     \item{for daily or hourly data, a reservoir has time series of length different from time series of the first reservoir,}
+#'     \item{for monthly data, a reservoir has not dates of time series identical to the first reservoir in the system
+#'       (its time series are shortened or the reservoir is removed completely in case of no intersection).}
 #'   }
 #'   An error occurs if the system structure forms a cycle.
 #' @export
@@ -113,8 +115,14 @@ check.wateres_system <- function(system) {
         }
     }
     for (res in length(system):1) {
-        if (attr(system[[res]], "time_step") != "month") {
-            warning(paste0("Reservoir '", attr(system[[res]], "id"), "' will not be used because it does not contain monthly data."))
+        if (attr(system[[res]], "time_step") != attr(system[[1]], "time_step")) {
+            warning(paste0(
+                "Reservoir '", attr(system[[res]], "id"), "' will not be used because it does not contain data of time step '",
+                attr(system[[1]], "time_step"), "'."))
+            system = remove_reser(system, res)
+        }
+        else if (is.null(system[[res]]$DTM) && nrow(system[[res]]) != nrow(system[[1]])) {
+            warning(paste0("Reservoir '", attr(system[[res]], "id"), "' will not be used because length of its time series differs from the first reservoir."))
             system = remove_reser(system, res)
         }
     }
@@ -128,20 +136,22 @@ check.wateres_system <- function(system) {
             system = remove_reser(system, res)
         }
     }
-    common_ts = as.character(system[[1]]$DTM)
-    for (res in length(system):min(length(system), 2)) {
-        tmp_common = intersect(common_ts, as.character(system[[res]]$DTM))
-        if (length(tmp_common) == 0) {
-            warning(paste0("Reservoir '", attr(system[[res]], "id"), "' will not be used because of different dates of time series."))
-            system = remove_reser(system, res)
+    if (!is.null(system[[1]]$DTM)) {
+        common_ts = as.character(system[[1]]$DTM)
+        for (res in length(system):min(length(system), 2)) {
+            tmp_common = intersect(common_ts, as.character(system[[res]]$DTM))
+            if (length(tmp_common) == 0) {
+                warning(paste0("Reservoir '", attr(system[[res]], "id"), "' will not be used because of different dates of time series."))
+                system = remove_reser(system, res)
+            }
+            else
+                common_ts = tmp_common
         }
-        else
-            common_ts = tmp_common
-    }
-    for (res in 1:length(system)) {
-        if (length(system[[res]]$DTM) != length(common_ts)) {
-            warning(paste0("Time series for reservoir '", attr(system[[res]], "id"), "' will be shortened to common period for all reservoirs."))
-            system[[res]] = resize_input(system[[res]], common_ts[1], common_ts[length(common_ts)])
+        for (res in 1:length(system)) {
+            if (length(system[[res]]$DTM) != length(common_ts)) {
+                warning(paste0("Time series for reservoir '", attr(system[[res]], "id"), "' will be shortened to common period for all reservoirs."))
+                system[[res]] = resize_input(system[[res]], common_ts[1], common_ts[length(common_ts)])
+            }
         }
     }
     return(system)

@@ -23,9 +23,11 @@ A warning is given if:
   \itemize{
     \item{any downstream reservoir does not exist in the system (NA is set instead of the downstream ID
       in the system to be returned),}
-    \item{a reservoir does not contain monthly data (it is removed and downstream IDs of affected reservoirs are adjusted),}
+    \item{a reservoir does not contain data of time step identical with the time step of the first reservoir
+      (then it is removed and downstream IDs of affected reservoirs are adjusted),}
     \item{a reservoir is not connected to the first reservoir in the system (it is removed),}
-    \item{a reservoir has not dates of time series identical to the first reservoir in the system (its time series are shortened
+    \item{for daily or hourly data, a reservoir has time series of length different from time series of the first reservoir,}
+    \item{for monthly data, a reservoir has not dates of time series identical to the first reservoir in the system (its time series are shortened
       or the reservoir is removed completely in case of no intersection).}
   }
   An error occurs if the system structure forms a cycle.
