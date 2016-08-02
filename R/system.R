@@ -242,7 +242,7 @@ calc_max_transfer_inner <- function(system, series, def_pos, curr_res, curr_id, 
         curr_max_transfer = series[[curr_id]]$storage[def_pos] + sum(attr(system[[curr_id]], "from_up")) # current storage and transfer from upper reservoirs
         if (curr_max_transfer > 0) {
             if (series[[curr_id]]$deficit[def_pos] > 0) { # storage is zero
-                def_ratio = series[[curr_id]]$deficit[def_pos] / curr_max_transfer
+                def_ratio = min(series[[curr_id]]$deficit[def_pos] / curr_max_transfer, 1)
             }
             else { # storage greater than zero
                 def_ratio = 0

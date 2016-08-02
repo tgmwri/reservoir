@@ -27,8 +27,8 @@ A warning is given if:
       (then it is removed and downstream IDs of affected reservoirs are adjusted),}
     \item{a reservoir is not connected to the first reservoir in the system (it is removed),}
     \item{for daily or hourly data, a reservoir has time series of length different from time series of the first reservoir,}
-    \item{for monthly data, a reservoir has not dates of time series identical to the first reservoir in the system (its time series are shortened
-      or the reservoir is removed completely in case of no intersection).}
+    \item{for monthly data, a reservoir has not dates of time series identical to the first reservoir in the system
+      (its time series are shortened or the reservoir is removed completely in case of no intersection).}
   }
   An error occurs if the system structure forms a cycle.
 }
