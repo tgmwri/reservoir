@@ -3,7 +3,7 @@
 #' Plots time series of chosen water balance variables for the reservoir, by using the \code{ggplot2} package.
 #'
 #' @param x A \code{wateres_series} object with reservoir variables as returned by \code{\link{calc_series.wateres}}.
-#' @param reser A corresponding \code{wateres} object whose series of inflow and number of minutes will be used.
+#' @param reser A corresponding \code{wateres} object whose series of number of minutes will be used.
 #' @param type A type of variables to be plotted: \dQuote{storage}, \dQuote{level} or \dQuote{flow} which plots all of the remaining variables.
 #' @param begin A time step to begin the plot.
 #' @param end A time step to end the plot.
@@ -33,7 +33,6 @@ plot.wateres_series <- function(x, reser, type = "flow", begin = 1, end = nrow(x
     units = c(storage = "mil. m\u00b3", flow = "m\u00b3.s\u207b\u00b9", level = "m.a.s.l.")
     type = types[pmatch(type, types, 1)]
     if (type == "flow") {
-        x = cbind(inflow = reser$Q, x)
         vars = colnames(x)[!(colnames(x) %in% c("storage", "level"))]
     }
     else {

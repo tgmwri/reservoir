@@ -302,20 +302,21 @@ RcppExport SEXP calc_storage(
     }
   }
   convert_m3(reservoir.var[wateres::YIELD], reservoir.minutes, false);
+  convert_m3(reservoir.var[wateres::INFLOW], reservoir.minutes, false);
 
   vector<double> resul_var;
-  unsigned var_count = reservoir.var_count - 1 + is_transfer;
+  unsigned var_count = reservoir.var_count + is_transfer;
   resul_var.resize(time_steps - initial_pos);
 
-  string output_var_names[7] = { "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit", "transfer" };
-  wateres::var_name output_vars[7] = {
-    wateres::YIELD, wateres::YIELD, wateres::PRECIPITATION, wateres::EVAPORATION,
+  string output_var_names[8] = { "inflow", "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit", "transfer" };
+  wateres::var_name output_vars[8] = {
+    wateres::INFLOW, wateres::YIELD, wateres::YIELD, wateres::PRECIPITATION, wateres::EVAPORATION,
     wateres::WATERUSE, wateres::DEFICIT, wateres::TRANSFER };
 
   List resul;
   for (unsigned v = 0; v < var_count; v++) {
     for (ts = initial_pos; ts < time_steps; ts++) {
-      if (v == 0)
+      if (v == 1)
         resul_var[ts - initial_pos] = reservoir.storage[ts + 1]; //initial storage not returned
       else
         resul_var[ts - initial_pos] = reservoir.var[output_vars[v]][ts];

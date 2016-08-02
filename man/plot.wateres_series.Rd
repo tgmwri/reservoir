@@ -10,7 +10,7 @@
 \arguments{
 \item{x}{A \code{wateres_series} object with reservoir variables as returned by \code{\link{calc_series.wateres}}.}
 
-\item{reser}{A corresponding \code{wateres} object whose series of inflow and number of minutes will be used.}
+\item{reser}{A corresponding \code{wateres} object whose series of number of minutes will be used.}
 
 \item{type}{A type of variables to be plotted: \dQuote{storage}, \dQuote{level} or \dQuote{flow} which plots all of the remaining variables.}
 

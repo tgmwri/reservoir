@@ -107,8 +107,8 @@ test_that("transfer greater than storage is decreased", {
     riv = set_wateruse(riv, -4e5)
     riv$T = c(-15249091, rep(0, nrow(riv) - 1))
     riv_resul = calc_series(riv, yield = 0.033)
-    expect_equivalent(c(0, 0.033, 0, 0, -400000, 0, -14249091), as.numeric(riv_resul[1, ]))
-    expect_equivalent(c(0, 0.033, 0, 0, -309657.6, 90342.4, 0), as.numeric(riv_resul[2, ]))
+    expect_equivalent(c(0.126, 0, 0.033, 0, 0, -400000, 0, -14249091), as.numeric(riv_resul[1, ]))
+    expect_equivalent(c(0.161, 0, 0.033, 0, 0, -309657.6, 90342.4, 0), as.numeric(riv_resul[2, ]))
 })
 
 test_that("negative wateruse is effective also if storage is zero", {
