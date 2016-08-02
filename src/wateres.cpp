@@ -72,6 +72,7 @@ wateres::wateres(
   unsigned row_count = reser.nrows();
   vector<string> col_names = as<vector<string> >(reser.attr("names"));
   var.resize(var_count);
+
   for (unsigned v = 0; v < var_count; v++) {
     if (find(col_names.begin(), col_names.end(), var_names[v]) != col_names.end()) {
       var[v] = as<vector<double> >(reser[var_names[v]]);
@@ -80,6 +81,11 @@ wateres::wateres(
       var[v].resize(row_count, 0);
     }
   }
+  //custom inflow from another reservoir instead of natural inflow
+  if (find(col_names.begin(), col_names.end(), "I") != col_names.end()) {
+    var[INFLOW] = as<vector<double> >(reser["I"]);
+  }
+
   this->minutes = as<vector<unsigned> >(reser["minutes"]);
   area = as<double>(reser.attr("area"));
   eas = as<DataFrame>(reser.attr("eas"));

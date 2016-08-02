@@ -378,6 +378,8 @@ calc_deficits.wateres_system <- function(system, yields, initial_storages) {
     # set transfer variable to be filled in set_transfers_from_pos
     for (res in 1:length(system)) {
         system[[res]]$T = 0
+        if (!is.null(attr(system[[res]], "up_ids")))
+            system[[res]]$I = system[[res]]$Q
     }
     system = set_transfers_from_pos(system, yields, initial_storages, 1)
     resul$system = calc_single(system, yields = yields, initial_storages = initial_storages)
