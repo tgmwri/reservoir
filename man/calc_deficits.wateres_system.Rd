@@ -3,11 +3,12 @@
 \name{calc_deficits}
 \alias{calc_deficits}
 \alias{calc_deficits.wateres_system}
-\title{Calculation of system of reservoirs with respect to deficits}
+\title{Calculation of system of reservoirs}
 \usage{
-calc_deficits(system, yields, initial_storages)
+calc_deficits(system, yields, initial_storages, types)
 
-\method{calc_deficits}{wateres_system}(system, yields, initial_storages)
+\method{calc_deficits}{wateres_system}(system, yields, initial_storages,
+  types = c("single_plain", "system_plain"))
 }
 \arguments{
 \item{system}{A \code{wateres_system} object.}
@@ -16,24 +17,29 @@ calc_deficits(system, yields, initial_storages)
 
 \item{initial_storages}{A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing, all reservoirs
 are considered to be full initially.}
+
+\item{types}{A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
+\dQuote{system_transfer} (see details).}
 }
 \value{
-A list consisting of two items: \code{single} with the results for independently calculated reservoirs and \code{system} with the results
-  for the system. Each of the items is a list of the \code{wateres_series} objects for individual reservoirs. The object contains the water
-  balance variables returned by the \code{\link{calc_series}} functions. Moreover, \code{transfer} variable is added for the system results if has
-  non-zero value at least in one time step.
+A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
+  objects for individual reservoirs. The object contains the water balance variables returned by the \code{\link{calc_series}} functions.
+  Moreover, \code{transfer} variable is added for the system results if has non-zero value at least in one time step.
 }
 \description{
-Calculates time series of variables for reservoirs in the system in order to estimate influence of the system on deficit volumes.
-Two variants are outputted: firstly, each reservoir is calculated independently of the system; secondly, water transfers decreasing
-deficit volumes are added to the system.
+Calculates time series of variables for reservoirs organized in a system. Four types of calculation are available, depending on whether
+inflows from upstream reservoirs and water transfer between reservoirs are considered.
 }
 \details{
-The purpose of this system calculation is a rough estimation of deficit volumes elimination by the system. Therefore, water storage
-is just redistributed within the system. Reservoir outflows are not considered as inflow to the reservoirs downwards; input time series of inflow
-for individual reservoirs are used instead.
+The types of calculation selected as the \code{types} argument are as follows:
+\itemize{
+  \item{\code{single_plain} - reservoirs are calculated independently of the system.}
+  \item{\code{single_transfer} - as above, and water transfer is added to decrease deficit volumes; a fictional scenario for testing purposes.}
+  \item{\code{system_plain} - reservoirs are calculated within the system, i.e. reservoir inflow consists of yield of corresponding upstream
+    reservoirs and runoff from the intercatchment (derived from the original inflow series to reservoirs).}
+  \item{\code{system_transfer} - as above, and water transfer is added.}}
 
-The water redistribution is carried out independently for the time steps when deficit in any of the reservoirs occurs. Future time steps are not
+The water transfer (redistribution) is carried out independently for the time steps when deficit in any of the reservoirs occurs. Future time steps are not
 considered, i.e. it is possible that deficit decrease in a time step will cause deficit increase in the next time step.
 
 For a given time step, the following algorithm is applied:

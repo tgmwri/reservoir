@@ -214,7 +214,7 @@ set_up_ids <- function(system) {
 }
 
 # goes through all of the reservoirs starting from leaves and continuing to the bottom
-traverse <- function(system, resers_done, inner_function, series, def_pos) {
+traverse <- function(system, resers_done, inner_function, series, def_pos, use_attr_series = TRUE) {
     bottom_id = find_bottom_id(system, names(system)[[1]], c())
     new_resers_done = c()
     for (curr_res in system) {
@@ -223,7 +223,9 @@ traverse <- function(system, resers_done, inner_function, series, def_pos) {
             next
         curr_up = attr(curr_res, "up_ids")
         if (is.null(curr_up) || all(curr_up %in% resers_done)) {
-            system = inner_function(system, series, def_pos, curr_res, curr_id, bottom_id)
+            system = inner_function(system, series, def_pos, curr_id, bottom_id)
+            if (use_attr_series)
+                series = attr(system, "series")
             new_resers_done = c(new_resers_done, curr_id)
         }
     }
@@ -231,32 +233,89 @@ traverse <- function(system, resers_done, inner_function, series, def_pos) {
     if (all.equal(sort(names(system)), sort(resers_done)) == TRUE)
         return(system)
     else
-        traverse(system, resers_done, inner_function, series, def_pos)
+        traverse(system, resers_done, inner_function, series, def_pos, use_attr_series)
 }
 
-# calculates maximum transferred volume for reservoirs in the system
-# starting from leaves, water exceeding deficits moved downwards and accumulated in the bottom reservoir to be redistributed later
-calc_max_transfer_inner <- function(system, series, def_pos, curr_res, curr_id, bottom_id) {
-    if (curr_id != bottom_id) {
-        curr_down = attr(curr_res, "down_id")
-        curr_max_transfer = series[[curr_id]]$storage[def_pos] + sum(attr(system[[curr_id]], "from_up")) # current storage and transfer from upper reservoirs
-        if (curr_max_transfer > 0) {
-            if (series[[curr_id]]$deficit[def_pos] > 0) { # storage is zero
-                def_ratio = min(series[[curr_id]]$deficit[def_pos] / curr_max_transfer, 1)
-            }
-            else { # storage greater than zero
-                def_ratio = 0
-            }
-            for (res_id in names(system)) { # only upstream reservoirs are in from_up, so it is safe to copy all of them (rest is 0)
-                attr(system[[curr_down]], "from_up")[res_id] = attr(system[[curr_down]], "from_up")[res_id] + (1 - def_ratio) * attr(system[[curr_id]], "from_up")[res_id]
-                attr(system[[curr_id]], "from_up")[res_id] = attr(system[[curr_id]], "from_up")[res_id] - (1 - def_ratio) * attr(system[[curr_id]], "from_up")[res_id]
-            }
-            attr(system[[curr_down]], "from_up")[curr_id] = attr(system[[curr_down]], "from_up")[curr_id] + series[[curr_id]]$storage[def_pos]
+# calculates inflows to reservoirs from upper reservoirs plus intercatchment
+calc_inflows_inner <- function(system, series, def_pos, curr_id, bottom_id, recalc_series = TRUE) {
+    curr_up = attr(system[[curr_id]], "up_ids")
+    if (!is.null(curr_up)) {
+        tmp_len = nrow(system[[curr_id]])
+        sum_up_Q = sum_up_yield = vector("numeric", tmp_len - def_pos + 1)
+        for (up_id in curr_up) {
+            if (recalc_series)
+                series[[up_id]] = calc_series(system[[up_id]], yield = attr(system, "yields")[up_id], initial_storage = attr(system, "initial_storages")[up_id])
+            sum_up_Q = sum_up_Q + system[[up_id]]$Q[def_pos:tmp_len]
+            sum_up_yield = sum_up_yield + series[[up_id]]$yield[def_pos:tmp_len]
         }
+        intercatch_Q = system[[curr_id]]$Q[def_pos:tmp_len] - sum_up_Q
+        if (any(intercatch_Q < 0)) {
+            warning("There is a negative inflow from an intercatchment.")
+        }
+        system[[curr_id]]$I[def_pos:tmp_len] = sum_up_yield + intercatch_Q
     }
     return(system)
 }
 
+calc_inflows <- function(system, resers_done, series, def_pos) {
+    traverse(system, resers_done, calc_inflows_inner, series, def_pos, FALSE)
+}
+
+calc_max_transfer_inner <- function(system, series, def_pos, curr_id, bottom_id) {
+    # set inflows for current reservoir (influenced by new values of upstreams reservoirs)
+    if (attr(system, "calc_type") != "single_transfer")
+        system = calc_inflows_inner(system, series, def_pos, curr_id, bottom_id, FALSE)
+
+    # calculate the current reservoir (input transfers have been set in previous calculation of upstream reservoirs)
+    series[[curr_id]] = calc_series(system[[curr_id]], yield = attr(system, "yields")[curr_id], initial_storage = attr(system, "initial_storages")[curr_id])
+
+    # set final transfers for current current reservoir and transfer to the downstream reservoir
+    # amount from upstream reservoirs
+    transfer_from_up = 0
+    if (!is.null(series[[curr_id]]$transfer[def_pos]))
+        transfer_from_up = series[[curr_id]]$transfer[def_pos]
+
+    # amount available to be transferred to the downstream reservoir
+    # calculated from resulting series that includes also transfer from upstream reservoir
+    yield_excess = (series[[curr_id]]$yield[def_pos] - attr(system, "yields")[[curr_id]]) * 60 * system[[curr_id]]$minutes[def_pos]
+    transfer_to_down = series[[curr_id]]$storage[def_pos] + max(yield_excess, 0) - series[[curr_id]]$deficit[def_pos]
+
+    if (transfer_from_up > 0 || transfer_to_down > 0) {
+        def_ratio = max(min((transfer_from_up - transfer_to_down) / transfer_from_up, 1), 0)
+        res_down = attr(system[[curr_id]], "down_id")
+        is_bottom = is.na(res_down)
+        res_all = names(system)[names(system) != curr_id]
+
+        # only upstream reservoirs are in from_up, so it is safe to copy all of them (rest is 0)
+        if (!is_bottom) {
+            res_all = res_all[res_all != res_down]
+            attr(system[[res_down]], "from_up")[res_all] = attr(system[[res_down]], "from_up")[res_all] + (1 - def_ratio) * attr(system[[curr_id]], "from_up")[res_all]
+            attr(system[[res_down]], "from_up")[curr_id] = attr(system[[res_down]], "from_up")[curr_id] + max(transfer_to_down - transfer_from_up, 0)
+        }
+        attr(system[[curr_id]], "from_up")[res_all] = attr(system[[curr_id]], "from_up")[res_all] - (1 - def_ratio) * attr(system[[curr_id]], "from_up")[res_all]
+
+        # add transfers to input
+        for (res_id in names(system)) {
+            system[[res_id]]$T[def_pos] = 0
+            for (from_res_id in names(attr(system[[res_id]], "from_up"))) {
+                curr_from_up = attr(system[[res_id]], "from_up")[from_res_id]
+                if (curr_from_up > 0) {
+                    system[[res_id]]$T[def_pos] = system[[res_id]]$T[def_pos] + curr_from_up
+                    system[[from_res_id]]$T[def_pos] = system[[from_res_id]]$T[def_pos] - curr_from_up
+                }
+            }
+        }
+        # recalculate the current reservoir for final transfers (to be used for downward reservoir)
+        if (!is_bottom) {
+            series[[curr_id]] = calc_series(system[[curr_id]], yield = attr(system, "yields")[curr_id], initial_storage = attr(system, "initial_storages")[curr_id])
+        }
+    }
+    attr(system, "series") = series
+    return(system)
+}
+
+# calculates maximum transferred volume for reservoirs in the system
+# starting from leaves, water exceeding deficits moved downwards and accumulated in the bottom reservoir to be redistributed later
 calc_max_transfer <- function(system, resers_done, series, def_pos) {
     traverse(system, resers_done, calc_max_transfer_inner, series, def_pos)
 }
@@ -264,6 +323,8 @@ calc_max_transfer <- function(system, resers_done, series, def_pos) {
 # set transfers recursively for time steps with deficit from given time step to the end
 set_transfers_from_pos <- function(system, yields, initial_storages, init_pos, series = NULL) {
     series = calc_single(system, yields, initial_storages, init_pos, series, only_part_ts = TRUE)
+    if (attr(system, "calc_type") != "single_transfer")
+        system = calc_inflows(system, c(), series, 1) # initial calculation of inflows because then it starts from def_pos
     defs_sum = rowSums(as.data.frame(lapply(series, function(x) { x$deficit })))
     def_pos = which(defs_sum > 0)
     def_pos = def_pos[def_pos >= init_pos]
@@ -273,24 +334,9 @@ set_transfers_from_pos <- function(system, yields, initial_storages, init_pos, s
             attr(system[[res]], "from_up") = vector("numeric", length(system))
             names(attr(system[[res]], "from_up")) = names(system)
         }
+
         system = calc_max_transfer(system, c(), series, def_pos)
-
-        # return the exceeding transfered volume from the bottom reservoir
-        bottom_res = find_bottom_id(system, names(system)[[1]], c())
-        sum_from_up = sum(attr(system[[bottom_res]], "from_up"))
-        if (sum_from_up > 0)
-            attr(system[[bottom_res]], "from_up") = attr(system[[bottom_res]], "from_up") * min(1, series[[bottom_res]]$deficit[def_pos] / sum_from_up)
-
-        # add transfers to input time series
-        for (res_id in names(system)) {
-            for (from_res_id in names(attr(system[[res_id]], "from_up"))) {
-                curr_from_up = attr(system[[res_id]], "from_up")[from_res_id]
-                if (curr_from_up > 0) {
-                    system[[res_id]]$T[def_pos] = system[[res_id]]$T[def_pos] + curr_from_up
-                    system[[from_res_id]]$T[def_pos] = system[[from_res_id]]$T[def_pos] - curr_from_up
-                }
-            }
-        }
+        series = attr(system, "series")
         set_transfers_from_pos(system, yields, initial_storages, def_pos + 1, series)
     }
     else {
@@ -300,19 +346,22 @@ set_transfers_from_pos <- function(system, yields, initial_storages, init_pos, s
 
 #' @rdname calc_deficits.wateres_system
 #' @export
-calc_deficits <- function(system, yields, initial_storages) UseMethod("calc_deficits")
+calc_deficits <- function(system, yields, initial_storages, types) UseMethod("calc_deficits")
 
-#' Calculation of system of reservoirs with respect to deficits
+#' Calculation of system of reservoirs
 #'
-#' Calculates time series of variables for reservoirs in the system in order to estimate influence of the system on deficit volumes.
-#' Two variants are outputted: firstly, each reservoir is calculated independently of the system; secondly, water transfers decreasing
-#' deficit volumes are added to the system.
+#' Calculates time series of variables for reservoirs organized in a system. Four types of calculation are available, depending on whether
+#' inflows from upstream reservoirs and water transfer between reservoirs are considered.
 #'
-#' The purpose of this system calculation is a rough estimation of deficit volumes elimination by the system. Therefore, water storage
-#' is just redistributed within the system. Reservoir outflows are not considered as inflow to the reservoirs downwards; input time series of inflow
-#' for individual reservoirs are used instead.
+#' The types of calculation selected as the \code{types} argument are as follows:
+#' \itemize{
+#'   \item{\code{single_plain} - reservoirs are calculated independently of the system.}
+#'   \item{\code{single_transfer} - as above, and water transfer is added to decrease deficit volumes; a fictional scenario for testing purposes.}
+#'   \item{\code{system_plain} - reservoirs are calculated within the system, i.e. reservoir inflow consists of yield of corresponding upstream
+#'     reservoirs and runoff from the intercatchment (derived from the original inflow series to reservoirs).}
+#'   \item{\code{system_transfer} - as above, and water transfer is added.}}
 #'
-#' The water redistribution is carried out independently for the time steps when deficit in any of the reservoirs occurs. Future time steps are not
+#' The water transfer (redistribution) is carried out independently for the time steps when deficit in any of the reservoirs occurs. Future time steps are not
 #' considered, i.e. it is possible that deficit decrease in a time step will cause deficit increase in the next time step.
 #'
 #' For a given time step, the following algorithm is applied:
@@ -338,10 +387,11 @@ calc_deficits <- function(system, yields, initial_storages) UseMethod("calc_defi
 #' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.
 #' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing, all reservoirs
 #'   are considered to be full initially.
-#' @return A list consisting of two items: \code{single} with the results for independently calculated reservoirs and \code{system} with the results
-#'   for the system. Each of the items is a list of the \code{wateres_series} objects for individual reservoirs. The object contains the water
-#'   balance variables returned by the \code{\link{calc_series}} functions. Moreover, \code{transfer} variable is added for the system results if has
-#'   non-zero value at least in one time step.
+#' @param types A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
+#'   \dQuote{system_transfer} (see details).
+#' @return A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
+#'   objects for individual reservoirs. The object contains the water balance variables returned by the \code{\link{calc_series}} functions.
+#'   Moreover, \code{transfer} variable is added for the system results if has non-zero value at least in one time step.
 #' @seealso \code{\link{calc_series}} for calculating individual reservoirs
 #' @export
 #' @examples
@@ -358,7 +408,7 @@ calc_deficits <- function(system, yields, initial_storages) UseMethod("calc_defi
 #' thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
 #' sys = as.system(riv, thar)
 #' resul = calc_deficits(sys, c(riv = 0.14, thar = 8))
-calc_deficits.wateres_system <- function(system, yields, initial_storages) {
+calc_deficits.wateres_system <- function(system, yields, initial_storages, types = c("single_plain", "system_plain")) {
     system = check(system)
     system = set_up_ids(system)
 
@@ -371,17 +421,42 @@ calc_deficits.wateres_system <- function(system, yields, initial_storages) {
         if (anyNA(values) || length(values) < length(system))
             stop(paste0("Argument '", arg, "' does not provide values for all reservoirs in the system."))
     }
+    attr(system, "yields") = yields
+    attr(system, "initial_storages") = initial_storages
 
-    resul = list(single = list(), system = list())
-    resul$single = calc_single(system, yields = yields, initial_storages = initial_storages)
-
-    # set transfer variable to be filled in set_transfers_from_pos
-    for (res in 1:length(system)) {
-        system[[res]]$T = 0
-        if (!is.null(attr(system[[res]], "up_ids")))
-            system[[res]]$I = system[[res]]$Q
+    initialize_input <- function(system, res, var, is) {
+        if (is)
+            system[[res]][[var]] = 0
+        else if (!is.null(system[[res]][[var]]))
+            system[[res]][[var]] = NULL
+        return(system)
     }
-    system = set_transfers_from_pos(system, yields, initial_storages, 1)
-    resul$system = calc_single(system, yields = yields, initial_storages = initial_storages)
+
+    resul = list()
+    all_types = c("single_plain", "system_plain", "system_transfer",  "single_transfer")
+    for (ct in types) {
+        matched = pmatch(ct, all_types, -1)
+        if (matched == -1)
+            stop("Unknown or ambiguous value '", ct, "' of argument 'types'.")
+        else
+            ct = all_types[matched]
+
+        attr(system, "calc_type") = ct
+        for (res in 1:length(system)) {
+            system = initialize_input(system, res, "T", grepl("transfer", ct))
+            if (!is.null(attr(system[[res]], "up_ids"))) {
+                system = initialize_input(system, res, "I", grepl("system", ct))
+            }
+        }
+
+        if (ct == "system_plain") {
+            series = calc_single(system, yields, initial_storages)
+            system = calc_inflows(system, c(), series, 1)
+        }
+        else if (grepl("transfer", ct)) {
+            system = set_transfers_from_pos(system, yields, initial_storages, 1)
+        }
+        resul[[ct]] = calc_single(system, yields, initial_storages)
+    }
     return(resul)
 }

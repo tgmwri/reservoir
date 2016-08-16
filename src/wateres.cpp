@@ -292,6 +292,9 @@ RcppExport SEXP calc_storage(
   for (ts = initial_pos; ts < time_steps; ts++) {
     reservoir.var[wateres::YIELD][ts] = yield_req[ts];
     reservoir.storage[ts + 1] = reservoir.storage[ts] + reservoir.var[wateres::INFLOW][ts];
+    //negative inflow should not be allowed, but just to be sure - otherwise balance calculation would be destroyed
+    if (reservoir.storage[ts + 1] < 0)
+      reservoir.storage[ts + 1] = 0;
     double withdrawal_req = reservoir.var[wateres::WATERUSE][ts];
     reservoir.transfer_add = reservoir.wateruse_add = true;
     reservoir.calc_balance_var(ts, wateres::WATERUSE);
