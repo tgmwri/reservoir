@@ -37,7 +37,7 @@ plot(alpha_beta(riv))
 
 ## Use cases
 The package can be used to calculate:
-- long-term reservoir water balance,
+- long-term water balance of reservoirs and their systems,
 - water reservoir characteristics to estimate its efectiveness,
 - deficit volumes for individual catchments and reservoirs
 and their systems,
