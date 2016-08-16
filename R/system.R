@@ -250,7 +250,7 @@ calc_inflows_inner <- function(system, series, def_pos, curr_id, bottom_id, reca
         }
         intercatch_Q = system[[curr_id]]$Q[def_pos:tmp_len] - sum_up_Q
         if (any(intercatch_Q < 0)) {
-            warning("There is a negative inflow from an intercatchment.")
+            stop("Negative inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(intercatch_Q < 0)[1], ") is not allowed.")
         }
         system[[curr_id]]$I[def_pos:tmp_len] = sum_up_yield + intercatch_Q
     }

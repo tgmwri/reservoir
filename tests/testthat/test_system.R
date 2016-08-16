@@ -148,9 +148,9 @@ riv_mrf = 0.033
 riv_paralel = as.wateres(riv_data, 14.4e6, 754e3, id = "A2", down_id = "B")
 riv_paralel = set_wateruse(riv_paralel, rep(riv_wateruse, nrow(riv_paralel)))
 
-riv2_wateruse = riv_wateruse * 1.12
+riv2_wateruse = riv_wateruse * 2.12
 riv2_data = riv_data
-riv2_data$Q = riv2_data$Q * 1.12
+riv2_data$Q = riv2_data$Q * 2.12
 riv2 = as.wateres(riv2_data, 14.4e6, 754e3, id = "B", down_id = "C")
 riv2 = set_wateruse(riv2, rep(riv2_wateruse, nrow(riv2)))
 riv2_mrf = 0.033
@@ -168,8 +168,8 @@ test_that("system is not calculated without yields", {
 })
 
 test_that("system is not calculated if wrong calculation type is given", {
-    system = as.system(riv, riv2)
-    yields = c(A1 = riv_mrf, B = riv2_mrf)
+    system = as.system(riv, riv2, thar)
+    yields = c(A1 = riv_mrf, B = riv2_mrf, C = thar_mrf)
     expect_error(calc_deficits(system, yields, types = "system"), "Unknown or ambiguous value 'system'")
     expect_error(calc_deficits(system, yields, types = "nesmysl"), "Unknown or ambiguous value 'nesmysl'")
 })
@@ -182,7 +182,7 @@ test_that("system of four reservoirs is calculated", {
             system, yields, types = c("single_plain", "system_plain", "system_transfer", "single_transfer")),
         readRDS("system_4reser.rds"))
 
-    riv2$W[108] = riv2$W[108] - 5845586.9 # decrease water use to get deficit -9e5 in reservoir B
+    riv2$W[108] = riv2$W[108] - 4537238.1 # decrease water use to get deficit -9e5 in reservoir B for single_plain
     system = as.system(riv, riv_paralel, riv2, thar)
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B = riv2_mrf, C = thar_mrf)
     expect_equivalent(
