@@ -9,7 +9,7 @@ test_that("system of four hourly empty reservoirs is calculated", {
     sys = as.system(res_a1, res_a2, res_b, res_c)
     yields = c(A1 = 4, A2 = 7, B = 20, C = 29)
     initial_storages = c(A1 = 0, A2 = 0, B = 0, C = 0)
-    resul = calc_deficits(sys, yields, initial_storages, c("single_plain", "system_plain", "single_transfer", "system_transfer"))
+    resul = calc_system(sys, yields, initial_storages, c("single_plain", "system_plain", "single_transfer", "system_transfer"))
 
     sin_plain = resul$single_plain
     sin_transfer = resul$single_transfer
@@ -164,21 +164,21 @@ thar_mrf = 2.718
 test_that("system is not calculated without yields", {
     system = as.system(riv, riv_paralel, riv2, thar)
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B3 = riv2_mrf, C = thar_mrf)
-    expect_error(calc_deficits(system, yields), "Argument 'yields' does not provide values")
+    expect_error(calc_system(system, yields), "Argument 'yields' does not provide values")
 })
 
 test_that("system is not calculated if wrong calculation type is given", {
     system = as.system(riv, riv2, thar)
     yields = c(A1 = riv_mrf, B = riv2_mrf, C = thar_mrf)
-    expect_error(calc_deficits(system, yields, types = "system"), "Unknown or ambiguous value 'system'")
-    expect_error(calc_deficits(system, yields, types = "nesmysl"), "Unknown or ambiguous value 'nesmysl'")
+    expect_error(calc_system(system, yields, types = "system"), "Unknown or ambiguous value 'system'")
+    expect_error(calc_system(system, yields, types = "nesmysl"), "Unknown or ambiguous value 'nesmysl'")
 })
 
 test_that("system of four reservoirs is calculated", {
     system = as.system(riv, riv_paralel, riv2, thar)
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B = riv2_mrf, C = thar_mrf)
     expect_equivalent(
-        calc_deficits(
+        calc_system(
             system, yields, types = c("single_plain", "system_plain", "system_transfer", "single_transfer")),
         readRDS("system_4reser.rds"))
 
@@ -186,7 +186,7 @@ test_that("system of four reservoirs is calculated", {
     system = as.system(riv, riv_paralel, riv2, thar)
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B = riv2_mrf, C = thar_mrf)
     expect_equivalent(
-        calc_deficits(
+        calc_system(
             system, yields, types = c("single_plain", "system_plain", "system_transfer", "single_transfer")),
         readRDS("system_4reser_defB.rds"))
 })
@@ -196,7 +196,7 @@ test_that("system with deficit in the first time is calculated", {
     reser_A = as.wateres(reser_data, 14.4e6, 754e3, id = "A", down_id = "B")
     reser_B = as.wateres(reser_data, 0, 754e3, id = "B")
     system = as.system(reser_A, reser_B)
-    resul = calc_deficits(system, yields = c(A = 2, B = 2), types = c("single_plain", "system_plain", "single_transfer", "system_transfer"))
+    resul = calc_system(system, yields = c(A = 2, B = 2), types = c("single_plain", "system_plain", "single_transfer", "system_transfer"))
 
     expect_equivalent(resul$single_plain$A$storage, c(11721600, 9216000, 6537600, 3945600, 1267200, 0))
     expect_equivalent(resul$single_plain$A$deficit, c(rep(0, 5), 1324800))

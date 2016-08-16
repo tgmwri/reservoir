@@ -344,9 +344,9 @@ set_transfers_from_pos <- function(system, yields, initial_storages, init_pos, s
     }
 }
 
-#' @rdname calc_deficits.wateres_system
+#' @rdname calc_system.wateres_system
 #' @export
-calc_deficits <- function(system, yields, initial_storages, types) UseMethod("calc_deficits")
+calc_system <- function(system, yields, initial_storages, types) UseMethod("calc_system")
 
 #' Calculation of system of reservoirs
 #'
@@ -407,8 +407,8 @@ calc_deficits <- function(system, yields, initial_storages, types) UseMethod("ca
 #'     DTM = period)
 #' thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
 #' sys = as.system(riv, thar)
-#' resul = calc_deficits(sys, c(riv = 0.14, thar = 8))
-calc_deficits.wateres_system <- function(system, yields, initial_storages, types = c("single_plain", "system_plain")) {
+#' resul = calc_system(sys, c(riv = 0.14, thar = 8))
+calc_system.wateres_system <- function(system, yields, initial_storages, types = c("single_plain", "system_plain")) {
     system = check(system)
     system = set_up_ids(system)
 
