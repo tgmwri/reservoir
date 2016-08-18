@@ -23,7 +23,7 @@ set_variable <- function(reser, values, variable) {
 
 #' @rdname set_evaporation.wateres
 #' @export
-set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation")
+set_evaporation <- function(reser, values, altitude, plant_cover) UseMethod("set_evaporation")
 
 #' Evaporation setting or calculation
 #'
@@ -33,13 +33,18 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #' @param values A vector of evaporation values in mm, either monthly or daily values of length of reservoir time series, or 12 monthly values starting by January.
 #' @param altitude Reservoir altitude (m.a.s.l.) used for calculation of monthly evaporation values according to the Czech Technical Standard
 #'   ČSN 75 2405, where evaporation is a function of altitude for range from 100 to 1200 m.
+#' @param plant_cover Part of flooded area covered with plants, optional number between 0 and 0.75.
 #' @return A modified \code{wateres} object with evaporation time series added (denoted as \code{E}).
 #' @details Evaporation is applied when calculating reservoir water balance. If no elevation-area-storage relationship is provided for the reservoir,
 #'   evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
 #'   linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
 #'
+#'   If the \code{plant_cover} argument is given, evaporation will be increased by plant transpiration as given by Vrána and Beran (1998). When the reservoir
+#'   is getting empty, it is assumed that the plant cover area corresponds with the shallowest parts of the reservoir and therefore the coefficient increasing
+#'   evaporation is adjusted accordingly.
+#'
 #'   An error occurs if data in \code{reser} are not monthly or daily or if no dates are associated with daily data.
-#' @references ČSN 72 2405
+#' @references ČSN 72 2405; Vrána, Karel, and Beran, Jan: Rybníky a účelové nádrže, ČVUT, Praha, 1998 (in Czech)
 #' @export
 #' @examples
 #' reser = data.frame(
@@ -51,13 +56,18 @@ set_evaporation <- function(reser, values, altitude) UseMethod("set_evaporation"
 #' reser = set_evaporation(reser, c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
 #' reser = set_evaporation(reser, altitude = 529)
 #' resul = calc_series(reser, storage = 21e3, yield = 0.14)
-set_evaporation.wateres <- function(reser, values = NULL, altitude = NULL) {
+set_evaporation.wateres <- function(reser, values = NULL, altitude = NULL, plant_cover = NULL) {
     if (attr(reser, "time_step") == "hour")
         stop("Evaporation cannot be set for hourly data.")
     if (!is.null(altitude)) {
         E_annual = 4.957651e-5 * altitude ^ 2 - 0.3855958 * altitude + 871.19424
         E_monthly = c(0.01, 0.02, 0.06, 0.09, 0.12, 0.14, 0.16, 0.15, 0.11, 0.07, 0.05, 0.02)
         values = E_annual * E_monthly
+    }
+    if (!is.null(plant_cover)) {
+        if (plant_cover < 0 || plant_cover > 0.75)
+            stop("Plant cover value has to be between 0 and 0.75.")
+        attr(reser, "plant_cover") = plant_cover
     }
     reser = set_variable(reser, values, "E")
     return(reser)

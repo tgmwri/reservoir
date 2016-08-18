@@ -13,6 +13,8 @@ class wateres
     enum var_name {INFLOW, EVAPORATION, WATERUSE, PRECIPITATION, YIELD, DEFICIT, TRANSFER};
     static const unsigned var_count = 7; //!< number of time series of variables
     static const std::string var_names[]; //!< names of variables
+    std::vector<double> plant_covers; //!< plant covers of area
+    std::vector<double> plant_coeffs; //!< corresponding evaporation coefficients for plant covers
     std::vector<std::vector<double> > var; //!< values of water balance variables
     std::vector<double> storage;
     std::vector<unsigned> minutes; //!< number of minutes for time steps
@@ -26,7 +28,10 @@ class wateres
     bool throw_exceed; //!< whether volume exceeding maximum storage will be thrown
     double volume; //!< maximum reservoir storage
     double area; //!< flooded area for maximum storage
+    double plant_cover; //!< part of the area covered by plants
+    double plant_coeff; //!< evaporation coefficient for whole area
 
+    double interpolate_linear(std::vector<double> &x, std::vector<double> &y, double x_required); //!< linear interpolation for a given value
     double get_area(double storage_req); //!< gets area for given storage
     void set_var_zero(unsigned ts, var_name var_n); //!< sets values of variables in a time step to zero
     bool check_value_sign(unsigned ts, var_name var_n, var_name next_var_n, bool &adding); //!< handles if variable value has corresponding sign

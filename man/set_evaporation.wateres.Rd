@@ -5,9 +5,10 @@
 \alias{set_evaporation.wateres}
 \title{Evaporation setting or calculation}
 \usage{
-set_evaporation(reser, values, altitude)
+set_evaporation(reser, values, altitude, plant_cover)
 
-\method{set_evaporation}{wateres}(reser, values = NULL, altitude = NULL)
+\method{set_evaporation}{wateres}(reser, values = NULL, altitude = NULL,
+  plant_cover = NULL)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
@@ -16,6 +17,8 @@ set_evaporation(reser, values, altitude)
 
 \item{altitude}{Reservoir altitude (m.a.s.l.) used for calculation of monthly evaporation values according to the Czech Technical Standard
 ČSN 75 2405, where evaporation is a function of altitude for range from 100 to 1200 m.}
+
+\item{plant_cover}{Part of flooded area covered with plants, optional number between 0 and 0.75.}
 }
 \value{
 A modified \code{wateres} object with evaporation time series added (denoted as \code{E}).
@@ -27,6 +30,10 @@ For monthly or daily data, sets or calculates time series of evaporation from th
 Evaporation is applied when calculating reservoir water balance. If no elevation-area-storage relationship is provided for the reservoir,
   evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
   linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
+
+  If the \code{plant_cover} argument is given, evaporation will be increased by plants transpiration as given by Vrána and Beran (1998). When the reservoir
+  is getting empty, it is assumed that the plant cover area corresponds with the shallowest parts of the reservoir and therefore the coefficient increasing
+  evaporation is adjusted accordingly.
 
   An error occurs if data in \code{reser} are not monthly or daily or if no dates are associated with daily data.
 }
@@ -42,6 +49,6 @@ reser = set_evaporation(reser, altitude = 529)
 resul = calc_series(reser, storage = 21e3, yield = 0.14)
 }
 \references{
-ČSN 72 2405
+ČSN 72 2405; Vrána, Karel, and Beran, Jan: Rybníky a účelové nádrže, ČVUT, Praha, 1998 (in Czech)
 }
 

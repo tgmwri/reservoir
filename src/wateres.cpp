@@ -88,8 +88,45 @@ wateres::wateres(
 
   this->minutes = as<vector<unsigned> >(reser["minutes"]);
   area = as<double>(reser.attr("area"));
+
+  double tmp[5] = { 0, 0.1, 0.3, 0.5, 0.75 };
+  plant_covers.assign(&tmp[0], &tmp[0] + 5);
+  double tmp2[5] = { 1, 1.03, 1.08, 1.14, 1.22 };
+  plant_coeffs.assign(&tmp2[0], &tmp2[0] + 5);
+
+  Rcpp::Nullable<double> tmp_plant = as<Rcpp::Nullable<double> >(reser.attr("plant_cover"));
+  if (tmp_plant.isNotNull())
+    plant_cover = as<double>(tmp_plant);
+  else
+    plant_cover = 0;
+  plant_coeff = interpolate_linear(plant_covers, plant_coeffs, plant_cover);
   eas = as<DataFrame>(reser.attr("eas"));
   transfer_add = true;
+}
+
+/**
+ * - makes linear interpolation
+ * - if given value is out of given limits, a limit value is returned
+ * @param x X values
+ * @param y Y values
+ * @param x_required X value for which Y value is required
+ * @return Y value
+ */
+double wateres::interpolate_linear(vector<double> &x, vector<double> &y, double x_required)
+{
+  unsigned x_size = x.size();
+  if (x_size > 0 && x_size == y.size()) {
+    if (x_required < x[0])
+      return y[0];
+    if (x_required > x[x_size - 1])
+      return y[x_size - 1];
+    for (unsigned n = 1; n < x_size; n++) {
+      if (x_required < x[n] + x[n] * numeric_limits<double>::epsilon()) {
+        return (y[n] - y[n - 1]) / (x[n] - x[n - 1]) * (x_required - x[n - 1]) + y[n - 1];
+      }
+    }
+  }
+  return 0;
 }
 
 /**
@@ -101,17 +138,9 @@ wateres::wateres(
 double wateres::get_area(double storage_req)
 {
   NumericVector eas_area = eas["area"], eas_storage = eas["storage"];
-  unsigned eas_size = eas_area.size();
-  if (storage_req < eas_storage[0])
-    return eas_area[0];
-  if (storage_req > eas_storage[eas_size - 1])
-    return eas_area[eas_size - 1];
-  for (unsigned as = 1; as < eas_size; as++) {
-    if (storage_req < eas_storage[as] + eas_storage[as] * numeric_limits<double>::epsilon()) {
-      return (eas_area[as] - eas_area[as - 1]) / (eas_storage[as] - eas_storage[as - 1]) * (storage_req - eas_storage[as - 1]) + eas_area[as - 1];
-    }
-  }
-  return 0;
+  vector<double> tmp_storage = as<vector<double> >(eas_storage);
+  vector<double> tmp_area = as<vector<double> >(eas_area);
+  return interpolate_linear(tmp_storage, tmp_area, storage_req);
 }
 
 /**
@@ -186,6 +215,17 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
       else
         tmp_area = get_area(storage[ts]);
       var[var_n][ts] = convert_mm(var[var_n][ts], tmp_area);
+      if (plant_coeff > 1 + numeric_limits<double>::epsilon()) {
+        double tmp_plant_coeff;
+        if (eas.size() == 0)
+          tmp_plant_coeff = plant_coeff;
+        else {
+          //assumed that area with plants is the shallowest
+          double plant_coeff_area = max(plant_cover - 1 + tmp_area / area, 0.0);
+          tmp_plant_coeff = interpolate_linear(plant_covers, plant_coeffs, plant_coeff_area);
+        }
+        var[var_n][ts] *= tmp_plant_coeff;
+      }
       break;
     case WATERUSE:
     case TRANSFER:
@@ -250,8 +290,8 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
 /**
   * - calculates monthly time series of reservoir storage and yield
   * @param Rreser reservoir object with time series of inflows (Q) in m3.s-1, precipitation (R) in mm, evaporation (E) in mm,
-    water use in m3, number of minutes in time steps (minutes) and with attributes (area - flooded by reservoir in m2,
-    eas - elevation-area-storage relationship (in m.a.s.l., m2 and m3)
+    water use in m3, number of minutes in time steps (minutes) and with attributes: area - flooded by reservoir in m2,
+    eas - elevation-area-storage relationship (in m.a.s.l., m2 and m3), plant_cover - fraction of fully flooded area covered by plants
   * @param Rinflow time series of inflows in m3.s-1
   * @param Ryield_req time series of required yield (reservoir outflow) in m3.s-1
   * @param Rvolume reservoir potential volume in m3

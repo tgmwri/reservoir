@@ -26,6 +26,11 @@ test_that("evaporation values of incorrect length are rejected", {
     expect_error(set_evaporation(riv, monthly_evap[1:5]))
 })
 
+test_that("evaporation with incorrect plant cover is rejected", {
+    expect_error(set_evaporation(riv, monthly_evap, plant_cover = -1), "has to be between 0 and 0.75")
+    expect_error(set_evaporation(riv, monthly_evap, plant_cover = 0.8), "has to be between 0 and 0.75")
+})
+
 test_that("water use values are set", {
     # time series
     riv = set_wateruse(riv, rep_len(monthly_with, nrow(riv)))

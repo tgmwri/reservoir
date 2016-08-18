@@ -30,6 +30,22 @@ test_that("series with evaporation depending on E-A-S relationship are calculate
     expect_equivalent(resul, readRDS("series_evaporation_eas.rds"))
 })
 
+test_that("series with evaporation and plant cover are calculated", {
+    eas = data.frame(elevation = c(500, 510, 520), area = c(0, 50, 100), storage = c(0, 500, 1000))
+    reser = as.wateres(data.frame(Q = c(1, 1, 1, 1, 1)), 1e3, 1e2, time_step = "day", eas = eas)
+    reser = set_evaporation(reser, rep(10, 5), plant = 11/30)
+
+    resul = calc_series(reser, yield = 0.9)
+    expect_equal(resul$storage, rep(1e3, 5))
+    expect_equal(resul$yield, rep(0.9999872, 5), tol = 1e-5)
+    expect_equal(resul$evaporation, rep(1.1, 5))
+
+    resul = calc_series(reser, yield = 1.0005)
+    expect_equal(resul$storage, c(955.70000, 911.46143, 867.28204, 823.15969, 779.09335), tol = 1e-5)
+    expect_equal(resul$yield, rep(1.0005, 5))
+    expect_equal(resul$evaporation, c(1.1, 1.038569, 0.979394, 0.922343, 0.866340), tol = 1e-5)
+})
+
 rivh = as.wateres("rivendell_1h.txt", 14.4e6, 754e3, eas = eas, time_step = "hour")
 
 test_that("series for hourly data are calculated", {
