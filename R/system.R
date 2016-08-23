@@ -214,7 +214,7 @@ set_up_ids <- function(system) {
 }
 
 # goes through all of the reservoirs starting from leaves and continuing to the bottom
-traverse <- function(system, resers_done, inner_function, series, def_pos, use_attr_series = TRUE) {
+traverse <- function(system, resers_done, inner_function, series, def_pos, use_attr_series = TRUE, only_part_ts = FALSE) {
     bottom_id = find_bottom_id(system, names(system)[[1]], c())
     new_resers_done = c()
     for (curr_res in system) {
@@ -223,7 +223,7 @@ traverse <- function(system, resers_done, inner_function, series, def_pos, use_a
             next
         curr_up = attr(curr_res, "up_ids")
         if (is.null(curr_up) || all(curr_up %in% resers_done)) {
-            system = inner_function(system, series, def_pos, curr_id, bottom_id)
+            system = inner_function(system, series, def_pos, curr_id, bottom_id, only_part_ts = only_part_ts)
             if (use_attr_series)
                 series = attr(system, "series")
             new_resers_done = c(new_resers_done, curr_id)
@@ -237,14 +237,14 @@ traverse <- function(system, resers_done, inner_function, series, def_pos, use_a
 }
 
 # calculates inflows to reservoirs from upper reservoirs plus intercatchment
-calc_inflows_inner <- function(system, series, def_pos, curr_id, bottom_id, recalc_series = TRUE) {
+calc_inflows_inner <- function(system, series, def_pos, curr_id, bottom_id, recalc_series = TRUE, only_part_ts = FALSE) {
     curr_up = attr(system[[curr_id]], "up_ids")
     if (!is.null(curr_up)) {
         tmp_len = nrow(system[[curr_id]])
         sum_up_Q = sum_up_yield = vector("numeric", tmp_len - def_pos + 1)
+        if (recalc_series)
+            series = calc_single(system, 1, series, only_part_ts = only_part_ts, reser_names = curr_up)
         for (up_id in curr_up) {
-            if (recalc_series)
-                series[[up_id]] = calc_series(system[[up_id]], yield = attr(system, "yields")[up_id], initial_storage = attr(system, "initial_storages")[up_id])
             sum_up_Q = sum_up_Q + system[[up_id]]$Q[def_pos:tmp_len]
             sum_up_yield = sum_up_yield + series[[up_id]]$yield[def_pos:tmp_len]
         }
@@ -253,21 +253,22 @@ calc_inflows_inner <- function(system, series, def_pos, curr_id, bottom_id, reca
             stop("Negative inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(intercatch_Q < 0)[1], ") is not allowed.")
         }
         system[[curr_id]]$I[def_pos:tmp_len] = sum_up_yield + intercatch_Q
+
     }
     return(system)
 }
 
-calc_inflows <- function(system, resers_done, series, def_pos) {
-    traverse(system, resers_done, calc_inflows_inner, series, def_pos, FALSE)
+calc_inflows <- function(system, resers_done, series, def_pos, only_part_ts) {
+    traverse(system, resers_done, calc_inflows_inner, series, def_pos, FALSE, only_part_ts)
 }
 
-calc_max_transfer_inner <- function(system, series, def_pos, curr_id, bottom_id) {
+calc_max_transfer_inner <- function(system, series, def_pos, curr_id, bottom_id, only_part_ts = NULL) {
     # set inflows for current reservoir (influenced by new values of upstreams reservoirs)
     if (attr(system, "calc_type") != "single_transfer")
-        system = calc_inflows_inner(system, series, def_pos, curr_id, bottom_id, FALSE)
+        system = calc_inflows_inner(system, series, def_pos, curr_id, bottom_id, TRUE)
 
     # calculate the current reservoir (input transfers have been set in previous calculation of upstream reservoirs)
-    series[[curr_id]] = calc_series(system[[curr_id]], yield = attr(system, "yields")[curr_id], initial_storage = attr(system, "initial_storages")[curr_id])
+    series[[curr_id]] = calc_single(system, 1, series, only_part_ts = FALSE, reser_names = curr_id)[[curr_id]]
 
     # set final transfers for current current reservoir and transfer to the downstream reservoir
     # amount from upstream reservoirs
@@ -307,7 +308,7 @@ calc_max_transfer_inner <- function(system, series, def_pos, curr_id, bottom_id)
         }
         # recalculate the current reservoir for final transfers (to be used for downward reservoir)
         if (!is_bottom) {
-            series[[curr_id]] = calc_series(system[[curr_id]], yield = attr(system, "yields")[curr_id], initial_storage = attr(system, "initial_storages")[curr_id])
+            series[[curr_id]] = calc_single(system, def_pos, series, only_part_ts = TRUE, reser_names = curr_id)[[curr_id]]
         }
     }
     attr(system, "series") = series
@@ -324,7 +325,7 @@ calc_max_transfer <- function(system, resers_done, series, def_pos) {
 set_transfers_from_pos <- function(system, init_pos, series = NULL) {
     series = calc_single(system, init_pos, series, only_part_ts = TRUE)
     if (attr(system, "calc_type") != "single_transfer")
-        system = calc_inflows(system, c(), series, 1) # initial calculation of inflows because then it starts from def_pos
+        system = calc_inflows(system, c(), series, 1, TRUE) # initial calculation of inflows because then it starts from def_pos
     defs_sum = rowSums(as.data.frame(lapply(series, function(x) { x$deficit })))
     def_pos = which(defs_sum > 0)
     def_pos = def_pos[def_pos >= init_pos]
@@ -451,7 +452,7 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
 
         if (ct == "system_plain") {
             series = calc_single(system)
-            system = calc_inflows(system, c(), series, 1)
+            system = calc_inflows(system, c(), series, 1, FALSE)
         }
         else if (grepl("transfer", ct)) {
             system = set_transfers_from_pos(system, 1)
