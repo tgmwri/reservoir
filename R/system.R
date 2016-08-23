@@ -158,19 +158,19 @@ check.wateres_system <- function(system) {
 }
 
 # calculates simply each reservoir in the system by using its input data
-calc_single <- function(system, yields, initial_storages, init_pos = 1, resul = NULL, only_part_ts = FALSE) {
+calc_single <- function(system, init_pos = 1, resul = NULL, only_part_ts = FALSE, reser_names = names(system)) {
     if (is.null(resul))
         resul = list()
     min_last_pos = nrow(system[[1]])
-    for (res in 1:length(system)) {
+    for (res in reser_names) {
         curr_id = attr(system[[res]], "id")
         if (only_part_ts) {
             # previous time step needs to be calculated because transfers were set there but the balance was not recalculated with them
             # therefore the next deficit which will stop the calculation (first_def_pos) cannot be in the same time
             init_pos_prev = if (init_pos == 1) 1 else init_pos - 1
             tmp_resul = calc_series(
-                system[[res]], yield = yields[curr_id],
-                initial_storage = if (init_pos > 2) resul[[curr_id]]$storage[init_pos - 2] else initial_storages[curr_id],
+                system[[res]], yield = attr(system, "yields")[curr_id],
+                initial_storage = if (init_pos > 2) resul[[curr_id]]$storage[init_pos - 2] else attr(system, "initial_storages")[curr_id],
                 initial_pos = init_pos_prev,
                 last_pos = min_last_pos, till_def = TRUE, first_def_pos = init_pos)
 
@@ -196,7 +196,7 @@ calc_single <- function(system, yields, initial_storages, init_pos = 1, resul = 
                 min_last_pos = last_pos
         }
         else {
-            resul[[curr_id]] = calc_series(system[[res]], yield = yields[curr_id], initial_storage = initial_storages[curr_id])
+            resul[[curr_id]] = calc_series(system[[res]], yield = attr(system, "yields")[curr_id], initial_storage = attr(system, "initial_storages")[curr_id])
         }
     }
     return(resul)
@@ -321,8 +321,8 @@ calc_max_transfer <- function(system, resers_done, series, def_pos) {
 }
 
 # set transfers recursively for time steps with deficit from given time step to the end
-set_transfers_from_pos <- function(system, yields, initial_storages, init_pos, series = NULL) {
-    series = calc_single(system, yields, initial_storages, init_pos, series, only_part_ts = TRUE)
+set_transfers_from_pos <- function(system, init_pos, series = NULL) {
+    series = calc_single(system, init_pos, series, only_part_ts = TRUE)
     if (attr(system, "calc_type") != "single_transfer")
         system = calc_inflows(system, c(), series, 1) # initial calculation of inflows because then it starts from def_pos
     defs_sum = rowSums(as.data.frame(lapply(series, function(x) { x$deficit })))
@@ -337,7 +337,7 @@ set_transfers_from_pos <- function(system, yields, initial_storages, init_pos, s
 
         system = calc_max_transfer(system, c(), series, def_pos)
         series = attr(system, "series")
-        set_transfers_from_pos(system, yields, initial_storages, def_pos + 1, series)
+        set_transfers_from_pos(system, def_pos + 1, series)
     }
     else {
         return(system)
@@ -450,13 +450,13 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
         }
 
         if (ct == "system_plain") {
-            series = calc_single(system, yields, initial_storages)
+            series = calc_single(system)
             system = calc_inflows(system, c(), series, 1)
         }
         else if (grepl("transfer", ct)) {
-            system = set_transfers_from_pos(system, yields, initial_storages, 1)
+            system = set_transfers_from_pos(system, 1)
         }
-        resul[[ct]] = calc_single(system, yields, initial_storages)
+        resul[[ct]] = calc_single(system)
     }
     return(resul)
 }
