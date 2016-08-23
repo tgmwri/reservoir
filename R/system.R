@@ -127,6 +127,7 @@ check.wateres_system <- function(system) {
         }
     }
     bottom_id = find_bottom_id(system, attr(system[[1]], "id"), c())
+    attr(system, "bottom_id") = bottom_id
     for (res in length(system):1) {
         curr_id = attr(system[[res]], "id")
         tmp_found_ids = curr_id
@@ -215,7 +216,7 @@ set_up_ids <- function(system) {
 
 # goes through all of the reservoirs starting from leaves and continuing to the bottom
 traverse <- function(system, resers_done, inner_function, series, def_pos, use_attr_series = TRUE, only_part_ts = FALSE) {
-    bottom_id = find_bottom_id(system, names(system)[[1]], c())
+    bottom_id = attr(system, "bottom_id")
     new_resers_done = c()
     for (curr_res in system) {
         curr_id = attr(curr_res, "id")
@@ -230,7 +231,7 @@ traverse <- function(system, resers_done, inner_function, series, def_pos, use_a
         }
     }
     resers_done = c(resers_done, new_resers_done)
-    if (all.equal(sort(names(system)), sort(resers_done)) == TRUE)
+    if (new_resers_done[1] == bottom_id)
         return(system)
     else
         traverse(system, resers_done, inner_function, series, def_pos, use_attr_series)
@@ -297,11 +298,10 @@ calc_max_transfer_inner <- function(system, series, def_pos, curr_id, bottom_id,
 
         # add transfers to input
         for (res_id in names(system)) {
-            system[[res_id]]$T[def_pos] = 0
+            system[[res_id]]$T[def_pos] = sum(attr(system[[res_id]], "from_up"))
             for (from_res_id in names(attr(system[[res_id]], "from_up"))) {
                 curr_from_up = attr(system[[res_id]], "from_up")[from_res_id]
                 if (curr_from_up > 0) {
-                    system[[res_id]]$T[def_pos] = system[[res_id]]$T[def_pos] + curr_from_up
                     system[[from_res_id]]$T[def_pos] = system[[from_res_id]]$T[def_pos] - curr_from_up
                 }
             }
@@ -337,8 +337,7 @@ set_transfers_from_pos <- function(system, init_pos, series = NULL) {
         }
 
         system = calc_max_transfer(system, c(), series, def_pos)
-        series = attr(system, "series")
-        set_transfers_from_pos(system, def_pos + 1, series)
+        set_transfers_from_pos(system, def_pos + 1, attr(system, "series"))
     }
     else {
         return(system)
