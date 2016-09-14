@@ -26,9 +26,9 @@ as.system <- function(...) {
     for (res in 1:length(system)) {
         curr_id = attr(system[[res]], "id")
         if (is.na(curr_id))
-            stop(paste0("Missing ID for reservoir given at position ", res, "."))
+            stop("Missing ID for reservoir given at position ", res, ".")
         if (curr_id %in% names(system))
-            stop(paste0("Duplicate ID of reservoirs given at positions ", which(curr_id == names(system)[1]), " and ", res, "."))
+            stop("Duplicate ID of reservoirs given at positions ", which(curr_id == names(system)[1]), " and ", res, ".")
         names(system)[res] = curr_id
     }
     class(system) = c("wateres_system", "list")
@@ -109,7 +109,7 @@ check.wateres_system <- function(system) {
         curr_id_down = attr(system[[res]], "down_id")
         if (!is.na(curr_id_down)) {
             if (!curr_id_down %in% names(system)) {
-                warning(paste0("Reservoir '", attr(system[[res]], "id"), "': downstream reservoir '", curr_id_down, "' does not exist."))
+                warning("Reservoir '", attr(system[[res]], "id"), "': downstream reservoir '", curr_id_down, "' does not exist.")
                 attr(system[[res]], "down_id") = NA
             }
         }
@@ -124,7 +124,7 @@ check.wateres_system <- function(system) {
             system = remove_reser(system, res)
         }
         else if (is.null(system[[res]]$DTM) && nrow(system[[res]]) != nrow(system[[1]])) {
-            warning(paste0("Reservoir '", attr(system[[res]], "id"), "' will not be used because length of its time series differs from the first reservoir."))
+            warning("Reservoir '", attr(system[[res]], "id"), "' will not be used because length of its time series differs from the first reservoir.")
             system = remove_reser(system, res)
         }
     }
@@ -135,7 +135,7 @@ check.wateres_system <- function(system) {
         tmp_found_ids = curr_id
         curr_bottom_id = find_bottom_id(system, curr_id, tmp_found_ids)
         if (curr_bottom_id != bottom_id) {
-            warning(paste0("Reservoir '", curr_id, "' will not be used because it is not connected to the reservoir '", bottom_id, "'."))
+            warning("Reservoir '", curr_id, "' will not be used because it is not connected to the reservoir '", bottom_id, "'.")
             system = remove_reser(system, res)
         }
     }
@@ -144,7 +144,7 @@ check.wateres_system <- function(system) {
         for (res in length(system):min(length(system), 2)) {
             tmp_common = intersect(common_ts, as.character(system[[res]]$DTM))
             if (length(tmp_common) == 0) {
-                warning(paste0("Reservoir '", attr(system[[res]], "id"), "' will not be used because of different dates of time series."))
+                warning("Reservoir '", attr(system[[res]], "id"), "' will not be used because of different dates of time series.")
                 system = remove_reser(system, res)
             }
             else
@@ -152,7 +152,7 @@ check.wateres_system <- function(system) {
         }
         for (res in 1:length(system)) {
             if (length(system[[res]]$DTM) != length(common_ts)) {
-                warning(paste0("Time series for reservoir '", attr(system[[res]], "id"), "' will be shortened to common period for all reservoirs."))
+                warning("Time series for reservoir '", attr(system[[res]], "id"), "' will be shortened to common period for all reservoirs.")
                 system[[res]] = resize_input(system[[res]], common_ts[1], common_ts[length(common_ts)])
             }
         }
@@ -421,7 +421,7 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
         values = get(arg)
         values = values[names(values) %in% names(system)]
         if (anyNA(values) || length(values) < length(system))
-            stop(paste0("Argument '", arg, "' does not provide values for all reservoirs in the system."))
+            stop("Argument '", arg, "' does not provide values for all reservoirs in the system.")
     }
     attr(system, "yields") = yields
     attr(system, "initial_storages") = initial_storages

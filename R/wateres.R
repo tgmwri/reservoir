@@ -126,7 +126,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
         required_cols = c(required_cols, "DTM")
     for (colname in required_cols) {
         if (!colname %in% colnames(dframe))
-            stop(paste0("To create a reservoir, ", colname, " column is required."))
+            stop("To create a reservoir, ", colname, " column is required.")
     }
     optional_cols = "DTM"
     all_cols = required_cols
@@ -505,7 +505,7 @@ calc_series.wateres <- function(
     if (length(yield) == 1)
         yield = rep(yield, nrow(reser))
     else if (length(yield) != nrow(reser))
-        stop(paste0("Time series of required yield must have the length of the reservoir series (", nrow(reser), ")."))
+        stop("Time series of required yield must have the length of the reservoir series (", nrow(reser), ").")
     eas = attr(reser, "eas")
     if (!missing(initial_level)) {
         if (is.null(eas))

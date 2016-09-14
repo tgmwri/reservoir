@@ -38,7 +38,7 @@ plot.wateres_series <- function(x, reser, type = "flow", begin = 1, end = nrow(x
     else {
         vars = type
         if (!vars %in% colnames(x))
-            stop(paste0("The required '", vars, "' is not available in time series data. Recalculate the time series with proper settings."))
+            stop("The required '", vars, "' is not available in time series data. Recalculate the time series with proper settings.")
     }
 
     series = x[begin:end, vars, with = FALSE]
@@ -127,7 +127,7 @@ prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "stora
 check_plot_pkgs <- function() {
     for (pkg_name in c("ggplot2")) {
         if (!requireNamespace(pkg_name, quietly = FALSE))
-            stop(paste0("To produce a plot, ", pkg_name, " package needs to be installed."))
+            stop("To produce a plot, ", pkg_name, " package needs to be installed.")
     }
 }
 
