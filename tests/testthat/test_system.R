@@ -103,7 +103,7 @@ test_that("check of system gives appopriate errors and warnings", {
     expect_warning(check(as.system(riv_no_down, thar)), "downstream reservoir 'lond' does not exist")
 
     rivh = as.wateres("rivendell_1h.txt", 14.4e6, 754e3, time_step = "hour", id = "rivh")
-    expect_warning(check(as.system(rivh, thar)), "does not contain data of time step 'hour'")
+    expect_warning(check(as.system(rivh, thar)), "does not contain data of time step '1-hour'")
 
     thar_cycle = as.wateres("tharbad.txt", 41.3e6, 2672e3, id = "thar", down_id = "riv")
     expect_error(check(as.system(riv, thar_cycle)), "There is a cycle")
@@ -124,7 +124,7 @@ test_that("downstream ID is adjusted if a reservoir is removed", {
     rivh = as.wateres("rivendell_1h.txt", 14.4e6, 754e3, time_step = "hour", id = "rivh", down_id = "thar")
     sys = as.system(riv_to_rivh, rivh, thar)
     expect_equal(attr(sys[["riv"]], "down_id"), "rivh")
-    expect_warning(sys <- check(sys), "does not contain data of time step 'month'")
+    expect_warning(sys <- check(sys), "does not contain data of time step '1-month'")
     expect_equal(attr(sys[["riv"]], "down_id"), "thar")
 })
 

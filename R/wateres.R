@@ -38,12 +38,12 @@ days_for_months <- function(DTM) {
     return(days)
 }
 
-calc_minutes <- function(time_step, len, DTM) {
-    minutes = rep(60, len)
-    if (time_step == "day") {
+calc_minutes <- function(time_step_len, time_step_unit, len, DTM) {
+    minutes = rep(60, len) * time_step_len
+    if (time_step_unit == "day") {
         minutes = 24 * minutes
     }
-    if (time_step == "month") {
+    else if (time_step_unit == "month") {
         minutes = days_for_months(DTM) * 24 * minutes
     }
     return(minutes)
@@ -63,7 +63,8 @@ calc_minutes <- function(time_step, len, DTM) {
 #'   elevation (m.a.s.l.), area (m2) and storage (m3). If values of these three variables are not sorted and their orders
 #'   differ or if they contain any NA value, this argument will be ignored.
 #' @param observed Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).
-#' @param time_step Time step length, currently \dQuote{month}, \dQuote{day} and \dQuote{hour} values are supported.
+#' @param time_step Time step length (optional, defaults to 1) and unit, entered as a unit name or a string joined by the hyphen (e.g. \dQuote{7-day}).
+#'   Currently \dQuote{month}, \dQuote{day} and \dQuote{hour} values are supported. However, the length of monthly time step is allowed to be only 1.
 #' @param id An identifier of the reservoir used for calculation of systems.
 #' @param down_id The identifier of the nearest reservoir downstream (also used in systems).
 #' @param title A reservoir title.
@@ -82,18 +83,31 @@ calc_minutes <- function(time_step, len, DTM) {
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3, eas = eas)
 as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time_step = "month", id = NA, down_id = NA, title = NA) {
     ts_types = c("month", "day", "hour")
-    time_step = ts_types[pmatch(time_step, ts_types, 1)]
-    if (is.na(time_step))
-        stop("Invalid value of time step.")
+    if (grepl("-", time_step)) {
+        splitted = strsplit(time_step, "-", fixed = TRUE)[[1]]
+        time_step_len = suppressWarnings(as.integer(splitted[1]))
+        if (is.na(time_step_len))
+            stop("Invalid value of time step length.")
+        time_step = splitted[2]
+    }
+    else
+        time_step_len = 1L
+    time_step_unit = ts_types[pmatch(time_step, ts_types, 1)]
+    if (is.na(time_step_unit))
+        stop("Invalid value of time step unit.")
+    if (time_step_len != 1 && time_step_unit == "month")
+        stop("Monthly time step cannot be combined with an arbitrary length.")
+
     if ("bilan" %in% class(dframe)) {
         if (requireNamespace("bilan", quietly = TRUE)) {
             catch_area = bilan::bil.get.area(dframe)
             if (!(catch_area > 0))
                 stop("Catchment area needs to be specified when using Bilan data.")
             data = bilan::bil.get.data(dframe)
-            time_step = bilan::bil.info(dframe, FALSE)$time_step
+            time_step_unit = bilan::bil.info(dframe, FALSE)$time_step
+            time_step_len = 1
             Qvar = ifelse(observed, "R", "RM")
-            if (time_step == "month")
+            if (time_step_unit == "month")
                 days = days_for_months(data$DTM)
             else
                 days = 1
@@ -108,7 +122,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
     else if (!"data.frame" %in% class(dframe) && !"data.table" %in% class(dframe))
         stop("To create a reservoir, data.frame or data.table is required.")
     required_cols = c("Q")
-    if (time_step == "month")
+    if (time_step_unit == "month")
         required_cols = c(required_cols, "DTM")
     for (colname in required_cols) {
         if (!colname %in% colnames(dframe))
@@ -125,10 +139,10 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
     colnames(dframe) = all_cols
     if ("DTM" %in% colnames(dframe))
         dframe$DTM = as.Date(dframe$DTM)
-    dframe$minutes = calc_minutes(time_step, nrow(dframe), dframe$DTM)
+    dframe$minutes = calc_minutes(time_step_len, time_step_unit, nrow(dframe), dframe$DTM)
     dframe$Q = as.numeric(dframe$Q)
     class(dframe) = c("wateres", "data.table", "data.frame")
-    for (attr_name in c("time_step", "storage", "area", "id", "down_id", "title"))
+    for (attr_name in c("time_step_len", "time_step_unit", "storage", "area", "id", "down_id", "title"))
         attr(dframe, attr_name) = get(attr_name)
     if (!is.null(eas)) {
         if (ncol(eas) != 3)
@@ -152,7 +166,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
 }
 
 # converts input (date or index) to index of the given time series of dates
-value_to_position <- function(value, DTM, time_step, type, value_type) {
+value_to_position <- function(value, DTM, time_step_len, time_step_unit, type, value_type) {
     if (is.null(value_type)) {
         value_date = try(as.Date(value), silent = TRUE)
         value_type = if (class(value_date) == "try-error") "index" else "date"
@@ -174,10 +188,10 @@ value_to_position <- function(value, DTM, time_step, type, value_type) {
         # expand time series to reach (or nearly reach) the given date
         if (value_date < DTM[1]) {
             # unique because DTM[1] is repeated
-            tmp_dtm = unique(c(rev(seq(DTM[1], value_date, by = paste("-1", time_step))), tmp_dtm))
+            tmp_dtm = unique(c(rev(seq(DTM[1], value_date, by = paste0("-", time_step_len, " ", time_step_unit))), tmp_dtm))
         }
         else if (value_date > DTM[length(DTM)]) {
-            tmp_dtm = unique(c(tmp_dtm, seq(DTM[length(DTM)], value_date, by = time_step)))
+            tmp_dtm = unique(c(tmp_dtm, seq(DTM[length(DTM)], value_date, by = paste(time_step_len, time_step_unit))))
         }
         if (type == "begin") {
             after_begin = which(tmp_dtm >= value_date)
@@ -223,8 +237,8 @@ resize_input.wateres <- function(reser, begin = 1, end = nrow(reser), type = NUL
         type_begin = if (missing(begin)) "index" else type
         type_end = if (missing(end)) "index" else type
     }
-    begin_pos = value_to_position(begin, reser$DTM, attr(reser, "time_step"), "begin", type_begin)
-    end_pos = value_to_position(end, reser$DTM, attr(reser, "time_step"), "end", type_end)
+    begin_pos = value_to_position(begin, reser$DTM, attr(reser, "time_step_len"), attr(reser, "time_step_unit"), "begin", type_begin)
+    end_pos = value_to_position(end, reser$DTM, attr(reser, "time_step_len"), attr(reser, "time_step_unit"), "end", type_end)
     if (end_pos < begin_pos)
         stop("End for reservoir resizing cannot be less than begin.")
 
@@ -238,7 +252,8 @@ resize_input.wateres <- function(reser, begin = 1, end = nrow(reser), type = NUL
     if (rows_before > 0 || rows_after > 0) {
         tmp_coeff = begin_pos_orig / abs(begin_pos_orig)
         tmp_len = if (begin_pos_orig < 1) abs(begin_pos_orig) + 2 else begin_pos_orig
-        begin_date = seq(reser$DTM[1], by = paste(tmp_coeff, attr(reser, "time_step")), length.out = tmp_len)[tmp_len]
+        begin_date = seq(
+            reser$DTM[1], by = paste(tmp_coeff * attr(reser, "time_step_len"), attr(reser, "time_step_unit")), length.out = tmp_len)[tmp_len]
 
         for (type in c("before", "after")) {
             dt_name = paste0("dt_", type)
@@ -260,8 +275,8 @@ resize_input.wateres <- function(reser, begin = 1, end = nrow(reser), type = NUL
 
     if (rows_before > 0 || rows_after > 0) {
         if (!is.null(reser$DTM))
-            reser$DTM = seq(begin_date, by = attr(reser, "time_step"), length.out = nrow(reser))
-        reser$minutes = calc_minutes(attr(reser, "time_step"), nrow(reser), reser$DTM)
+            reser$DTM = seq(begin_date, by = paste(attr(reser, "time_step_len"), attr(reser, "time_step_unit")), length.out = nrow(reser))
+        reser$minutes = calc_minutes(attr(reser, "time_step_len"), attr(reser, "time_step_unit"), nrow(reser), reser$DTM)
     }
     return(reser)
 }

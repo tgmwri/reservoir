@@ -2,11 +2,15 @@ set_variable <- function(reser, values, variable) {
     if (length(values) != nrow(reser)) {
         var_names = c(E = "evaporation", W = "wateruse", P = "precipitation")
         if (length(values) == 12) {
-            time_step = attr(reser, "time_step")
+            time_step = attr(reser, "time_step_unit")
             if (time_step == "hour")
                 stop("Variable ", var_names[variable], " cannot be set by 12 values for hourly data.")
-            else if (time_step == "day" && is.null(reser$DTM))
-                stop("Variable ", var_names[variable], " cannot be set for daily data without specified date.")
+            else if (time_step == "day") {
+                if (is.null(reser$DTM))
+                    stop("Variable ", var_names[variable], " cannot be set for daily data without specified date.")
+                else if (attr(reser, "time_step_len") != 1)
+                    stop("Variable ", var_names[variable], " cannot be set for data with an arbitrary length of daily time step.")
+            }
             months = as.integer(format(reser$DTM, "%m"))
             values = values[months]
             if (time_step == "day")
@@ -43,7 +47,7 @@ set_evaporation <- function(reser, values, altitude, plant_cover) UseMethod("set
 #'   is getting empty, it is assumed that the plant cover area corresponds with the shallowest parts of the reservoir and therefore the coefficient increasing
 #'   evaporation is adjusted accordingly.
 #'
-#'   An error occurs if data in \code{reser} are not monthly or daily or if no dates are associated with daily data.
+#'   An error occurs if data in \code{reser} are not in monthly or daily time step of length one or if no dates are associated with daily data.
 #' @references ČSN 72 2405; Vrána, Karel, and Beran, Jan: Rybníky a účelové nádrže, ČVUT, Praha, 1998 (in Czech)
 #' @export
 #' @examples
@@ -57,7 +61,7 @@ set_evaporation <- function(reser, values, altitude, plant_cover) UseMethod("set
 #' reser = set_evaporation(reser, altitude = 529)
 #' resul = calc_series(reser, storage = 21e3, yield = 0.14)
 set_evaporation.wateres <- function(reser, values = NULL, altitude = NULL, plant_cover = NULL) {
-    if (attr(reser, "time_step") == "hour")
+    if (attr(reser, "time_step_unit") == "hour")
         stop("Evaporation cannot be set for hourly data.")
     if (!is.null(altitude)) {
         E_annual = 4.957651e-5 * altitude ^ 2 - 0.3855958 * altitude + 871.19424
@@ -85,8 +89,8 @@ set_wateruse <- function(reser, values) UseMethod("set_wateruse")
 #' whereas negative water use (withdrawal) is considered after the yield and evaporation demands are satisfied.
 #' @param reser A \code{wateres} object.
 #' @param values A vector of water use values in m3, either monthly or daily of length of reservoir time series, or 12 monthly values
-#'   starting by January (for monthly or daily data only), or one constant value. Positive values mean water release to the reservoir,
-#'   negative withdrawal from the reservoir.
+#'   starting by January (for monthly or daily time step of length one only), or one constant value. Positive values mean water release
+#'   to the reservoir, negative withdrawal from the reservoir.
 #' @return A modified \code{wateres} object with water use time series added (denoted as \code{W}).
 #' @export
 #' @examples

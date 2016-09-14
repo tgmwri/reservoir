@@ -13,8 +13,8 @@ set_wateruse(reser, values)
 \item{reser}{A \code{wateres} object.}
 
 \item{values}{A vector of water use values in m3, either monthly or daily of length of reservoir time series, or 12 monthly values
-starting by January (for monthly or daily data only), or one constant value. Positive values mean water release to the reservoir,
-negative withdrawal from the reservoir.}
+starting by January (for monthly or daily time step of length one only), or one constant value. Positive values mean water release
+to the reservoir, negative withdrawal from the reservoir.}
 }
 \value{
 A modified \code{wateres} object with water use time series added (denoted as \code{W}).

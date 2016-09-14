@@ -23,7 +23,8 @@ differ or if they contain any NA value, this argument will be ignored.}
 
 \item{observed}{Only when Bilan object is used; whether to read observed runoffs from the object (otherwise modelled are read).}
 
-\item{time_step}{Time step length, currently \dQuote{month}, \dQuote{day} and \dQuote{hour} values are supported.}
+\item{time_step}{Time step length (optional, defaults to 1) and unit, entered as a unit name or a string joined by the hyphen (e.g. \dQuote{7-day}).
+Currently \dQuote{month}, \dQuote{day} and \dQuote{hour} values are supported. However, the length of monthly time step is allowed to be only 1.}
 
 \item{id}{An identifier of the reservoir used for calculation of systems.}
 

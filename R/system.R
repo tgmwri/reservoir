@@ -114,11 +114,13 @@ check.wateres_system <- function(system) {
             }
         }
     }
+    time_step_first = paste(attr(system[[1]], "time_step_len"), attr(system[[1]], "time_step_unit"), sep = "-")
     for (res in length(system):1) {
-        if (attr(system[[res]], "time_step") != attr(system[[1]], "time_step")) {
-            warning(paste0(
+        time_step_curr = paste(attr(system[[res]], "time_step_len"), attr(system[[res]], "time_step_unit"), sep = "-")
+        if (time_step_curr != time_step_first) {
+            warning(
                 "Reservoir '", attr(system[[res]], "id"), "' will not be used because it does not contain data of time step '",
-                attr(system[[1]], "time_step"), "'."))
+                time_step_first, "'.")
             system = remove_reser(system, res)
         }
         else if (is.null(system[[res]]$DTM) && nrow(system[[res]]) != nrow(system[[1]])) {

@@ -91,7 +91,7 @@ prob_field <- function(reser, probs, yield, storage, throw_exceed) UseMethod("pr
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "storage"), throw_exceed = FALSE) {
-    if (attr(reser, "time_step") != "month")
+    if (attr(reser, "time_step_unit") != "month")
         stop("Probability fields can be calculated only for monthly data.")
 
     calc_resul = calc_series(reser, storage, yield, throw_exceed, get_level = TRUE)

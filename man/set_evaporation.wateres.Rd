@@ -31,11 +31,11 @@ Evaporation is applied when calculating reservoir water balance. If no elevation
   evaporation only for flooded area related to the potential storage is assumed. Otherwise, evaporation is calculated for the area interpolated
   linearly by using the area-storage relationship (or area equal to the one of the limit value if storage fall out of the relationship limits).
 
-  If the \code{plant_cover} argument is given, evaporation will be increased by plants transpiration as given by Vrána and Beran (1998). When the reservoir
+  If the \code{plant_cover} argument is given, evaporation will be increased by plant transpiration as given by Vrána and Beran (1998). When the reservoir
   is getting empty, it is assumed that the plant cover area corresponds with the shallowest parts of the reservoir and therefore the coefficient increasing
   evaporation is adjusted accordingly.
 
-  An error occurs if data in \code{reser} are not monthly or daily or if no dates are associated with daily data.
+  An error occurs if data in \code{reser} are not in monthly or daily time step of length one or if no dates are associated with daily data.
 }
 \examples{
 reser = data.frame(

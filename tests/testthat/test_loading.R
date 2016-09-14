@@ -63,7 +63,7 @@ test_that("reservoir input time series are resized", {
     expect_equivalent(resul$Q, c(rep(0, 6), rep(4.46, 36)))
     expect_equal(class(resul), c("wateres", "data.table", "data.frame"))
     expect_equal(names(attributes(resul)), c("names", "class", "row.names", ".internal.selfref",
-        "time_step", "storage", "area", "id", "down_id", "title"))
+        "time_step_len", "time_step_unit", "storage", "area", "id", "down_id", "title"))
 
     resul = resize_input(reser, "1902-01-01", "1903-04-01")
     expect_equivalent(resul$DTM, seq(as.Date("1902-01-15"), by = "month", length.out = 15))
@@ -83,4 +83,10 @@ test_that("reservoir input time series are resized", {
 
     resize_input(reser, begin = "1902-01-15", type = "date")
     resize_input(reser, end = "1902-01-15", type = "date")
+})
+
+test_that("invalid time steps are rejected", {
+    Q_df = data.frame(Q = c(5, 7, 9, 4, 3, 3))
+    expect_error(as.wateres(Q_df, 1e7, 1e2, time_step = "5x-hour"), "Invalid value of time step length")
+    expect_error(as.wateres(Q_df, 1e7, 1e2, time_step = "2-month"), "Monthly time step cannot be combined")
 })

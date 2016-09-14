@@ -138,3 +138,12 @@ test_that("negative wateruse is effective also if storage is zero", {
     expect_equivalent(resul$wateruse, rep(1e6, 6))
     expect_equivalent(resul$deficit, c(rep(0, 4), 1132800, 1592000))
 })
+
+test_that("series for different time steps are calculated", {
+    Q_df = data.frame(Q = c(5, 7, 9, 4, 3, 3))
+    resul_storage = list(
+        `1h` = c(9992800, 9992800, 1e+07, 9989200, 9974800, 9960400), `2h` = c(9985600, 9985600, 1e+07, 9978400, 9949600, 9920800),
+        `4h` = c(9971200, 9971200, 1e+07, 9956800, 9899200, 9841600), `8h` = c(9942400, 9942400, 1e+07, 9913600, 9798400, 9683200))
+    for (h in c(1, 2, 4, 8))
+        expect_equal(resul_storage[[paste0(h, "h")]], calc_series(as.wateres(Q_df, 1e7, 1e2, time_step = paste(h, "hour", sep = "-")), yield = 7)$storage)
+})
