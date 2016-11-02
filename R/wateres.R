@@ -144,8 +144,11 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
     dframe$minutes = calc_minutes(time_step_len, time_step_unit, nrow(dframe), dframe$DTM)
     dframe$Q = as.numeric(dframe$Q)
     class(dframe) = c("wateres", "data.table", "data.frame")
-    for (attr_name in c("time_step_len", "time_step_unit", "storage", "area", "id", "down_id", "title"))
+    for (attr_name in c("time_step_len", "time_step_unit", "storage", "area", "id", "down_id", "title")) {
+        if (length(get(attr_name)) == 0)
+            stop("Missing value of reservoir attribute '", attr_name, "'.")
         attr(dframe, attr_name) = get(attr_name)
+    }
     if (!is.null(eas)) {
         if (ncol(eas) != 3)
             warning("Incorrect number of columns for elevation-area-storage relationship.")

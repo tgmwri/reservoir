@@ -90,3 +90,9 @@ test_that("invalid time steps are rejected", {
     expect_error(as.wateres(Q_df, 1e7, 1e2, time_step = "5x-hour"), "Invalid value of time step length")
     expect_error(as.wateres(Q_df, 1e7, 1e2, time_step = "2-month"), "Monthly time step cannot be combined")
 })
+
+test_that("invalid attributes are reported", {
+    Q_df = data.frame(Q = c(5, 7, 9, 4, 3, 3))
+    expect_error(as.wateres(Q_df, NULL, 1e2, time_step = "day"), "Missing value of reservoir attribute 'storage'")
+    expect_error(as.wateres(Q_df, 1e7, numeric(0), time_step = "day"), "Missing value of reservoir attribute 'area'")
+})
