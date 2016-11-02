@@ -54,8 +54,10 @@ calc_minutes <- function(time_step_len, time_step_unit, len, DTM) {
 #' Creates a wateres object from provided time series.
 #'
 #' @param dframe A name of file containing table with data (including header) or directly data frame or data table.
-#'   The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, required for monthly time step only).
-#'   Alternatively, this can be a Bilan object (in daily or monthly time step) where the dates and modelled or observed runoffs are read from.
+#'   The data need to consist of time series of flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, required for monthly time step only).
+#'   Optionally, time series of flows from intercatchment only can be given (\dQuote{QI} column). These intercatchment flows will be used when
+#'   calculating a system of reservoirs by the \code{\link{calc_system}} function.
+#'   Alternatively, \code{dframe} can be a Bilan object (in daily or monthly time step) where the dates and modelled or observed runoffs are read from.
 #'   In that case, catchment area needs to be specified within the Bilan object.
 #' @param storage Potential storage of the reservoir in m3.
 #' @param area Flooded area of the reservoir for the potential storage in m2.
@@ -128,7 +130,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
         if (!colname %in% colnames(dframe))
             stop("To create a reservoir, ", colname, " column is required.")
     }
-    optional_cols = "DTM"
+    optional_cols = c("DTM", "QI")
     all_cols = required_cols
     for (col_name in optional_cols) {
         if (col_name %in% colnames(dframe) && !col_name %in% required_cols)

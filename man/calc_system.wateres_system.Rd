@@ -36,7 +36,8 @@ The types of calculation selected as the \code{types} argument are as follows:
   \item{\code{single_plain} - reservoirs are calculated independently of the system.}
   \item{\code{single_transfer} - as above, and water transfer is added to decrease deficit volumes; a fictional scenario for testing purposes.}
   \item{\code{system_plain} - reservoirs are calculated within the system, i.e. reservoir inflow consists of yield of corresponding upstream
-    reservoirs and runoff from the intercatchment (derived from the original inflow series to reservoirs).}
+    reservoirs and runoff from the intercatchment (derived from the original inflow series to reservoirs or given by the \dQuote{QI} column when
+    creating a reservoir by the \code{\link{as.wateres}} function).}
   \item{\code{system_transfer} - as above, and water transfer is added.}}
 
 The water transfer (redistribution) is carried out independently for the time steps when deficit in any of the reservoirs occurs. Future time steps are not

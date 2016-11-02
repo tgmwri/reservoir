@@ -9,8 +9,10 @@ as.wateres(dframe, storage, area, eas = NULL, observed = FALSE,
 }
 \arguments{
 \item{dframe}{A name of file containing table with data (including header) or directly data frame or data table.
-The data need to consist of monthly flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, required for monthly time step only).
-Alternatively, this can be a Bilan object (in daily or monthly time step) where the dates and modelled or observed runoffs are read from.
+The data need to consist of time series of flows in m3.s-1 (\dQuote{Q} column) and dates (\dQuote{DTM} column, required for monthly time step only).
+Optionally, time series of flows from intercatchment only can be given (\dQuote{QI} column). These intercatchment flows will be used when
+calculating a system of reservoirs by the \code{\link{calc_system}} function.
+Alternatively, \code{dframe} can be a Bilan object (in daily or monthly time step) where the dates and modelled or observed runoffs are read from.
 In that case, catchment area needs to be specified within the Bilan object.}
 
 \item{storage}{Potential storage of the reservoir in m3.}

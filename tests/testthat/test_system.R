@@ -11,6 +11,16 @@ test_that("system of four hourly empty reservoirs is calculated", {
     initial_storages = c(A1 = 0, A2 = 0, B = 0, C = 0)
     resul = calc_system(sys, yields, initial_storages, c("single_plain", "system_plain", "single_transfer", "system_transfer"))
 
+    # intercatchment flows directly given
+    inter_res_a1 = as.wateres(data.frame(Q = c(5, 7, 9, 4, 3, 3)), 1e7, 1e2, id = "A1", down_id = "B", time_step = "day")
+    inter_res_a2 = as.wateres(data.frame(Q = c(7, 11, 12, 6, 5, 4)), 1e7, 1e2, id = "A2", down_id = "B", time_step = "day")
+    inter_res_b = as.wateres(data.frame(Q = rep(NA, 6), QI = c(6, 6, 4, 5, 6, 16)), 1e7, 1e2, id = "B", down_id = "C", time_step = "day")
+    inter_res_c = as.wateres(data.frame(Q = rep(NA, 6), QI = c(7, 9, 8, 7, 9, 9)), 1e7, 1e2, id = "C", time_step = "day")
+
+    inter_sys = as.system(inter_res_a1, inter_res_a2, inter_res_b, inter_res_c)
+    inter_resul = calc_system(inter_sys, yields, initial_storages, types = c("system_plain", "system_transfer"))
+    expect_equal(resul[c("system_plain", "system_transfer")], inter_resul)
+
     sin_plain = resul$single_plain
     sin_transfer = resul$single_transfer
     sys_plain = resul$system_plain
@@ -83,6 +93,22 @@ test_that("system of four hourly empty reservoirs is calculated", {
     expect_equal(sys_transfer$C$yield, c(25, rep(29, 3), 24, 29))
     expect_equal(sys_transfer$C$deficit, 86400 * c(4, rep(0, 3), 5, 0))
     expect_equal(sys_transfer$C$transfer, 86400 * c(0, 0, 1, 2, 0, 0))
+})
+
+test_that("system with incorrectly given intercatchment flows is checked", {
+    inter_res_a1 = as.wateres(data.frame(Q = c(5, 7, 9, 4, 3, 3)), 1e7, 1e2, id = "A1", down_id = "B", time_step = "day")
+    inter_res_a2 = as.wateres(data.frame(Q = c(7, 11, 12, 6, 5, 4)), 1e7, 1e2, id = "A2", down_id = "B", time_step = "day")
+    inter_res_b = as.wateres(data.frame(Q = rep(NA, 6), QI = c(6, 6, 4, 5, 6, 16)), 1e7, 1e2, id = "B", down_id = "C", time_step = "day")
+    inter_res_c = as.wateres(data.frame(Q = c(25, 33, 33, 22, 23, 32)), 1e7, 1e2, id = "C", time_step = "day")
+
+    inter_sys = as.system(inter_res_a1, inter_res_a2, inter_res_b, inter_res_c)
+    inter_yields = c(A1 = 4, A2 = 7, B = 20, C = 29)
+    inter_initial_storages = c(A1 = 0, A2 = 0, B = 0, C = 0)
+    expect_error(calc_system(inter_sys, inter_yields, inter_initial_storages, types = "system_plain"), "Missing inflow from an intercatchment")
+
+    inter_res_b = as.wateres(data.frame(Q = rep(1, 6), QI = c(6, 6, 4, 5, 6, 16)), 1e7, 1e2, id = "B", down_id = "C", time_step = "day")
+    inter_sys = as.system(inter_res_a1, inter_res_a2, inter_res_b, inter_res_c)
+    expect_warning(calc_system(inter_sys, inter_yields, inter_initial_storages, types = "system_plain"), "Intercatchment flow (QI column) is given inconsistently", fixed = TRUE)
 })
 
 riv = as.wateres("rivendell.txt", 14.4e6, 754e3, id = "riv", down_id = "thar")

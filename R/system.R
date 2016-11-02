@@ -244,25 +244,47 @@ calc_inflows_inner <- function(system, series, def_pos, curr_id, bottom_id, reca
     curr_up = attr(system[[curr_id]], "up_ids")
     if (!is.null(curr_up)) {
         tmp_len = nrow(system[[curr_id]])
-        sum_up_Q = sum_up_yield = vector("numeric", tmp_len - def_pos + 1)
+        sum_up_yield = vector("numeric", tmp_len - def_pos + 1)
         if (recalc_series)
             series = calc_single(system, 1, series, only_part_ts = only_part_ts, reser_names = curr_up)
         for (up_id in curr_up) {
-            sum_up_Q = sum_up_Q + system[[up_id]]$Q[def_pos:tmp_len]
             sum_up_yield = sum_up_yield + series[[up_id]]$yield[def_pos:tmp_len]
         }
-        intercatch_Q = system[[curr_id]]$Q[def_pos:tmp_len] - sum_up_Q
-        if (any(intercatch_Q < 0)) {
-            stop("Negative inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(intercatch_Q < 0)[1], ") is not allowed.")
-        }
-        system[[curr_id]]$I[def_pos:tmp_len] = sum_up_yield + intercatch_Q
-
+        system[[curr_id]]$I[def_pos:tmp_len] = sum_up_yield + system[[curr_id]]$QI[def_pos:tmp_len]
     }
     return(system)
 }
 
 calc_inflows <- function(system, resers_done, series, def_pos, only_part_ts) {
     traverse(system, resers_done, calc_inflows_inner, series, def_pos, FALSE, only_part_ts)
+}
+
+# calculates and checks flows to reservoirs from intercatchment
+calc_intercatchs_inner <- function(system, series, def_pos, curr_id, bottom_id, recalc_series = TRUE, only_part_ts = FALSE) {
+    curr_up = attr(system[[curr_id]], "up_ids")
+    if (!is.null(curr_up)) {
+        if (!("QI" %in% colnames(system[[curr_id]]))) {
+            sum_up_Q = rep(0, nrow(system[[curr_id]]))
+            for (up_id in curr_up) {
+                sum_up_Q = sum_up_Q + system[[up_id]]$Q
+            }
+            system[[curr_id]]$QI = system[[curr_id]]$Q - sum_up_Q
+        }
+        if (anyNA(system[[curr_id]]$QI))
+            stop("Missing inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(is.na(system[[curr_id]]$QI))[1], ") is not allowed.")
+        else if (any(system[[curr_id]]$QI < 0)) {
+            stop("Negative inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(system[[curr_id]]$QI < 0)[1], ") is not allowed.")
+        }
+    }
+    return(system)
+}
+
+calc_intercatchs <- function(system) {
+    res_with_QI = sapply(system, function(res) { "QI" %in% colnames(res) })[sapply(system, function(res) { !is.null(attr(res, "up_ids")) })]
+    system = traverse(system, c(), calc_intercatchs_inner, NULL, 1, FALSE, FALSE)
+    if (!(all(res_with_QI) || all(!res_with_QI)))
+        warning("Intercatchment flow (QI column) is given inconsistently only for some reservoirs.")
+    return(system)
 }
 
 calc_max_transfer_inner <- function(system, series, def_pos, curr_id, bottom_id, only_part_ts = NULL) {
@@ -360,7 +382,8 @@ calc_system <- function(system, yields, initial_storages, types) UseMethod("calc
 #'   \item{\code{single_plain} - reservoirs are calculated independently of the system.}
 #'   \item{\code{single_transfer} - as above, and water transfer is added to decrease deficit volumes; a fictional scenario for testing purposes.}
 #'   \item{\code{system_plain} - reservoirs are calculated within the system, i.e. reservoir inflow consists of yield of corresponding upstream
-#'     reservoirs and runoff from the intercatchment (derived from the original inflow series to reservoirs).}
+#'     reservoirs and runoff from the intercatchment (derived from the original inflow series to reservoirs or given by the \dQuote{QI} column when
+#'     creating a reservoir by the \code{\link{as.wateres}} function).}
 #'   \item{\code{system_transfer} - as above, and water transfer is added.}}
 #'
 #' The water transfer (redistribution) is carried out independently for the time steps when deficit in any of the reservoirs occurs. Future time steps are not
@@ -425,6 +448,10 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
     }
     attr(system, "yields") = yields
     attr(system, "initial_storages") = initial_storages
+
+    if (any(grepl("system", types))) {
+        system = calc_intercatchs(system)
+    }
 
     initialize_input <- function(system, res, var, is) {
         if (is)
