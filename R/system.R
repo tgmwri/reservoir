@@ -418,7 +418,7 @@ calc_system <- function(system, yields, initial_storages, types, yields_intercat
 #' @param types A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
 #'   \dQuote{system_transfer} (see details).
 #' @param yields_intercatch Whether the vector of \code{yields} consists of values for intercatchment, i.e. whether total yields will be calculated as
-#'   a sum yields from upstream reservoirs.
+#'   a sum of yields from upstream reservoirs.
 #' @return A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
 #'   objects for individual reservoirs. The object contains the water balance variables returned by the \code{\link{calc_series}} functions.
 #'   Moreover, \code{transfer} variable is added for the system results if has non-zero value at least in one time step.

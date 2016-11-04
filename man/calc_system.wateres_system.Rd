@@ -22,7 +22,7 @@ are considered to be full initially.}
 \dQuote{system_transfer} (see details).}
 
 \item{yields_intercatch}{Whether the vector of \code{yields} consists of values for intercatchment, i.e. whether total yields will be calculated as
-a sum yields from upstream reservoirs.}
+a sum of yields from upstream reservoirs.}
 }
 \value{
 A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
