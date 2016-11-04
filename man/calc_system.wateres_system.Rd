@@ -5,10 +5,10 @@
 \alias{calc_system.wateres_system}
 \title{Calculation of system of reservoirs}
 \usage{
-calc_system(system, yields, initial_storages, types)
+calc_system(system, yields, initial_storages, types, yields_intercatch)
 
 \method{calc_system}{wateres_system}(system, yields, initial_storages,
-  types = c("single_plain", "system_plain"))
+  types = c("single_plain", "system_plain"), yields_intercatch = FALSE)
 }
 \arguments{
 \item{system}{A \code{wateres_system} object.}
@@ -20,6 +20,9 @@ are considered to be full initially.}
 
 \item{types}{A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
 \dQuote{system_transfer} (see details).}
+
+\item{yields_intercatch}{Whether the vector of \code{yields} consists of values for intercatchment, i.e. whether total yields will be calculated as
+a sum yields from upstream reservoirs.}
 }
 \value{
 A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}

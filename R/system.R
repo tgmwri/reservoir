@@ -270,6 +270,9 @@ calc_intercatchs_inner <- function(system, series, def_pos, curr_id, bottom_id, 
             }
             system[[curr_id]]$QI = system[[curr_id]]$Q - sum_up_Q
         }
+        if (attr(system, "yields_intercatch")) {
+            attr(system, "yields")[curr_id] = sum(attr(system, "yields")[curr_up]) + attr(system, "yields")[curr_id]
+        }
         if (anyNA(system[[curr_id]]$QI))
             stop("Missing inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(is.na(system[[curr_id]]$QI))[1], ") is not allowed.")
         else if (any(system[[curr_id]]$QI < 0)) {
@@ -370,7 +373,7 @@ set_transfers_from_pos <- function(system, init_pos, series = NULL) {
 
 #' @rdname calc_system.wateres_system
 #' @export
-calc_system <- function(system, yields, initial_storages, types) UseMethod("calc_system")
+calc_system <- function(system, yields, initial_storages, types, yields_intercatch) UseMethod("calc_system")
 
 #' Calculation of system of reservoirs
 #'
@@ -414,6 +417,8 @@ calc_system <- function(system, yields, initial_storages, types) UseMethod("calc
 #'   are considered to be full initially.
 #' @param types A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
 #'   \dQuote{system_transfer} (see details).
+#' @param yields_intercatch Whether the vector of \code{yields} consists of values for intercatchment, i.e. whether total yields will be calculated as
+#'   a sum yields from upstream reservoirs.
 #' @return A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
 #'   objects for individual reservoirs. The object contains the water balance variables returned by the \code{\link{calc_series}} functions.
 #'   Moreover, \code{transfer} variable is added for the system results if has non-zero value at least in one time step.
@@ -433,7 +438,7 @@ calc_system <- function(system, yields, initial_storages, types) UseMethod("calc
 #' thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
 #' sys = as.system(riv, thar)
 #' resul = calc_system(sys, c(riv = 0.14, thar = 8))
-calc_system.wateres_system <- function(system, yields, initial_storages, types = c("single_plain", "system_plain")) {
+calc_system.wateres_system <- function(system, yields, initial_storages, types = c("single_plain", "system_plain"), yields_intercatch = FALSE) {
     system = check(system)
     system = set_up_ids(system)
 
@@ -446,8 +451,8 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
         if (anyNA(values) || length(values) < length(system))
             stop("Argument '", arg, "' does not provide values for all reservoirs in the system.")
     }
-    attr(system, "yields") = yields
-    attr(system, "initial_storages") = initial_storages
+    for (curr_attr in c("yields", "yields_intercatch", "initial_storages"))
+        attr(system, curr_attr) = get(curr_attr)
 
     if (any(grepl("system", types))) {
         system = calc_intercatchs(system)

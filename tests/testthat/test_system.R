@@ -21,6 +21,11 @@ test_that("system of four hourly empty reservoirs is calculated", {
     inter_resul = calc_system(inter_sys, yields, initial_storages, types = c("system_plain", "system_transfer"))
     expect_equal(resul[c("system_plain", "system_transfer")], inter_resul)
 
+    # yields calculated from yields for intercatchments
+    yields_inter = c(A1 = 4, A2 = 7, B = 9, C = 9)
+    inter_resul_yield = calc_system(inter_sys, yields_inter, initial_storages, types = c("system_plain", "system_transfer"), yields_inter = TRUE)
+    expect_equal(inter_resul, inter_resul_yield)
+
     sin_plain = resul$single_plain
     sin_transfer = resul$single_transfer
     sys_plain = resul$system_plain
