@@ -28,6 +28,8 @@ a sum of yields from upstream reservoirs.}
 A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
   objects for individual reservoirs. The object contains the water balance variables returned by the \code{\link{calc_series}} functions.
   Moreover, \code{transfer} variable is added for the system results if has non-zero value at least in one time step.
+
+  If the yields are given as \code{yields_intercatch}, the list contains also the \code{yields} item with total yields calculated for the reservoirs.
 }
 \description{
 Calculates time series of variables for reservoirs organized in a system. Four types of calculation are available, depending on whether
