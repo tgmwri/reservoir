@@ -47,4 +47,3 @@ alpha_beta = alpha_beta(reser)
 \code{\link{plot.wateres_alpha_beta}} for plotting the results, \code{\link{sry.wateres}} for calculation of a reservoir storage for the
   given yield and reliability
 }
-

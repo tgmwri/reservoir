@@ -36,4 +36,3 @@ sry(reser, storage = 21e3, yield = 0.17)
 reser = set_precipitation(reser, c(55, 40, 44, 43, 81, 72, 85, 84, 52, 54, 48, 58))
 resul = calc_series(reser, storage = 21e3, yield = 0.17)
 }
-

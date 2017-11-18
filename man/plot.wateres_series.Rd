@@ -48,4 +48,3 @@ plot(calc_series(reser, 14.4e6, 0.14), reser)
 \seealso{
 \code{\link{calc_series.wateres}} used for calculation of reservoir time series
 }
-

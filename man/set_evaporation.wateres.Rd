@@ -51,4 +51,3 @@ resul = calc_series(reser, storage = 21e3, yield = 0.14)
 \references{
 ČSN 72 2405; Vrána, Karel, and Beran, Jan: Rybníky a účelové nádrže, ČVUT, Praha, 1998 (in Czech)
 }
-

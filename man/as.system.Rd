@@ -36,4 +36,3 @@ sys = as.system(riv, thar)
 \seealso{
 \code{\link{check.wateres_system}} for checking validity of the system
 }
-

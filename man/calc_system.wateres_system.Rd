@@ -85,4 +85,3 @@ resul = calc_system(sys, c(riv = 0.14, thar = 8))
 \seealso{
 \code{\link{calc_series}} for calculating individual reservoirs
 }
-

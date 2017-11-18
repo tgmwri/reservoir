@@ -36,4 +36,3 @@ sry(reser, storage = 21e3, yield = 0.14)
 reser = set_wateruse(reser, -1 * c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
 resul = calc_series(reser, storage = 21e3, yield = 0.14)
 }
-

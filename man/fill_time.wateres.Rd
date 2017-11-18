@@ -39,4 +39,3 @@ reser = data.frame(
 reser = as.wateres(reser, storage = 4e5, area = 754e3)
 fill = fill_time(reser, yield = 0.01)
 }
-

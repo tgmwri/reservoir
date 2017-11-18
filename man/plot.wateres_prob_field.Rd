@@ -38,4 +38,3 @@ reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 plot(prob_field, "storage")
 }
-

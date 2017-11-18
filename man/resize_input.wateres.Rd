@@ -36,4 +36,3 @@ reser = data.frame(
 reser = as.wateres(reser, storage = 4e5, area = 754e3)
 reser = resize_input(reser, "2000-02-15", 20)
 }
-

@@ -25,4 +25,3 @@ prob_field = prob_field(reser, c(0.1, 0.9, 0.99), 0.14)
 plot(prob_field, "storage")
 plot(alpha_beta(reser))
 }
-

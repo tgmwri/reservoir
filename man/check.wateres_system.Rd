@@ -47,4 +47,3 @@ thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
 sys = as.system(riv, thar)
 sys_modif = check(sys)
 }
-

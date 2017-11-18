@@ -60,4 +60,3 @@ Thomas A. McMahon, Adebayo J. Adeloye, Sen-Lin Zhou (2006): Understanding perfor
 \seealso{
 \code{\link{sry.wateres}} used for optimization of the yield or storage for given reliability and for calculation of reliability
 }
-

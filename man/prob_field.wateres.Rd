@@ -45,4 +45,3 @@ prob_field = prob_field(reser, c(0.9, 0.95, 0.99), 0.14)
 \seealso{
 \code{\link{plot.wateres_prob_field}} for plotting the results
 }
-

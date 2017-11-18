@@ -33,4 +33,3 @@ reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 alpha_beta = alpha_beta(reser)
 plot(alpha_beta)
 }
-

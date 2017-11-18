@@ -54,4 +54,3 @@ eas = data.frame(
     storage = c(0, 161e3, 1.864e6, 6.362e6, 14.400e6))
 reser = as.wateres(reser, storage = 14.4e6, area = 754e3, eas = eas)
 }
-

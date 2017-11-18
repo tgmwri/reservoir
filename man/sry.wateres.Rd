@@ -82,4 +82,3 @@ sry(reser, storage = 41e3, reliab = 0.5)
 \seealso{
 \code{\link{calc_series.wateres}} used for calculation of time series of water balance variables
 }
-
