@@ -1,5 +1,19 @@
 context("storage, yield, precipitation, evaporation and water use time series")
 
+test_that("series of simple reservoir for given storage are calculated", {
+    simple_reser = as.wateres(data.frame(Q = c(rep(2, 12), rep(0.5, 12)), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24)), storage = 1e7, area = 1e4)
+    resul = calc_series(simple_reser, 1e7, 1, FALSE)
+    expect_equal(resul$inflow, c(rep(2, 12), rep(0.5, 12)))
+    expect_equal(resul$storage, c(rep(1e7, 12), 1e2 * c(86608, 74512, 61120, 48160, 34768, 21808, 8416), rep(0, 5)))
+    expect_equal(resul$yield, c(rep(2, 12), rep(1, 7), 0.8142174, rep(0.5, 4)), tol = 1e-5)
+
+    expect_error(calc_series(simple_reser, c(rep(2e7, 12), rep(1e7, 12)), 1, FALSE), "must correspond with the length of the reservoir series")
+    resul = calc_series(simple_reser, c(rep(2e7, 13), rep(1e7, 12)), 1, FALSE)
+    expect_equal(resul$inflow, c(rep(2, 12), rep(0.5, 12)))
+    expect_equal(resul$storage, c(rep(2e7, 12), 1e7, 1e2 * c(87904, 74512, 61552, 48160, 35200, 21808, 8416), rep(0, 4)))
+    expect_equal(resul$yield, c(rep(2, 12), 4.2335723, rep(1, 7), 0.8246914, rep(0.5, 3)), tol = 1e-5)
+})
+
 eas = data.frame(
     elevation = c(496, 499, 502, 505, 508, 511, 514, 517, 520, 523, 526, 529),
     area = c(0, 5e3, 58e3, 90e3, 133e3, 180e3, 253e3, 347e3, 424e3, 483e3, 538e3, 754e3),

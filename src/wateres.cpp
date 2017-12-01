@@ -66,7 +66,7 @@ const string wateres::var_names[wateres::var_count] = {"Q", "E", "W", "P", "Y", 
  * - creates water reservoir from given vectors of variables and options
  */
 wateres::wateres(
-  DataFrame reser, vector<double> storage, bool throw_exceed, double volume) : storage(storage),
+  DataFrame reser, vector<double> storage, bool throw_exceed, vector<double> volume) : storage(storage),
   throw_exceed(throw_exceed), volume(volume)
 {
   unsigned row_count = reser.nrows();
@@ -279,10 +279,10 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
       default:
         break;
     }
-    if (storage[ts + 1] > volume) {
+    if (storage[ts + 1] > volume[ts + 1]) {
       if (!throw_exceed)
-        var[YIELD][ts] += storage[ts + 1] - volume;
-      storage[ts + 1] = volume;
+        var[YIELD][ts] += storage[ts + 1] - volume[ts + 1];
+      storage[ts + 1] = volume[ts + 1];
     }
   }
 }
@@ -294,7 +294,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
     eas - elevation-area-storage relationship (in m.a.s.l., m2 and m3), plant_cover - fraction of fully flooded area covered by plants
   * @param Rinflow time series of inflows in m3.s-1
   * @param Ryield_req time series of required yield (reservoir outflow) in m3.s-1
-  * @param Rvolume reservoir potential volume in m3
+  * @param Rvolume time series of reservoir potential volume in m3
   * @param Rinitial_storage initial storage in the reservoir in m3
   * @param Rinitial_pos initial time step of calculation
   * @param Rlast_pos last time step of calculation
@@ -309,7 +309,7 @@ RcppExport SEXP calc_storage(
 {
   DataFrame reser = as<DataFrame>(Rreser);
   vector<double> yield_req = as<vector<double> >(Ryield_req);
-  double volume = as<double>(Rvolume);
+  vector<double> volume = as<vector<double> >(Rvolume);
   double initial_storage = as<double>(Rinitial_storage);
   unsigned initial_pos = as<unsigned>(Rinitial_pos) - 1; //from R to C++ indexing
   unsigned last_pos = as<unsigned>(Rlast_pos) - 1;

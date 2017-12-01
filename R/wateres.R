@@ -476,7 +476,8 @@ calc_series <- function(
 #' water use or transfer variables are applied.
 #'
 #' @param reser A \code{wateres} object.
-#' @param storage A maximum reservoir storage in m3, if not given, take from the \code{reser} object.
+#' @param storage A maximum reservoir storage in m3, either a value of fixed maximum storage or a vector
+#'   of the length of the reservoir series plus one. If not given, taken from the \code{reser} object.
 #' @param yield A required yield in m3.s-1, either a value of fixed yield or a vector of the same length as the reservoir series.
 #' @param throw_exceed Whether volume exceeding storage will be thrown or added to yield.
 #' @param initial_storage A value of initial reservoir storage in m3. If not specified, the reservoir is considered to be full.
@@ -505,12 +506,19 @@ calc_series <- function(
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' resul = calc_series(reser, 14.4e6, 0.14)
 calc_series.wateres <- function(
-    reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage, initial_level, initial_pos = 1,
+    reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage[1], initial_level, initial_pos = 1,
     last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos) {
-    if (length(yield) == 1)
-        yield = rep(yield, nrow(reser))
-    else if (length(yield) != nrow(reser))
-        stop("Time series of required yield must have the length of the reservoir series (", nrow(reser), ").")
+    required_series_length = list(yield = nrow(reser), storage = nrow(reser) + 1)
+    for (variable in c("yield", "storage")) {
+        if (length(get(variable)) == 1) {
+            assign(variable, rep(get(variable), required_series_length[[variable]]))
+        }
+        else if (length(get(variable)) != required_series_length[[variable]]) {
+            stop("Time series of required ", variable, " must correspond with the length of the reservoir series (expected ",
+                required_series_length[[variable]], " time steps).")
+        }
+    }
+
     eas = attr(reser, "eas")
     if (!missing(initial_level)) {
         if (is.null(eas))

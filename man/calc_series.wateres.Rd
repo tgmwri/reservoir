@@ -9,14 +9,15 @@ calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
   initial_pos, last_pos, get_level, till_def, first_def_pos)
 
 \method{calc_series}{wateres}(reser, storage = attr(reser, "storage"), yield,
-  throw_exceed = FALSE, initial_storage = storage, initial_level,
+  throw_exceed = FALSE, initial_storage = storage[1], initial_level,
   initial_pos = 1, last_pos = nrow(reser), get_level = FALSE,
   till_def = FALSE, first_def_pos = initial_pos)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
 
-\item{storage}{A maximum reservoir storage in m3, if not given, take from the \code{reser} object.}
+\item{storage}{A maximum reservoir storage in m3, either a value of fixed maximum storage or a vector
+of the length of the reservoir series plus one. If not given, taken from the \code{reser} object.}
 
 \item{yield}{A required yield in m3.s-1, either a value of fixed yield or a vector of the same length as the reservoir series.}
 
