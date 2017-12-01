@@ -44,6 +44,6 @@ and their systems,
 - flood wave transformation.
 
 ## Further reading
-Current capabilities of the package are described in the [Reservoir Characteristics]
-(http://lapv.vuv.cz/wateres/vignettes/reservoir.html) and [System of Reservoirs]
-(http://lapv.vuv.cz/wateres/vignettes/system.html) vignettes.
+Current capabilities of the package are described in the
+[Reservoir Characteristics](http://lapv.vuv.cz/wateres/vignettes/reservoir.html)
+and [System of Reservoirs](http://lapv.vuv.cz/wateres/vignettes/system.html) vignettes.
