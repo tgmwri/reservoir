@@ -7,7 +7,8 @@
 class wateres
 {
   public:
-    wateres(Rcpp::DataFrame reser, std::vector<double> storage, bool throw_exceed, std::vector<double> volume); //!< reservoir from given values
+    wateres(Rcpp::DataFrame reser, std::vector<double> storage, bool throw_exceed,
+        std::vector<double> volume, std::vector<double> volume_optim, std::vector<double> yield_max); //!< reservoir from given values
 
     //! water balance variables
     enum var_name {INFLOW, EVAPORATION, WATERUSE, PRECIPITATION, YIELD, DEFICIT, TRANSFER};
@@ -27,6 +28,8 @@ class wateres
   private:
     bool throw_exceed; //!< whether volume exceeding maximum storage will be thrown
     std::vector<double> volume; //!< maximum reservoir storage for each time step
+    std::vector<double> volume_optim; //!< optimum reservoir storage for each time step
+    std::vector<double> yield_max; //!< maximum yield for storage below maximum value
     double area; //!< flooded area for maximum storage
     double plant_cover; //!< part of the area covered by plants
     double plant_coeff; //!< evaporation coefficient for whole area

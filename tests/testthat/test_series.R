@@ -14,6 +14,41 @@ test_that("series of simple reservoir for given storage are calculated", {
     expect_equal(resul$yield, c(rep(2, 12), 4.2335723, rep(1, 7), 0.8246914, rep(0.5, 3)), tol = 1e-5)
 })
 
+test_that("series of simple reservoir for optimum storage and maximum yield are calculated", {
+    simple_reser = as.wateres(data.frame(Q = c(rep(2, 12), rep(0.5, 12)), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24)), storage = 1e7, area = 1e4)
+    resul = calc_series(simple_reser, storage = 2e7, yield = 1, storage_optim = c(rep(2e7, 6), rep(1e7, 19)), yield_max = 3)
+
+    expect_equal(resul$inflow, c(rep(2, 12), rep(0.5, 12)))
+    expect_equal(resul$storage, c(rep(2e7, 5), 1e2 * c(174080, 147296, 120512), rep(1e7, 4), 1e2 * c(86608, 74512, 61120, 48160, 34768, 21808, 8416), rep(0, 5)))
+    expect_equal(resul$yield, c(rep(2, 5), rep(3, 3), 2.791358, rep(2, 3), rep(1, 7), 0.814217, rep(0.5, 4)), tol = 1e-5)
+
+    # including water use
+    simple_reser = set_wateruse(simple_reser, c(rep(0, 11), -5e6))
+    resul = calc_series(simple_reser, storage = 2e7, yield = 1, storage_optim = c(rep(2e7, 6), rep(1e7, 19)), yield_max = 3)
+
+    expect_equal(resul$inflow, c(rep(2, 12), rep(0.5, 12)))
+    expect_equal(resul$storage, c(rep(2e7, 5), 1e2 * c(174080, 147296, 120512), rep(1e7, 3), 1e2 * c(76784, 63392, 51296, 37904, 24944, 11552), rep(0, 7)))
+    expect_equal(resul$yield, c(rep(2, 5), rep(3, 3), 2.791358, rep(2, 2), rep(1, 6), 0.945679, rep(0.5, 6)), tol = 1e-5)
+
+    # yield greater than maximum yield due to exceeding of maximum storage
+    simple_reser = as.wateres(data.frame(Q = c(rep(4, 12), rep(0.5, 12)), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24)), storage = 1e7, area = 1e4)
+    resul = calc_series(simple_reser, storage = 2e7, yield = 1, storage_optim = c(rep(2e7, 6), rep(1e7, 19)), yield_max = 3)
+
+    expect_equal(resul$inflow, c(rep(4, 12), rep(0.5, 12)))
+    expect_equal(resul$storage, c(rep(2e7, 12), 1e2 * c(133040, 1e5, 86608, 73648, 60256, 47296, 33904, 20512, 7552), rep(0, 3)))
+    expect_equal(resul$yield, c(rep(4, 12), 3, 1.8657407, rep(1, 7), 0.781959, rep(0.5, 2)), tol = 1e-5)
+
+    # yield greater than maximum yield due to exceeding of maximum storage (starting from empty reservoir)
+    simple_reser = as.wateres(data.frame(Q = c(rep(2, 8), rep(4, 4), rep(0.5, 12)), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24)),
+        storage = 1e7, area = 1e4)
+    resul = calc_series(simple_reser, storage = 2e7, yield = 1, storage_optim = 1e7, yield_max = 3, initial_storage = 0)
+
+    expect_equal(resul$inflow, c(rep(2, 8), rep(4, 4), rep(0.5, 12)))
+    expect_equal(resul$storage, c(1e2 * c(26784, 51840, 78624), rep(1e7, 5), 1e2 * c(125920, 152704, 178624, 2e5, 133040, 1e5, 86608, 73648, 60256, 47296, 33904, 20512, 7552),
+        rep(0, 3)))
+    expect_equal(resul$yield, c(rep(1, 3), 1.1753086, rep(2, 4), rep(3, 3), 3.201911, 3, 1.865740, rep(1, 7), 0.781959, rep(0.5, 2)), tol = 1e-5)
+})
+
 eas = data.frame(
     elevation = c(496, 499, 502, 505, 508, 511, 514, 517, 520, 523, 526, 529),
     area = c(0, 5e3, 58e3, 90e3, 133e3, 180e3, 253e3, 347e3, 424e3, 483e3, 538e3, 754e3),

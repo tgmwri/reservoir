@@ -468,7 +468,8 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
 #' @rdname calc_series.wateres
 #' @export
 calc_series <- function(
-    reser, storage, yield, throw_exceed, initial_storage, initial_level, initial_pos, last_pos, get_level, till_def, first_def_pos) UseMethod("calc_series")
+    reser, storage, yield, throw_exceed, initial_storage, initial_level, initial_pos, last_pos, get_level, till_def, first_def_pos,
+    storage_optim, yield_max) UseMethod("calc_series")
 
 #' Calculation of reservoir time series
 #'
@@ -489,6 +490,12 @@ calc_series <- function(
 #'   is provided within the \code{reser} object.
 #' @param till_def If TRUE, the calculation will stop at time step when any deficit occurs provided that this time step is greater or equal to \code{first_def_pos}.
 #' @param first_def_pos If the \code{till_def} argument is TRUE, it means the first index of time step when a deficit will stop the calculation.
+#' @param storage_optim An optimum reservoir storage in m3, i.e. the value which will be tried to be not exceeded if this is allowed by the value of `max_yield`.
+#'   Either a value of fixed optimum storage or a vector of the length of the reservoir series plus one.
+#' @param yield_max A maximum value of yield (in m3.s-1) that can be obtained from storage below the maximum value (the `storage` argument). Hence, if
+#'   the reservoir storage exceeds the `storage` value and `throw_exceed` is not set to `TRUE`, the resulting yield may be greater than `yield_max`.
+#'   The maximum yield can be interpreted as an outflow capacity of the reservoir in case that its dam is not overflown.
+#'   Either a value of fixed yield or a vector of the same length as the reservoir series.
 #' @return A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield (in m3.s-1),
 #'   precipitation, evaporation, water use, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
 #'   sum of yield and withdrawal demands. There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system.
@@ -505,16 +512,24 @@ calc_series <- function(
 #'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' resul = calc_series(reser, 14.4e6, 0.14)
+#' @md
 calc_series.wateres <- function(
     reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage[1], initial_level, initial_pos = 1,
-    last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos) {
-    required_series_length = list(yield = nrow(reser), storage = nrow(reser) + 1)
-    for (variable in c("yield", "storage")) {
+    last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos, storage_optim = NULL, yield_max = NULL) {
+
+    if (is.null(storage_optim)) {
+        storage_optim = storage
+    }
+    if (is.null(yield_max)) {
+        yield_max = yield
+    }
+    required_series_length = list(yield = nrow(reser), yield_max = nrow(reser), storage = nrow(reser) + 1, storage_optim = nrow(reser) + 1)
+    for (variable in c("yield", "yield_max", "storage", "storage_optim")) {
         if (length(get(variable)) == 1) {
             assign(variable, rep(get(variable), required_series_length[[variable]]))
         }
         else if (length(get(variable)) != required_series_length[[variable]]) {
-            stop("Time series of required ", variable, " must correspond with the length of the reservoir series (expected ",
+            stop("Time series of ", variable, " must correspond with the length of the reservoir series (expected ",
                 required_series_length[[variable]], " time steps).")
         }
     }
@@ -527,7 +542,8 @@ calc_series.wateres <- function(
             initial_storage = approx(eas$elevation, eas$storage, initial_level, rule = 2)$y
     }
 
-    resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, storage, initial_storage, initial_pos, last_pos, throw_exceed, till_def, first_def_pos)
+    resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, yield_max, storage, storage_optim, initial_storage, initial_pos, last_pos, throw_exceed,
+        till_def, first_def_pos)
     resul = as.data.table(resul)
     if (get_level && !is.null(eas)) {
         resul = cbind(resul, level = approx(eas$storage, eas$elevation, resul$storage, rule = 2)$y)
