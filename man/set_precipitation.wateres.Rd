@@ -13,8 +13,7 @@ set_precipitation(reser, values)
 \item{reser}{A \code{wateres} object.}
 
 \item{values}{A vector of precipitation values in mm, either monthly or daily of length of reservoir time series, or 12 monthly values
-starting by January (for monthly or daily data only).
- (for monthly data only).}
+starting by January (for monthly or daily data only).}
 }
 \value{
 A modified \code{wateres} object with precipitation time series added (denoted as \code{P}).

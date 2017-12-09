@@ -1,27 +1,48 @@
-set_variable <- function(reser, values, variable) {
-    if (length(values) != nrow(reser)) {
+# sets variable (water balance value stored in wateres object) or property (reservoir characteristics stored in attributes of the wateres object)
+# values of properties are not dependent on time step (no conversions needed)
+# is_storage_property set to TRUE will require and produce time series of length of reservoir variables plus one
+set_variable <- function(reser, values, variable, allow_one_value = FALSE, is_property = FALSE, is_storage_property = FALSE) {
+    if (allow_one_value && length(values) == 1) {
+        values = rep(values, 12)
+    }
+    required_length = ifelse(is_storage_property, nrow(reser) + 1, nrow(reser))
+    if (length(values) != required_length) {
         var_names = c(E = "evaporation", W = "wateruse", P = "precipitation")
+        var_name = var_names[variable]
+        if (is.na(var_name)) {
+            var_name = variable
+        }
         if (length(values) == 12) {
             time_step = attr(reser, "time_step_unit")
             if (time_step == "hour")
-                stop("Variable ", var_names[variable], " cannot be set by 12 values for hourly data.")
+                stop("Variable ", var_name, " cannot be set by 12 values for hourly data.")
             else if (time_step == "day") {
                 if (is.null(reser$DTM))
-                    stop("Variable ", var_names[variable], " cannot be set for daily data without specified date.")
+                    stop("Variable ", var_name, " cannot be set for daily data without specified date.")
                 else if (attr(reser, "time_step_len") != 1)
-                    stop("Variable ", var_names[variable], " cannot be set for data with an arbitrary length of daily time step.")
+                    stop("Variable ", var_name, " cannot be set for data with an arbitrary length of daily time step.")
             }
             months = as.integer(format(reser$DTM, "%m"))
+            if (is_storage_property) {
+                last_dtm = seq(reser$DTM[nrow(reser)], by = paste0(time_step, "s"), length.out = 2)[2]
+                months = c(months, as.integer(format(last_dtm, "%m")))
+            }
             values = values[months]
-            if (time_step == "day")
+            if (time_step == "day" && !is_property) {
                 values = values / days_for_months(reser$DTM)
+            }
         }
         else {
-            text_const = ifelse(variable == "W", " or one constant value", "")
-            stop("Incorrect length of ", var_names[variable], " length of time series or 12 (monthly values)", text_const, " required.")
+            text_const = ifelse(allow_one_value, " or one constant value", "")
+            stop("Incorrect length of ", var_name, ": length of time series or 12 (monthly values)", text_const, " required.")
         }
     }
-    reser[[variable]] = values
+    if (is_property) {
+        attr(reser, variable) = values
+    }
+    else {
+        reser[[variable]] = values
+    }
     return(reser)
 }
 
@@ -103,9 +124,7 @@ set_wateruse <- function(reser, values) UseMethod("set_wateruse")
 #' reser = set_wateruse(reser, -1 * c(7, 14, 40, 62, 82, 96, 109, 102, 75, 48, 34, 13))
 #' resul = calc_series(reser, storage = 21e3, yield = 0.14)
 set_wateruse.wateres <- function(reser, values) {
-    if (length(values) == 1)
-        values = rep(values, 12)
-    reser = set_variable(reser, values, "W")
+    reser = set_variable(reser, values, "W", TRUE)
     return(reser)
 }
 
@@ -120,7 +139,6 @@ set_precipitation <- function(reser, values) UseMethod("set_precipitation")
 #' @param reser A \code{wateres} object.
 #' @param values A vector of precipitation values in mm, either monthly or daily of length of reservoir time series, or 12 monthly values
 #'   starting by January (for monthly or daily data only).
-#'    (for monthly data only).
 #' @return A modified \code{wateres} object with precipitation time series added (denoted as \code{P}).
 #' @details Precipitation is applied when calculating reservoir water balance. When calculating precipitation volume, the flooded area related
 #'   to the potential storage is always used.
@@ -136,5 +154,39 @@ set_precipitation <- function(reser, values) UseMethod("set_precipitation")
 #' resul = calc_series(reser, storage = 21e3, yield = 0.17)
 set_precipitation.wateres <- function(reser, values) {
     reser = set_variable(reser, values, "P")
+    return(reser)
+}
+
+#' @rdname set_property.wateres
+#' @export
+set_property <- function(reser, property_name, values) UseMethod("set_property")
+
+#' Reservoir property setting
+#'
+#' Sets a value or time series of values of a reservoir property, i.e. characteristics which affect water balance calculation.
+#'
+#' @param reser A `wateres` object.
+#' @param property_name One of \dQuote{storage} (maximum storage), \dQuote{storage_optim} (optimum storage), \dQuote{yield} (reservoir yield)
+#'   or \dQuote{yield_max} (maximum yield relevant if optimum, but not maximum storage is exceeded).
+#' @param values One constant value or a vector of property values (in m3 for storages or m3.s-1 for yields), either monthly or daily of length of reservoir time series
+#'   (or plus one in case of storages), or 12 monthly values starting by January (for monthly or daily data only). For storages, the values relate to the beginning
+#'   of the particular month (e.g. the first of 12 values relates to the beginning of January, i.e. the end of December).
+#' @return A modified `wateres` object with the property added as its attribute.
+#' @details The reservoir properties are implemented as attributes of the `wateres` object.
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
+#' reser = set_property(reser, "storage", 1e6 * c(10, 10, 10, 14, 14, 14, 12, 12, 12, 6, 6, 6))
+#' resul = calc_series(reser, yield = 0.17)
+#' @md
+set_property.wateres <- function(reser, property_name, values) {
+    if (!property_name %in% c("storage", "storage_optim", "yield", "yield_max")) {
+        stop("Unknown property '", property_name, "'.")
+    }
+    reser = set_variable(reser, values, property_name, TRUE, TRUE, property_name %in% c("storage", "storage_optim"))
     return(reser)
 }

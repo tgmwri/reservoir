@@ -53,3 +53,28 @@ test_that("precipitation monthly values are set", {
     riv = set_precipitation(riv, monthly_precip)
     expect_equivalent(riv$P, rep_len(monthly_precip, nrow(riv)))
 })
+
+test_that("properties are set", {
+    simple_reser = as.wateres(data.frame(Q = c(rep(2, 12), rep(0.5, 6)), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 18)), storage = 1e7, area = 1e4)
+    storage_var = 1e6 * c(10, 10, 10, 14, 14, 14, 12, 12, 12, 6, 6, 6, 10, 10, 10, 14, 14, 14)
+    expect_error(set_property(simple_reser, "storage", storage_var), "Incorrect length of storage")
+    storage_var = c(storage_var, 12e6)
+    simple_reser = set_property(simple_reser, "storage", storage_var)
+    expect_equal(attr(simple_reser, "storage"), storage_var)
+
+    storage_monthly = 1e6 * c(1:12)
+    simple_reser = set_property(simple_reser, "storage", storage_monthly)
+    expect_equal(attr(simple_reser, "storage"), 1e6 * c(1:12, 1:7))
+
+    simple_daily = as.wateres(data.frame(Q = c(rep(2, 20), rep(0.5, 20)), DTM = seq(as.Date("2000-01-01"), by = "days", length.out = 40)),
+        time_step = "day", storage = 1e7, area = 1e4)
+    simple_daily = set_property(simple_daily, "storage", storage_monthly)
+    expect_equal(attr(simple_daily, "storage"), 1e6 * c(rep(1, 31), rep(2, 10)))
+
+    simple_reser = set_property(simple_reser, "storage", 1e7)
+    expect_equal(attr(simple_reser, "storage"), rep(1e7, 19))
+
+    expect_error(set_property(simple_reser, "power_max", 0.25), "Unknown property")
+    simple_reser = set_property(simple_reser, "yield_max", c(rep(0.25, 6), rep(0.33, 6)))
+    expect_equal(attr(simple_reser, "yield_max"), c(rep(0.25, 6), rep(0.33, 6), rep(0.25, 6)))
+})
