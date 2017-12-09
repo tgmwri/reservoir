@@ -282,7 +282,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
     }
     // water exceeding optimum volume
     if (!volume_optim.empty() && storage[ts + 1] > volume_optim[ts + 1]) {
-      if (!volume_optim.empty() && var[YIELD][ts] < yield_max[ts]) {
+      if (var[YIELD][ts] < yield_max[ts]) {
         double orig_yield = var[YIELD][ts];
         var[YIELD][ts] += storage[ts + 1] - volume_optim[ts + 1];
         if (var[YIELD][ts] > yield_max[ts]) {
@@ -324,9 +324,15 @@ RcppExport SEXP calc_storage(
 {
   DataFrame reser = as<DataFrame>(Rreser);
   vector<double> yield_req = as<vector<double> >(Ryield_req);
-  vector<double> yield_max = as<vector<double> >(Ryield_max);
+  vector<double> yield_max;
+  if (!Rf_isNull(Ryield_max)) {
+    yield_max = as<vector<double> >(Ryield_max);
+  }
   vector<double> volume = as<vector<double> >(Rvolume);
-  vector<double> volume_optim = as<vector<double> >(Rvolume_optim);
+  vector<double> volume_optim;
+  if (!Rf_isNull(Rvolume_optim)) {
+    volume_optim = as<vector<double> >(Rvolume_optim);
+  }
   double initial_storage = as<double>(Rinitial_storage);
   unsigned initial_pos = as<unsigned>(Rinitial_pos) - 1; //from R to C++ indexing
   unsigned last_pos = as<unsigned>(Rlast_pos) - 1;

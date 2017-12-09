@@ -503,6 +503,8 @@ calc_series <- function(
 #'   Additionally, water levels are included if the \code{get_level} argument is TRUE.
 #' @details When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted
 #'   to get a time series of the same length as for other variables.
+#'
+#'   If one of `storage_optim` or `yield_max` is missing while the second is specified, both values are set to NULL and thus they are not considered in the calculation.
 #' @seealso \code{\link{plot.wateres_series}} for plotting the time series
 #' @export
 #' @examples
@@ -514,21 +516,20 @@ calc_series <- function(
 #' resul = calc_series(reser, 14.4e6, 0.14)
 #' @md
 calc_series.wateres <- function(
-    reser, storage = attr(reser, "storage"), yield, throw_exceed = FALSE, initial_storage = storage[1], initial_level, initial_pos = 1,
-    last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos, storage_optim = NULL, yield_max = NULL) {
+    reser, storage = attr(reser, "storage"), yield = attr(reser, "yield"), throw_exceed = FALSE, initial_storage = storage[1], initial_level,
+    initial_pos = 1, last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos,
+    storage_optim = attr(reser, "storage_optim"), yield_max = attr(reser, "yield_max")) {
 
-    if (is.null(storage_optim)) {
-        storage_optim = storage
-    }
-    if (is.null(yield_max)) {
-        yield_max = yield
+    if ((is.null(storage_optim) && !is.null(yield_max)) || (is.null(yield_max) && !is.null(storage_optim))) {
+        warning("Both optimum storage and maximum yield have to be specified (set to NULL for this calculation).")
+        storage_optim = yield_max = NULL
     }
     required_series_length = list(yield = nrow(reser), yield_max = nrow(reser), storage = nrow(reser) + 1, storage_optim = nrow(reser) + 1)
     for (variable in c("yield", "yield_max", "storage", "storage_optim")) {
         if (length(get(variable)) == 1) {
             assign(variable, rep(get(variable), required_series_length[[variable]]))
         }
-        else if (length(get(variable)) != required_series_length[[variable]]) {
+        else if (!is.null(get(variable)) && length(get(variable)) != required_series_length[[variable]]) {
             stop("Time series of ", variable, " must correspond with the length of the reservoir series (expected ",
                 required_series_length[[variable]], " time steps).")
         }

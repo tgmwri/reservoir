@@ -9,11 +9,12 @@ calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
   initial_pos, last_pos, get_level, till_def, first_def_pos, storage_optim,
   yield_max)
 
-\method{calc_series}{wateres}(reser, storage = attr(reser, "storage"), yield,
-  throw_exceed = FALSE, initial_storage = storage[1], initial_level,
-  initial_pos = 1, last_pos = nrow(reser), get_level = FALSE,
-  till_def = FALSE, first_def_pos = initial_pos, storage_optim = NULL,
-  yield_max = NULL)
+\method{calc_series}{wateres}(reser, storage = attr(reser, "storage"),
+  yield = attr(reser, "yield"), throw_exceed = FALSE,
+  initial_storage = storage[1], initial_level, initial_pos = 1,
+  last_pos = nrow(reser), get_level = FALSE, till_def = FALSE,
+  first_def_pos = initial_pos, storage_optim = attr(reser, "storage_optim"),
+  yield_max = attr(reser, "yield_max"))
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
@@ -63,6 +64,8 @@ water use or transfer variables are applied.
 \details{
 When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted
 to get a time series of the same length as for other variables.
+
+If one of \code{storage_optim} or \code{yield_max} is missing while the second is specified, both values are set to NULL and thus they are not considered in the calculation.
 }
 \examples{
 reser = data.frame(

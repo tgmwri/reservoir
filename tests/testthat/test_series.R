@@ -12,6 +12,17 @@ test_that("series of simple reservoir for given storage are calculated", {
     expect_equal(resul$inflow, c(rep(2, 12), rep(0.5, 12)))
     expect_equal(resul$storage, c(rep(2e7, 12), 1e7, 1e2 * c(87904, 74512, 61552, 48160, 35200, 21808, 8416), rep(0, 4)))
     expect_equal(resul$yield, c(rep(2, 12), 4.2335723, rep(1, 7), 0.8246914, rep(0.5, 3)), tol = 1e-5)
+
+    # storage specified as property
+    reser_data = data.frame(Q = c(rep(2, 12), rep(0.5, 6)), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 18))
+    storage_var = 1e6 * c(10, 10, 10, 14, 14, 14, 12, 12, 12, 6, 6, 6, 10, 10, 10, 14, 14, 14, 12)
+    reser = as.wateres(reser_data, storage = 1e7, area = 1e4)
+    reser = set_property(reser, "storage", storage_var)
+    resul = calc_series(reser, yield = 1)
+
+    reser2 = as.wateres(reser_data, storage = 1e7, area = 1e4)
+    resul2 = calc_series(reser2, yield = 1, storage = storage_var)
+    expect_equal(resul, resul2)
 })
 
 test_that("series of simple reservoir for optimum storage and maximum yield are calculated", {
@@ -47,6 +58,9 @@ test_that("series of simple reservoir for optimum storage and maximum yield are 
     expect_equal(resul$storage, c(1e2 * c(26784, 51840, 78624), rep(1e7, 5), 1e2 * c(125920, 152704, 178624, 2e5, 133040, 1e5, 86608, 73648, 60256, 47296, 33904, 20512, 7552),
         rep(0, 3)))
     expect_equal(resul$yield, c(rep(1, 3), 1.1753086, rep(2, 4), rep(3, 3), 3.201911, 3, 1.865740, rep(1, 7), 0.781959, rep(0.5, 2)), tol = 1e-5)
+
+    # yield_max missing
+    expect_warning(calc_series(simple_reser, yield = 1, storage = 1e7, storage_optim = 5e6), "optimum storage and maximum yield have to be specified")
 })
 
 eas = data.frame(
