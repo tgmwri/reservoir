@@ -94,6 +94,13 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
     }
     else
         time_step_len = 1L
+    if ("data.frame" %in% class(dframe) && !is.null(dframe$DTM) && length(dframe$DTM) > 1) {
+        diff_dates = difftime(dframe$DTM[2], dframe$DTM[1], units = "days")
+        if ((time_step == "day" && diff_dates != time_step_len) ||
+            (time_step == "month" && (diff_dates < 28 * time_step_len ||  diff_dates > 32 * time_step_len))) {
+            stop("Given time step does correspond with the time step of dates in data frame.")
+        }
+    }
     time_step_unit = ts_types[pmatch(time_step, ts_types, 1)]
     if (is.na(time_step_unit))
         stop("Invalid value of time step unit.")
