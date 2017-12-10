@@ -94,7 +94,7 @@ prob_field.wateres <- function(reser, probs, yield, storage = attr(reser, "stora
     if (attr(reser, "time_step_unit") != "month")
         stop("Probability fields can be calculated only for monthly data.")
 
-    calc_resul = calc_series(reser, storage, yield, throw_exceed, get_level = TRUE)
+    calc_resul = calc_series(reser, storage, yield, throw_exceed, get_level = TRUE, complex_properties = FALSE)
 
     vars = c("storage", "yield")
     if ("level" %in% colnames(calc_resul))

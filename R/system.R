@@ -175,7 +175,7 @@ calc_single <- function(system, init_pos = 1, resul = NULL, only_part_ts = FALSE
                 system[[res]], yield = attr(system, "yields")[curr_id],
                 initial_storage = if (init_pos > 2) resul[[curr_id]]$storage[init_pos - 2] else attr(system, "initial_storages")[curr_id],
                 initial_pos = init_pos_prev,
-                last_pos = min_last_pos, till_def = TRUE, first_def_pos = init_pos)
+                last_pos = min_last_pos, till_def = TRUE, first_def_pos = init_pos, complex_properties = FALSE)
 
             last_pos = init_pos_prev - 1 + nrow(tmp_resul)
             if (is.null(resul[[curr_id]])) {
@@ -199,7 +199,7 @@ calc_single <- function(system, init_pos = 1, resul = NULL, only_part_ts = FALSE
                 min_last_pos = last_pos
         }
         else {
-            resul[[curr_id]] = calc_series(system[[res]], yield = attr(system, "yields")[curr_id], initial_storage = attr(system, "initial_storages")[curr_id])
+            resul[[curr_id]] = calc_series(system[[res]], yield = attr(system, "yields")[curr_id], initial_storage = attr(system, "initial_storages")[curr_id], complex_properties = FALSE)
         }
     }
     return(resul)

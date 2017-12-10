@@ -7,14 +7,14 @@
 \usage{
 calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
   initial_pos, last_pos, get_level, till_def, first_def_pos, storage_optim,
-  yield_max)
+  yield_max, complex_properties)
 
 \method{calc_series}{wateres}(reser, storage = attr(reser, "storage"),
   yield = attr(reser, "yield"), throw_exceed = FALSE,
   initial_storage = storage[1], initial_level, initial_pos = 1,
   last_pos = nrow(reser), get_level = FALSE, till_def = FALSE,
   first_def_pos = initial_pos, storage_optim = attr(reser, "storage_optim"),
-  yield_max = attr(reser, "yield_max"))
+  yield_max = attr(reser, "yield_max"), complex_properties = TRUE)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
@@ -49,6 +49,9 @@ Either a value of fixed optimum storage or a vector of the length of the reservo
 the reservoir storage exceeds the \code{storage} value and \code{throw_exceed} is not set to \code{TRUE}, the resulting yield may be greater than \code{yield_max}.
 The maximum yield can be interpreted as an outflow capacity of the reservoir in case that its dam is not overflown.
 Either a value of fixed yield or a vector of the same length as the reservoir series.}
+
+\item{complex_properties}{If FALSE, constant values of \code{storage} and \code{yield} will be required and \code{storage_optim} and \code{yield_max} will not be considered.
+This is needed for calculation with generated values, as it is done e.g. in the \link{sry.wateres} function.}
 }
 \value{
 A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield (in m3.s-1),

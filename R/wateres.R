@@ -418,7 +418,7 @@ fill_time.wateres <- function(reser, yield, begins = NULL, samples = 10) {
     for (beg in 1:length(begins)) {
         tmp_reser = reser[begins[beg]:nrow(reser), ]
         attributes(tmp_reser) = attributes(reser)
-        series = calc_series(tmp_reser, attr(tmp_reser, "storage"), yield, FALSE, initial_storage = 0)
+        series = calc_series(tmp_reser, attr(tmp_reser, "storage"), yield, FALSE, initial_storage = 0, complex_properties = FALSE)
         storage_full = !(series$storage < attr(tmp_reser, "storage"))
         if (all(!storage_full))
             fill_months[beg] = NA
@@ -469,7 +469,7 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
 #' @export
 calc_series <- function(
     reser, storage, yield, throw_exceed, initial_storage, initial_level, initial_pos, last_pos, get_level, till_def, first_def_pos,
-    storage_optim, yield_max) UseMethod("calc_series")
+    storage_optim, yield_max, complex_properties) UseMethod("calc_series")
 
 #' Calculation of reservoir time series
 #'
@@ -496,6 +496,8 @@ calc_series <- function(
 #'   the reservoir storage exceeds the `storage` value and `throw_exceed` is not set to `TRUE`, the resulting yield may be greater than `yield_max`.
 #'   The maximum yield can be interpreted as an outflow capacity of the reservoir in case that its dam is not overflown.
 #'   Either a value of fixed yield or a vector of the same length as the reservoir series.
+#' @param complex_properties If FALSE, constant values of `storage` and `yield` will be required and `storage_optim` and `yield_max` will not be considered.
+#'   This is needed for calculation with generated values, as it is done e.g. in the [sry.wateres] function.
 #' @return A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield (in m3.s-1),
 #'   precipitation, evaporation, water use, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
 #'   sum of yield and withdrawal demands. There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system.
@@ -518,8 +520,16 @@ calc_series <- function(
 calc_series.wateres <- function(
     reser, storage = attr(reser, "storage"), yield = attr(reser, "yield"), throw_exceed = FALSE, initial_storage = storage[1], initial_level,
     initial_pos = 1, last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos,
-    storage_optim = attr(reser, "storage_optim"), yield_max = attr(reser, "yield_max")) {
+    storage_optim = attr(reser, "storage_optim"), yield_max = attr(reser, "yield_max"), complex_properties = TRUE) {
 
+    if (!complex_properties) {
+        if (length(storage) != 1 || length(yield) != 1) {
+            stop("For calculation of series without complex properties, storage and yield have to be constant.")
+        }
+        if (!is.null(storage_optim) || !is.null(yield_max)) {
+            warning("Optimum storage and maximum yield will not be considered in calculation without complex properties.")
+        }
+    }
     if ((is.null(storage_optim) && !is.null(yield_max)) || (is.null(yield_max) && !is.null(storage_optim))) {
         warning("Both optimum storage and maximum yield have to be specified (set to NULL for this calculation).")
         storage_optim = yield_max = NULL
@@ -582,7 +592,7 @@ calc_diff_reliability <- function(x, reser, storage_req, reliab_req, yield_req, 
     else if (missing(yield_req))
         yield_req = x
 
-    series = calc_series(reser, storage_req, yield_req, throw_exceed)
+    series = calc_series(reser, storage_req, yield_req, throw_exceed, complex_properties = FALSE)
     reliab = calc_reliability(series$yield, yield_req, prob_type)
     return(reliab - reliab_req)
 }
@@ -592,7 +602,7 @@ is_reliab_equal <- function(value, resul_value, reser, storage_req, yield_req, p
         storage_req = value
     else
         yield_req = value
-    series = calc_series(reser, storage_req, yield_req, throw_exceed)
+    series = calc_series(reser, storage_req, yield_req, throw_exceed, complex_properties = FALSE)
     if (calc_reliability(series$yield, yield_req, prob_type) == resul_value)
         return(0.5)
     else
@@ -690,12 +700,12 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
                     reliab_neighbour = -1 # storage can be decreased in the next bisection -> arbitrary different reliab_neighbour
                 }
                 else { # minimum storage always zero in other cases
-                    tmp_series = calc_series(reser, 0, yield, throw_exceed)
+                    tmp_series = calc_series(reser, 0, yield, throw_exceed, complex_properties = FALSE)
                     resul = c(0, calc_reliability(tmp_series$yield, yield, prob_type) - reliability)
                 }
             }
             if (!exists("reliab_neighbour")) {
-                series_neighbour = calc_series(reser, resul[1] + 1e-5, yield, throw_exceed)
+                series_neighbour = calc_series(reser, resul[1] + 1e-5, yield, throw_exceed, complex_properties = FALSE)
                 reliab_neighbour = calc_reliability(series_neighbour$yield, yield, prob_type)
             }
             missing = "storage"
@@ -713,7 +723,7 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
                 }
             }
             else {
-                series_neighbour = calc_series(reser, storage, resul[1] - 1e-5, throw_exceed)
+                series_neighbour = calc_series(reser, storage, resul[1] - 1e-5, throw_exceed, complex_properties = FALSE)
                 reliab_neighbour = calc_reliability(series_neighbour$yield, resul[1] - 1e-5, prob_type)
             }
             missing = "yield"
@@ -742,7 +752,7 @@ sry.wateres <- function(reser, storage, reliability, yield, prob_type = 7, upper
         }
         assign(missing, resul[1])
     }
-    series = calc_series(reser, storage, yield, throw_exceed)
+    series = calc_series(reser, storage, yield, throw_exceed, complex_properties = FALSE)
     reliability = calc_reliability(series$yield, yield, prob_type)
     resul = list(storage = storage, reliability = reliability, yield = yield)
     if (get_series)

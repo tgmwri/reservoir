@@ -188,3 +188,7 @@ test_that("storage-reliability-yield is calculated for corner cases of bisection
     sry = sry(riv, reliab = 0.6363636364, yield = 0.1, prob_type = 4)
     expect_equivalent(sry, list(storage = 0, reliability = 0.6363636364, yield = 0.1))
 })
+
+test_that("summary is not calculated for variable storage", {
+    expect_error(sry(riv, storage = rep(41e3, nrow(riv)), reliab = 0.5, prob_type = "ch"), "storage and yield have to be constant")
+})
