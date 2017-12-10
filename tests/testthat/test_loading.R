@@ -99,9 +99,9 @@ test_that("invalid attributes are reported", {
 
 test_that("time step not corresponding with dates is reported", {
     Q_df = data.frame(Q = c(5, 7, 9, 4, 3, 3), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 6))
-    expect_error(as.wateres(Q_df, 1e7, 1e2, time_step = "day"), "Given time step does correspond")
+    expect_error(as.wateres(Q_df, 1e7, 1e2, time_step = "day"), "Given time step does not correspond")
     reser = as.wateres(Q_df, 1e7, 1e2, time_step = "month")
     Q_df$DTM = as.Date(c("2000-01-01", "2000-01-03", "2000-01-05", "2000-01-07", "2000-01-09", "2000-01-11"))
     reser = as.wateres(Q_df, 1e7, 1e2, time_step = "2-day")
-    expect_error(as.wateres(Q_df, 1e7, 1e2, time_step = "3-day"), "Given time step does correspond")
+    expect_error(as.wateres(Q_df, 1e7, 1e2, time_step = "3-day"), "Given time step does not correspond")
 })

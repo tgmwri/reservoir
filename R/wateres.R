@@ -98,7 +98,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
         diff_dates = difftime(dframe$DTM[2], dframe$DTM[1], units = "days")
         if ((time_step == "day" && diff_dates != time_step_len) ||
             (time_step == "month" && (diff_dates < 28 * time_step_len ||  diff_dates > 32 * time_step_len))) {
-            stop("Given time step does correspond with the time step of dates in data frame.")
+            stop("Given time step does not correspond with the time step of dates in data frame.")
         }
     }
     time_step_unit = ts_types[pmatch(time_step, ts_types, 1)]
