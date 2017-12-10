@@ -534,6 +534,16 @@ calc_series.wateres <- function(
                 required_series_length[[variable]], " time steps).")
         }
     }
+    if (!is.null(yield_max)) {
+        if (any(yield_max < yield))  {
+            stop("Yield cannot be greater than maximum yield.")
+        }
+    }
+    if (!is.null(storage_optim)) {
+        if (any(storage_optim > storage))  {
+            stop("Optimum storage cannot be greater than maximum storage.")
+        }
+    }
 
     eas = attr(reser, "eas")
     if (!missing(initial_level)) {

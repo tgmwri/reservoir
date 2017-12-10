@@ -61,6 +61,9 @@ test_that("series of simple reservoir for optimum storage and maximum yield are 
 
     # yield_max missing
     expect_warning(calc_series(simple_reser, yield = 1, storage = 1e7, storage_optim = 5e6), "optimum storage and maximum yield have to be specified")
+
+    expect_error(calc_series(simple_reser, yield = 1, storage = 1e7, storage_optim = 5e6, yield_max = 0.5), "Yield cannot be greater than maximum yield")
+    expect_error(calc_series(simple_reser, yield = 1, storage = 1e7, storage_optim = 2e7, yield_max = 2), "Optimum storage cannot be greater than maximum storage")
 })
 
 eas = data.frame(
