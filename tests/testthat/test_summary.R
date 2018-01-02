@@ -27,6 +27,8 @@ test_that("characteristics are calculated for given reliability and storage", {
     expect_equivalent(chars$resilience, 0.272727272727)
     expect_equivalent(chars$vulnerability, 252139.72249)
     expect_equivalent(chars$dimless_vulner, 0.614231792124)
+    chars = summary(riv, reliab = 0.95) # partial matching works
+    expect_equivalent(chars$yield, 0.1557741525525)
 })
 
 test_that("characteristics are calculated for given reliability and yield", {

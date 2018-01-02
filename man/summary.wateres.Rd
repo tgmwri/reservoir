@@ -4,17 +4,17 @@
 \alias{summary.wateres}
 \title{Water reservoir summary}
 \usage{
-\method{summary}{wateres}(object, ..., reliability = "max",
-  get_series = FALSE)
+\method{summary}{wateres}(object, reliability = "max", get_series = FALSE,
+  ...)
 }
 \arguments{
 \item{object}{A \code{wateres} object.}
 
-\item{...}{Further arguments passed to the \code{\link{sry.wateres}} function (as \code{storage}, \code{yield}, \code{prob_type} or \code{upper_limit}).}
-
 \item{reliability}{A vector of reliability values passed to the \code{\link{sry.wateres}} function.}
 
 \item{get_series}{Whether time series of reservoir balance variables for the given reliabilites will be returned.}
+
+\item{...}{Further arguments passed to the \code{\link{sry.wateres}} function (as \code{storage}, \code{yield}, \code{prob_type} or \code{upper_limit}).}
 }
 \value{
 A data table of reservoir characteristics:

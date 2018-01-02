@@ -298,9 +298,9 @@ resize_input.wateres <- function(reser, begin = 1, end = nrow(reser), type = NUL
 #' Calculates characteristics of the reservoir.
 #'
 #' @param object A \code{wateres} object.
-#' @param ... Further arguments passed to the \code{\link{sry.wateres}} function (as \code{storage}, \code{yield}, \code{prob_type} or \code{upper_limit}).
 #' @param reliability A vector of reliability values passed to the \code{\link{sry.wateres}} function.
 #' @param get_series Whether time series of reservoir balance variables for the given reliabilites will be returned.
+#' @param ... Further arguments passed to the \code{\link{sry.wateres}} function (as \code{storage}, \code{yield}, \code{prob_type} or \code{upper_limit}).
 #' @return A data table of reservoir characteristics:
 #'   \item{storage}{reservoir storage in m3, given or the minimum storage calculated for given reliability and yield}
 #'   \item{reliability}{given or calculated reliability}
@@ -334,7 +334,7 @@ resize_input.wateres <- function(reser, begin = 1, end = nrow(reser), type = NUL
 #' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
 #' summary(reser, reliability = 1)
 #' summary(reser, reliability = 0.95)
-summary.wateres <- function(object, ..., reliability = "max", get_series = FALSE) {
+summary.wateres <- function(object, reliability = "max", get_series = FALSE, ...) {
     resul = sapply(reliability, summary_wateres, object, get_series, ...)
     if (!get_series) {
         return(as.data.table(t(resul)))
