@@ -62,8 +62,8 @@ test_that("reservoir input time series are resized", {
     expect_equivalent(resul$DTM, seq(as.Date("1900-07-15"), by = "month", length.out = 42))
     expect_equivalent(resul$Q, c(rep(0, 6), rep(4.46, 36)))
     expect_equal(class(resul), c("wateres", "data.table", "data.frame"))
-    expect_equal(names(attributes(resul)), c("names", "class", "row.names", ".internal.selfref",
-        "time_step_len", "time_step_unit", "storage", "area", "id", "down_id", "title"))
+    expect_true(setequal(names(attributes(resul)), c("names", "class", "row.names", ".internal.selfref",
+        "time_step_len", "time_step_unit", "storage", "area", "id", "down_id", "title")))
 
     resul = resize_input(reser, "1902-01-01", "1903-04-01")
     expect_equivalent(resul$DTM, seq(as.Date("1902-01-15"), by = "month", length.out = 15))
