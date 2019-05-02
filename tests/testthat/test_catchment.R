@@ -13,7 +13,7 @@ test_that("simple system of catchment reservoirs is calculated", {
     catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2)
     catch_system = as.catchment_system(catch1, catch2)
 
-    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C1_outlet = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200, C2_outlet = 25)
+    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
     resul = calc_catchment_system(catch_system, yields)
     resul = resul$system_plain
 
@@ -37,6 +37,6 @@ test_that("system with no main or lateral reservoir is calculated", {
     catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2)
     catch_system = as.catchment_system(catch1, catch2)
 
-    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C1_outlet = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200, C2_outlet = 25)
+    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
     resul = calc_catchment_system(catch_system, yields)
 })

@@ -94,10 +94,13 @@ as.catchment_system <- function(...) {
     }  
     names(all_reservoirs) = NULL
     result = do.call(as.system, all_reservoirs)
+    attr(result, "catchment_names") = names(catchments)
     class(result) = c("catchment_system", "wateres_system", "list")
     return(result)
 }
 
 calc_catchment_system <- function(system, yields) {
+    catch_names = attr(system, "catchment_names")
+    yields[paste0(catch_names, "_outlet")] = 0
     return(calc_system(system, yields, types = "system_plain"))
 }
