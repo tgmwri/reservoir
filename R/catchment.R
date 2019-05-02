@@ -4,8 +4,11 @@ as.catchment <- function(id, down_id, data, area, res_data) {
     # TDD check data, res_data
     data$Q = data$R * 1e3 * area / (24 * 3600) # TDD general time step, dtto as.wateres
 
-    res_branches = list(main = res_data[res_data$is_main,], other = res_data[!res_data$is_main,])
+    res_branches = list(main = res_data[res_data$is_main,], lateral = res_data[!res_data$is_main,])
     res_branches = lapply(res_branches, function(res_dframe) {
+        if (nrow(res_dframe) < 1) {
+            return(NULL)
+        }
         res_dframe = res_dframe[order(res_dframe$part),]
         res_dframe$down_id = NA
         for (res in 1:nrow(res_dframe)) {
@@ -20,8 +23,11 @@ as.catchment <- function(id, down_id, data, area, res_data) {
     })
     
     reservoirs = list()
-    for (branch in c("main", "other")) {
+    for (branch in c("main", "lateral")) {
         res_branch = res_branches[[branch]]
+        if (is.null(res_branch)) {
+            next
+        }
         for (res in 1:nrow(res_branch)) {
             curr_res = res_branch[res,]
             curr_res$id = paste0(id, "_", curr_res$id)
