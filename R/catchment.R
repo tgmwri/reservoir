@@ -3,6 +3,7 @@
 as.catchment <- function(id, down_id, data, area, res_data) {
     # TDD check data, res_data
     data$Q = data$R * 1e3 * area / (24 * 3600) # TDD general time step, dtto as.wateres
+    res_data$id = as.character(res_data$id)
 
     res_branches = list(main = res_data[res_data$is_main,], lateral = res_data[!res_data$is_main,])
     res_branches = lapply(res_branches, function(res_dframe) {

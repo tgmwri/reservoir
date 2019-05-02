@@ -2,8 +2,7 @@ context("calculation of system of reservoirs defined by catchments")
 
 data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7))
 res_data_c1 = data.frame(
-    storage = c(1e7, 1e7, 1e7), area = c(1e2, 1e2, 1e2), part = c(0.25, 0.25, 0.5), is_main = c(TRUE, FALSE, FALSE), id = c("M1", "L1", "L2"),
-    stringsAsFactors = FALSE)
+    storage = c(1e7, 1e7, 1e7), area = c(1e2, 1e2, 1e2), part = c(0.25, 0.25, 0.5), is_main = c(TRUE, FALSE, FALSE), id = c("M1", "L1", "L2"))
 
 test_that("simple system of catchment reservoirs is calculated", {
     res_data_c2 = res_data_c1
