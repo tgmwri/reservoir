@@ -7,8 +7,8 @@
 \usage{
 alpha_beta(reser, alphas, max_beta, reliability, ...)
 
-\method{alpha_beta}{wateres}(reser, alphas = seq(0, 1, 0.02), max_beta = 2,
-  reliability = "max", ...)
+\method{alpha_beta}{wateres}(reser, alphas = seq(0, 1, 0.02),
+  max_beta = 2, reliability = "max", ...)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}

@@ -5,8 +5,8 @@
 \alias{sry.wateres}
 \title{Calculation of storage, reliability and yield}
 \usage{
-sry(reser, storage, reliability, yield, prob_type, upper_limit, throw_exceed,
-  get_series)
+sry(reser, storage, reliability, yield, prob_type, upper_limit,
+  throw_exceed, get_series)
 
 \method{sry}{wateres}(reser, storage, reliability, yield, prob_type = 7,
   upper_limit = 5, throw_exceed = FALSE, get_series = FALSE)

@@ -7,8 +7,8 @@
 \usage{
 set_evaporation(reser, values, altitude, plant_cover)
 
-\method{set_evaporation}{wateres}(reser, values = NULL, altitude = NULL,
-  plant_cover = NULL)
+\method{set_evaporation}{wateres}(reser, values = NULL,
+  altitude = NULL, plant_cover = NULL)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}

@@ -4,8 +4,8 @@
 \alias{summary.wateres}
 \title{Water reservoir summary}
 \usage{
-\method{summary}{wateres}(object, reliability = "max", get_series = FALSE,
-  ...)
+\method{summary}{wateres}(object, reliability = "max",
+  get_series = FALSE, ...)
 }
 \arguments{
 \item{object}{A \code{wateres} object.}

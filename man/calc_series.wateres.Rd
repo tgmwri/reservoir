@@ -5,16 +5,17 @@
 \alias{calc_series.wateres}
 \title{Calculation of reservoir time series}
 \usage{
-calc_series(reser, storage, yield, throw_exceed, initial_storage, initial_level,
-  initial_pos, last_pos, get_level, till_def, first_def_pos, storage_optim,
-  yield_max, complex_properties)
+calc_series(reser, storage, yield, throw_exceed, initial_storage,
+  initial_level, initial_pos, last_pos, get_level, till_def, first_def_pos,
+  storage_optim, yield_max, complex_properties)
 
 \method{calc_series}{wateres}(reser, storage = attr(reser, "storage"),
   yield = attr(reser, "yield"), throw_exceed = FALSE,
   initial_storage = storage[1], initial_level, initial_pos = 1,
   last_pos = nrow(reser), get_level = FALSE, till_def = FALSE,
-  first_def_pos = initial_pos, storage_optim = attr(reser, "storage_optim"),
-  yield_max = attr(reser, "yield_max"), complex_properties = TRUE)
+  first_def_pos = initial_pos, storage_optim = attr(reser,
+  "storage_optim"), yield_max = attr(reser, "yield_max"),
+  complex_properties = TRUE)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
