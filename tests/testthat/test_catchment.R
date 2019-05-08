@@ -2,14 +2,15 @@ context("calculation of system of reservoirs defined by catchments")
 
 data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7))
 res_data_c1 = data.frame(
-    storage = c(1e7, 1e7, 1e7), area = c(1e2, 1e2, 1e2), part = c(0.25, 0.25, 0.5), is_main = c(TRUE, FALSE, FALSE), id = c("M1", "L1", "L2"))
+    storage = c(1e7, 1e7, 1e7), area = c(1e2, 1e2, 1e2), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
+branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.5))
 
 test_that("simple system of catchment reservoirs is calculated", {
     res_data_c2 = res_data_c1
     res_data_c2$storage = res_data_c2$storage * 2
 
-    catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1)
-    catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2)
+    catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+    catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2, branches = branches, main_branch = "main")
     catch_system = as.catchment_system(catch1, catch2)
 
     yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
@@ -27,13 +28,13 @@ test_that("simple system of catchment reservoirs is calculated", {
 })
 
 test_that("system with no main or lateral reservoir is calculated", {
-    res_data_c1$is_main = TRUE
+    res_data_c1$branch_id = rep("main", 3)
     res_data_c2 = res_data_c1
     res_data_c2$storage = res_data_c2$storage * 2
-    res_data_c2$is_main = FALSE
+    res_data_c2$branch_id = rep("lateral", 3)
 
-    catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1)
-    catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2)
+    catch1 = expect_warning(as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main"), "'lateral' is not used for any reservoir")
+    catch2 = expect_warning(as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2, branches = branches, main_branch = "main"), "'main' is not used for any reservoir")
     catch_system = as.catchment_system(catch1, catch2)
 
     yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)

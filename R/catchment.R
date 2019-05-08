@@ -1,30 +1,96 @@
+# finds ID of the first reservoir situated downstreams from the place at the branch of branch_id identifier and at the position given by connect_to_part
+get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_part) {
+    if (is.na(branch_id)) {
+        return("outlet") # TDD check keyword
+    }
+
+    res_data_branch = res_data[res_data$branch_id == branch_id,]
+    if (nrow(res_data_branch) < 1) { # branch with no reservoir
+        return(get_first_down_reservoir(res_data, branches, branches[[branch_id]]$down_id, branches[[branch_id]]$connect_to_part))
+    }
+    else {
+        res_data_branch = res_data_branch[order(res_data_branch$part),]
+        pos = which(connect_to_part <= res_data_branch$part)
+
+        if (length(pos) == 0) { # connected below the last reservoir of the branch
+            return(get_first_down_reservoir(res_data, branches, branches[[branch_id]]$down_id, branches[[branch_id]]$connect_to_part))
+        }
+        else {
+            return(res_data_branch[pos, "id"])
+        }
+    }
+}
+
+#' Catchment with water reservoirs creation
+#'
+#' Creates an object of system of provided wateres reservoirs organized in a catchment.
+#'
+#' @param id
+#' @param down_id
+#' @param data
+#' @param area
+#' @param res_data
+#' @param branches A list of individual branches with reservoirs; list names correspond to reservoir IDs.
+#'   Each branch is represented by a list consisting of an ID of the downstream branch (`down_id`; NA for
+#'   the main branch in the catchment) and a point where the branch is connected to the downstream branch
+#'   (`connect_to_part`; not relevant for the main branch). The connection point is given as a catchment
+#'   area (relative to the whole catchment area) of the downstream branch before the junction with this branch.
+#' @param main_branch An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.
+#' @return A \code{catchment} object which is also of list class.
+#' @details An error occurs if there is a downstream branch which has not been provided in the `branches` list.
+#' @export
+#' @md
+#' @examples
+#'
 # data - DTM, R, PET
 # area - in km2
-as.catchment <- function(id, down_id, data, area, res_data) {
+as.catchment <- function(id, down_id, data, area, res_data, branches, main_branch) {
     # TDD check data, res_data
     data$Q = data$R * 1e3 * area / (24 * 3600) # TDD general time step, dtto as.wateres
     res_data$id = as.character(res_data$id)
 
-    res_branches = list(main = res_data[res_data$is_main,], lateral = res_data[!res_data$is_main,])
-    res_branches = lapply(res_branches, function(res_dframe) {
+    branches_from_res = unique(as.character(res_data$branch_id))
+    if (!(main_branch %in% names(branches))) {
+        stop("Main branch '", main_branch, "' is not available in the list of branches.")
+    }
+    if (!all(branches_from_res %in% names(branches))) {
+        stop("Not all branches given in reservoir properties are available in the list of branches.")
+    }
+    down_branches = sapply(branches, function(branch) { return(branch$down_id) })
+    if (!all(down_branches[!is.na(down_branches)] %in% names(branches))) {
+        stop("Not all branches given as downstream branches are available in the list of branches.")
+    }
+
+    res_branches = list()
+    for (b in 1:length(branches)) {
+        branch = branches[[b]]
+        branch_id = names(branches)[[b]]
+
+        res_dframe = res_data[res_data$branch_id == branch_id,]
         if (nrow(res_dframe) < 1) {
-            return(NULL)
+            warning("Branch '", branch_id, "' is not used for any reservoir.")
+            next
         }
         res_dframe = res_dframe[order(res_dframe$part),]
+        if (!is.na(branch$down_id)) {
+            if (max(res_dframe$part) > branch$connect_to_part) {
+                stop("Branch '", branch_id, "' cannot take larger part of catchment than corresponding part of downstream branch.")
+            }
+        }
         res_dframe$down_id = NA
         for (res in 1:nrow(res_dframe)) {
             if (res + 1 <= nrow(res_dframe)) {
                 res_dframe[res, "down_id"] = paste0(id, "_", res_dframe[res + 1, "id"])
             }
             else {
-                res_dframe[res, "down_id"] = paste0(id, "_outlet") # TDD check reserved keyword
+                res_dframe[res, "down_id"] = paste0(id, "_", get_first_down_reservoir(res_data, branches, branch_id, res_dframe$part + 1e-7)) # epsilon to get the next reservoir, not the same
             }
         }
-        return(res_dframe)
-    })
-    
+        res_branches[[branch_id]] = res_dframe
+    }
+
     reservoirs = list()
-    for (branch in c("main", "lateral")) {
+    for (branch in names(branches)) {
         res_branch = res_branches[[branch]]
         if (is.null(res_branch)) {
             next
@@ -35,22 +101,23 @@ as.catchment <- function(id, down_id, data, area, res_data) {
             curr_res_ts = data.frame(DTM = data$DTM, Q = data$Q * curr_res$part)
             reservoirs[[curr_res$id]] = as.wateres(curr_res_ts, curr_res$storage, curr_res$area, time_step = "day", id = curr_res$id, down_id = curr_res$down_id)
             reservoirs[[curr_res$id]] = set_evaporation(reservoirs[[curr_res$id]], data$PET)
-            attr(reservoirs[[curr_res$id]], "is_main") = branch == "main"
+            attr(reservoirs[[curr_res$id]], "branch_id") = branch
             # TDD set wateruse etc.
         }
     }
     reservoirs[[paste0(id, "_outlet")]] = as.wateres(data.frame(DTM = data$DTM, Q = data$Q), 0, 0, time_step = "day")
-    attr(reservoirs[[paste0(id, "_outlet")]], "is_main") = TRUE
     attr(reservoirs[[paste0(id, "_outlet")]], "id") = paste0(id, "_outlet")
     attr(reservoirs[[paste0(id, "_outlet")]], "down_id") = NA
+    attr(reservoirs[[paste0(id, "_outlet")]], "branch") = main_branch
     attr(reservoirs, "id") = id
     attr(reservoirs, "down_id") = down_id
-    if (length(res_branches$main) > 0) {
-        first_main_res = res_branches$main$id[1]
+    if (length(res_branches[[main_branch]]) > 0) {
+        first_main_res = res_branches[[main_branch]]$id[1]
     }
     else {
         first_main_res = "outlet"
     }
+    attr(reservoirs, "main_branch") = main_branch
     attr(reservoirs, "first_main_res") = paste0(id, "_", first_main_res)
     class(reservoirs) = c("catchment", "list")
     return(reservoirs)
@@ -74,7 +141,7 @@ as.catchment_system <- function(...) {
             if (!(curr_catch_id %in% down_ids_to_process)) {
                 curr_Q_outlet = catchments[[curr_catch_id]][[paste0(curr_catch_id, "_outlet")]]$Q
                 for (res_down in names(catchments[[curr_catch_down_id]])) {
-                    if (attr(catchments[[curr_catch_down_id]][[res_down]], "is_main")) {
+                    if (attr(catchments[[curr_catch_down_id]][[res_down]], "branch") == attr(catchments[[curr_catch_down_id]], "main_branch")) {
                         catchments[[curr_catch_down_id]][[res_down]]$Q = catchments[[curr_catch_down_id]][[res_down]]$Q + curr_Q_outlet
                     }
                 }
