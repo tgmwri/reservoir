@@ -2,8 +2,9 @@ context("calculation of system of reservoirs defined by catchments")
 
 data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7))
 res_data_c1 = data.frame(
-    storage = c(1e7, 1e7, 1e7), area = c(1e2, 1e2, 1e2), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
-branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.5))
+    storage = c(1e7, 1e7, 1e7), area = c(1e2, 1e2, 1e2), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"),
+    stringsAsFactors = FALSE)
+branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
 
 test_that("simple system of catchment reservoirs is calculated", {
     res_data_c2 = res_data_c1
@@ -39,4 +40,20 @@ test_that("system with no main or lateral reservoir is calculated", {
 
     yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
     resul = calc_catchment_system(catch_system, yields)
+})
+
+test_that("invalid inputs for catchment are recognized", {
+    make_catchment <- function() {
+        as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+    }
+    res_data_c1$branch_id[3] = "lateral_unavailable"
+    expect_error(make_catchment(), "Not all branches given in reservoir properties are available")
+    res_data_c1$branch_id[3] = "lateral"
+    branches$lateral$down_id = "lateral_unavailable"
+    expect_error(make_catchment(), "Not all branches given as downstream branches are available")
+    branches$lateral$down_id = "main"
+    branches$lateral$connect_to_part = 0.4
+    expect_error(make_catchment(), "cannot take larger part of catchment")
+    branches$lateral$connect_to_part = 0.5
+    expect_error(make_catchment(), "areas of reservoirs of these branches are invalid")
 })

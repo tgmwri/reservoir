@@ -34,10 +34,14 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'   Each branch is represented by a list consisting of an ID of the downstream branch (`down_id`; NA for
 #'   the main branch in the catchment) and a point where the branch is connected to the downstream branch
 #'   (`connect_to_part`; not relevant for the main branch). The connection point is given as a catchment
-#'   area (relative to the whole catchment area) of the downstream branch before the junction with this branch.
+#'   area (relative to the whole catchment area) of the downstream branch after the junction with this branch,
+#'   i.e. including the area of the connecting branch.
 #' @param main_branch An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.
 #' @return A \code{catchment} object which is also of list class.
-#' @details An error occurs if there is a downstream branch which has not been provided in the `branches` list.
+#' @details An error occurs if there is a branch (downstream or in `res_data`) which has not been provided
+#'   in the `branches` list or if branch connecting point does not comply with catchment parts (if sum of part
+#'   of the connecting branch and part of the corresponding reservoir at the downstream branch is greater than
+#'   part for the connecting point).
 #' @export
 #' @md
 #' @examples
@@ -75,6 +79,10 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
         if (!is.na(branch$down_id)) {
             if (max(res_dframe$part) > branch$connect_to_part) {
                 stop("Branch '", branch_id, "' cannot take larger part of catchment than corresponding part of downstream branch.")
+            }
+            res_dframe_down = res_data[res_data$branch_id == branch$down_id & res_data$part < branch$connect_to_part,]
+            if (nrow(res_dframe_down) > 0 && max(res_dframe_down$part) + max(res_dframe$part) > branch$connect_to_part) {
+                stop("Branch '", branch_id, "' is connected to branch '", branch$down_id, "' that way that areas of reservoirs of these branches are invalid.")
             }
         }
         res_dframe$down_id = NA
