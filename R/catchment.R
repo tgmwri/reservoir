@@ -206,7 +206,7 @@ as.catchment_system <- function(...) {
 
 #' @rdname calc_catchment_system.catchment_system
 #' @export
-calc_catchment_system <- function(system, yields, initial_storages) UseMethod("calc_catchment_system")
+calc_catchment_system <- function(system, yields, initial_storages, output_vars) UseMethod("calc_catchment_system")
 
 #' Calculation of system of catchments with reservoirs
 #'
@@ -216,9 +216,11 @@ calc_catchment_system <- function(system, yields, initial_storages) UseMethod("c
 #' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.
 #' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If NULL, all reservoirs
 #'   are considered to be full initially.
+#' @param output_vars A vector of variables whose time series are returned. Variable names are those returned by `calc_series`
+#'   (`inflow`, `storage`, `yield`, `precipitation`, `evaporation`, `wateruse` and `deficit`).
 #' @return A list of data frames with time series for individual reservoirs.
 #' @details No transfers between reservoirs are considered (`system_plain` option of [`calc_system`] is used).
-#' @seealso [`calc_system`] for inner function calculating the reservoir system
+#' @seealso [`calc_system`] for inner function calculating the reservoir system, [`calc_series`] for returned time series
 #' @export
 #' @md
 #' @examples
@@ -234,12 +236,31 @@ calc_catchment_system <- function(system, yields, initial_storages) UseMethod("c
 #' catch_system = as.catchment_system(catch1, catch2)
 #'
 #' yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
-#' resul = calc_catchment_system(catch_system, yields)
-calc_catchment_system.catchment_system <- function(system, yields, initial_storages = NULL) {
+#' resul = calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield", "precipitation"))
+calc_catchment_system.catchment_system <- function(system, yields, initial_storages = NULL, output_vars = c("storage", "yield")) {
     catch_names = attr(system, "catchment_names")
     yields[paste0(catch_names, "_outlet")] = 0
     if (!is.null(initial_storages)) {
         initial_storages[paste0(catch_names, "_outlet")] = 0
     }
-    return(calc_system(system, yields, initial_storages, types = "system_plain"))
+    resul = calc_system(system, yields, initial_storages, types = "system_plain")$system_plain
+    resul_by_catchs = list()
+    for (r in 1:length(resul)) {
+        res = resul[[r]]
+        catch_res_id = names(resul)[r]
+        catch_id = unlist(strsplit(catch_res_id, "_", fixed = TRUE))[1]
+        res_id = gsub(paste0(catch_id, "_"), "", catch_res_id, fixed = TRUE)
+        for (out_var in output_vars) {
+            if (out_var %in% names(res)) {
+                if (is.null(resul_by_catchs[[catch_id]])) {
+                    resul_by_catchs[[catch_id]] = data.frame(out_var = resul[[catch_res_id]][[out_var]])
+                }
+                else {
+                    resul_by_catchs[[catch_id]] = cbind(resul_by_catchs[[catch_id]], resul[[catch_res_id]][[out_var]])
+                }
+                names(resul_by_catchs[[catch_id]])[length(resul_by_catchs[[catch_id]])] = paste0(res_id, "_", out_var)
+            }
+        }
+    }
+    return(resul_by_catchs)
 }

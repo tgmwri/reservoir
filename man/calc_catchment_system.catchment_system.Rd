@@ -5,10 +5,10 @@
 \alias{calc_catchment_system.catchment_system}
 \title{Calculation of system of catchments with reservoirs}
 \usage{
-calc_catchment_system(system, yields, initial_storages)
+calc_catchment_system(system, yields, initial_storages, output_vars)
 
 \method{calc_catchment_system}{catchment_system}(system, yields,
-  initial_storages = NULL)
+  initial_storages = NULL, output_vars = c("storage", "yield"))
 }
 \arguments{
 \item{system}{A \code{catchment_system} object.}
@@ -17,6 +17,9 @@ calc_catchment_system(system, yields, initial_storages)
 
 \item{initial_storages}{A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If NULL, all reservoirs
 are considered to be full initially.}
+
+\item{output_vars}{A vector of variables whose time series are returned. Variable names are those returned by \code{calc_series}
+(\code{inflow}, \code{storage}, \code{yield}, \code{precipitation}, \code{evaporation}, \code{wateruse} and \code{deficit}).}
 }
 \value{
 A list of data frames with time series for individual reservoirs.
@@ -40,8 +43,8 @@ catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, re
 catch_system = as.catchment_system(catch1, catch2)
 
 yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
-resul = calc_catchment_system(catch_system, yields)
+resul = calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield", "precipitation"))
 }
 \seealso{
-\code{\link{calc_system}} for inner function calculating the reservoir system
+\code{\link{calc_system}} for inner function calculating the reservoir system, \code{\link{calc_series}} for returned time series
 }

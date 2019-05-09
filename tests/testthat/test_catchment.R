@@ -15,26 +15,25 @@ test_that("simple system of catchment reservoirs is calculated", {
     catch_system = as.catchment_system(catch1, catch2)
 
     yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
-    resul = calc_catchment_system(catch_system, yields)
-    resul = resul$system_plain
+    resul = calc_catchment_system(catch_system, yields, output_vars = c("inflow", "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit"))
 
-    expect_equal(as.data.frame(resul$C1_M1), data.frame(inflow = rep(25, 7), storage = rep(1e7, 7), yield = rep(25.00006, 7), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
-    expect_equal(as.data.frame(resul$C1_L1), as.data.frame(resul$C1_M1))
-    expect_equal(as.data.frame(resul$C1_L2), data.frame(inflow = rep(50.00006, 7), storage = rep(1e7, 7), yield = rep(50.00012, 7), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
-    expect_equal(as.data.frame(resul$C1_outlet), data.frame(inflow = rep(100.0002, 7), storage = rep(0, 7), yield = rep(100.0002, 7), precipitation = rep(0, 7), evaporation = rep(0, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
-    expect_equal(as.data.frame(resul$C2_M1), data.frame(inflow = rep(150.0002, 7), storage = rep(2e7, 7), yield = rep(150.0002, 7), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
-    expect_equal(as.data.frame(resul$C2_L1), data.frame(inflow = rep(50, 7), storage = rep(2e7, 7), yield = rep(50.00006, 7), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
-    expect_equal(as.data.frame(resul$C2_L2), data.frame(inflow = rep(100.0001, 7), storage = c(11360010, 2720020, rep(0, 5)), yield = c(rep(200, 2), 131.4818, rep(100, 4)), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = c(rep(0, 2), 5919970, rep(8639990, 4))), tolerance = 1e-5)
-    expect_equal(as.data.frame(resul$C2_outlet), data.frame(inflow = c(rep(400.0002, 2), 331.4821, rep(300.0003, 4)), storage = rep(0, 7), yield = c(rep(400.0002, 2), 331.4821, rep(300.0003, 4)), precipitation = rep(0, 7), evaporation = rep(0, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
+    expect_equal(as.data.frame(resul$C1[, 1:7]), data.frame(M1_inflow = rep(25, 7), M1_storage = rep(1e7, 7), M1_yield = rep(25.00006, 7), M1_precipitation = rep(10, 7), M1_evaporation = rep(5, 7), M1_wateruse = rep(0, 7), M1_deficit = rep(0, 7)), tolerance = 1e-5)
+    tmp_df = as.data.frame(resul$C1[, 1:7])
+    names(tmp_df) = gsub("M1", "L1", names(tmp_df), fixed = TRUE)
+    expect_equal(as.data.frame(resul$C1[, 8:14]), tmp_df)
+    expect_equal(as.data.frame(resul$C1[, 15:21]), data.frame(L2_inflow = rep(50.00006, 7), L2_storage = rep(1e7, 7), L2_yield = rep(50.00012, 7), L2_precipitation = rep(10, 7), L2_evaporation = rep(5, 7), L2_wateruse = rep(0, 7), L2_deficit = rep(0, 7)), tolerance = 1e-5)
+    expect_equal(as.data.frame(resul$C1[, 22:28]), data.frame(outlet_inflow = rep(100.0002, 7), outlet_storage = rep(0, 7), outlet_yield = rep(100.0002, 7), outlet_precipitation = rep(0, 7), outlet_evaporation = rep(0, 7), outlet_wateruse = rep(0, 7), outlet_deficit = rep(0, 7)), tolerance = 1e-5)
+    expect_equal(as.data.frame(resul$C2[, 1:7]), data.frame(M1_inflow = rep(150.0002, 7), M1_storage = rep(2e7, 7), M1_yield = rep(150.0002, 7), M1_precipitation = rep(10, 7), M1_evaporation = rep(5, 7), M1_wateruse = rep(0, 7), M1_deficit = rep(0, 7)), tolerance = 1e-5)
+    expect_equal(as.data.frame(resul$C2[, 8:14]), data.frame(L1_inflow = rep(50, 7), L1_storage = rep(2e7, 7), L1_yield = rep(50.00006, 7), L1_precipitation = rep(10, 7), L1_evaporation = rep(5, 7), L1_wateruse = rep(0, 7), L1_deficit = rep(0, 7)), tolerance = 1e-5)
+    expect_equal(as.data.frame(resul$C2[, 15:21]), data.frame(L2_inflow = rep(100.0001, 7), L2_storage = c(11360010, 2720020, rep(0, 5)), L2_yield = c(rep(200, 2), 131.4818, rep(100, 4)), L2_precipitation = rep(10, 7), L2_evaporation = rep(5, 7), L2_wateruse = rep(0, 7), L2_deficit = c(rep(0, 2), 5919970, rep(8639990, 4))), tolerance = 1e-5)
+    expect_equal(as.data.frame(resul$C2[, 22:28]), data.frame(outlet_inflow = c(rep(400.0002, 2), 331.4821, rep(300.0003, 4)), outlet_storage = rep(0, 7), outlet_yield = c(rep(400.0002, 2), 331.4821, rep(300.0003, 4)), outlet_precipitation = rep(0, 7), outlet_evaporation = rep(0, 7), outlet_wateruse = rep(0, 7), outlet_deficit = rep(0, 7)), tolerance = 1e-5)
 
     initial_storages = c(C1_M1 = 1e7, C1_L1 = 1e7, C1_L2 = 1e7, C2_M1 = 0, C2_L1 = 2e7, C2_L2 = 2e7)
-    resul_init = calc_catchment_system(catch_system, yields, initial_storages)
-    resul_init = resul_init$system_plain
-    for (res in c("C1_M1", "C1_L1", "C1_L2", "C1_outlet", "C2_L1", "C2_L2")) {
-        expect_equal(resul_init[[res]], resul[[res]])
-    }
-    expect_equal(as.data.frame(resul_init$C2_M1), data.frame(inflow = rep(150.0002, 7), storage = c(10800020, rep(2e7, 6)), yield = c(25, 43.51898, rep(150.0002, 5)), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
-    expect_equal(as.data.frame(resul_init$C2_outlet), data.frame(inflow = c(275, 293.519, 331.4821, rep(300.0003, 4)), storage = rep(0, 7), yield = c(275, 293.519, 331.4821, rep(300.0003, 4)), precipitation = rep(0, 7), evaporation = rep(0, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
+    resul_init = calc_catchment_system(catch_system, yields, initial_storages, output_vars = c("inflow", "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit"))
+    expect_equal(resul_init$C1, resul$C1)
+    expect_equal(resul_init$C2[, 8:21], resul$C2[, 8:21])
+    expect_equal(as.data.frame(resul_init$C2[, 1:7]), data.frame(M1_inflow = rep(150.0002, 7), M1_storage = c(10800020, rep(2e7, 6)), M1_yield = c(25, 43.51898, rep(150.0002, 5)), M1_precipitation = rep(10, 7), M1_evaporation = rep(5, 7), M1_wateruse = rep(0, 7), M1_deficit = rep(0, 7)), tolerance = 1e-5)
+    expect_equal(as.data.frame(resul_init$C2[, 22:28]), data.frame(outlet_inflow = c(275, 293.519, 331.4821, rep(300.0003, 4)), outlet_storage = rep(0, 7), outlet_yield = c(275, 293.519, 331.4821, rep(300.0003, 4)), outlet_precipitation = rep(0, 7), outlet_evaporation = rep(0, 7), outlet_wateruse = rep(0, 7), outlet_deficit = rep(0, 7)), tolerance = 1e-5)
 })
 
 test_that("system with no main or lateral reservoir is calculated", {
