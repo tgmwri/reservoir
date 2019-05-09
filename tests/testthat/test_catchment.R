@@ -26,6 +26,15 @@ test_that("simple system of catchment reservoirs is calculated", {
     expect_equal(as.data.frame(resul$C2_L1), data.frame(inflow = rep(50, 7), storage = rep(2e7, 7), yield = rep(50.00006, 7), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
     expect_equal(as.data.frame(resul$C2_L2), data.frame(inflow = rep(100.0001, 7), storage = c(11360010, 2720020, rep(0, 5)), yield = c(rep(200, 2), 131.4818, rep(100, 4)), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = c(rep(0, 2), 5919970, rep(8639990, 4))), tolerance = 1e-5)
     expect_equal(as.data.frame(resul$C2_outlet), data.frame(inflow = c(rep(400.0002, 2), 331.4821, rep(300.0003, 4)), storage = rep(0, 7), yield = c(rep(400.0002, 2), 331.4821, rep(300.0003, 4)), precipitation = rep(0, 7), evaporation = rep(0, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
+
+    initial_storages = c(C1_M1 = 1e7, C1_L1 = 1e7, C1_L2 = 1e7, C2_M1 = 0, C2_L1 = 2e7, C2_L2 = 2e7)
+    resul_init = calc_catchment_system(catch_system, yields, initial_storages)
+    resul_init = resul_init$system_plain
+    for (res in c("C1_M1", "C1_L1", "C1_L2", "C1_outlet", "C2_L1", "C2_L2")) {
+        expect_equal(resul_init[[res]], resul[[res]])
+    }
+    expect_equal(as.data.frame(resul_init$C2_M1), data.frame(inflow = rep(150.0002, 7), storage = c(10800020, rep(2e7, 6)), yield = c(25, 43.51898, rep(150.0002, 5)), precipitation = rep(10, 7), evaporation = rep(5, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
+    expect_equal(as.data.frame(resul_init$C2_outlet), data.frame(inflow = c(275, 293.519, 331.4821, rep(300.0003, 4)), storage = rep(0, 7), yield = c(275, 293.519, 331.4821, rep(300.0003, 4)), precipitation = rep(0, 7), evaporation = rep(0, 7), wateruse = rep(0, 7), deficit = rep(0, 7)), tolerance = 1e-5)
 })
 
 test_that("system with no main or lateral reservoir is calculated", {

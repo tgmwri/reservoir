@@ -142,6 +142,24 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
     return(reservoirs)
 }
 
+#' Creation of system of catchments
+#'
+#' Creates system of catchments with reservoirs.
+#'
+#' @param ... Objects of `catchment` class.
+#' @export
+#' @md
+#' @examples
+#' data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7), P = rep(1, 7))
+#' res_data_c1 = data.frame(
+#'     storage = c(1e7, 1e7, 1e7), area = c(1e4, 1e4, 1e4), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
+#' branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
+#' res_data_c2 = res_data_c1
+#' res_data_c2$storage = res_data_c2$storage * 2
+#'
+#' catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+#' catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2, branches = branches, main_branch = "main")
+#' catch_system = as.catchment_system(catch1, catch2)
 as.catchment_system <- function(...) {
     catchments = list(...) # TDD check unique catchment ID, reservoir names
     down_ids_to_process = c()
@@ -186,8 +204,42 @@ as.catchment_system <- function(...) {
     return(result)
 }
 
-calc_catchment_system <- function(system, yields) {
+#' @rdname calc_catchment_system.catchment_system
+#' @export
+calc_catchment_system <- function(system, yields, initial_storages) UseMethod("calc_catchment_system")
+
+#' Calculation of system of catchments with reservoirs
+#'
+#' Calculates time series of variables for reservoirs organized in a system of catchments.
+#'
+#' @param system A `catchment_system` object.
+#' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.
+#' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If NULL, all reservoirs
+#'   are considered to be full initially.
+#' @return A list of data frames with time series for individual reservoirs.
+#' @details No transfers between reservoirs are considered (`system_plain` option of [`calc_system`] is used).
+#' @seealso [`calc_system`] for inner function calculating the reservoir system
+#' @export
+#' @md
+#' @examples
+#' data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7), P = rep(1, 7))
+#' res_data_c1 = data.frame(
+#'     storage = c(1e7, 1e7, 1e7), area = c(1e4, 1e4, 1e4), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
+#' branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
+#' res_data_c2 = res_data_c1
+#' res_data_c2$storage = res_data_c2$storage * 2
+#'
+#' catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+#' catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2, branches = branches, main_branch = "main")
+#' catch_system = as.catchment_system(catch1, catch2)
+#'
+#' yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
+#' resul = calc_catchment_system(catch_system, yields)
+calc_catchment_system.catchment_system <- function(system, yields, initial_storages = NULL) {
     catch_names = attr(system, "catchment_names")
     yields[paste0(catch_names, "_outlet")] = 0
-    return(calc_system(system, yields, types = "system_plain"))
+    if (!is.null(initial_storages)) {
+        initial_storages[paste0(catch_names, "_outlet")] = 0
+    }
+    return(calc_system(system, yields, initial_storages, types = "system_plain"))
 }

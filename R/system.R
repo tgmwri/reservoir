@@ -413,7 +413,7 @@ calc_system <- function(system, yields, initial_storages, types, yields_intercat
 #'
 #' @param system A \code{wateres_system} object.
 #' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.
-#' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing, all reservoirs
+#' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing or NULL, all reservoirs
 #'   are considered to be full initially.
 #' @param types A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
 #'   \dQuote{system_transfer} (see details).
@@ -444,7 +444,7 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
     system = check(system)
     system = set_up_ids(system)
 
-    if (missing(initial_storages)) {
+    if (missing(initial_storages) || is.null(initial_storages)) {
         initial_storages = sapply(names(system), function(res) { attr(system[[res]], "storage") })
     }
     for (arg in c("yields", "initial_storages")) {
