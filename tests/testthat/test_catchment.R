@@ -57,3 +57,22 @@ test_that("invalid inputs for catchment are recognized", {
     branches$lateral$connect_to_part = 0.5
     expect_error(make_catchment(), "areas of reservoirs of these branches are invalid")
 })
+
+test_that("structure of reservoirs is created correctly", {
+    res_data_c1 = data.frame(
+        storage = rep(1e7, 5), area = rep(1e2, 5), part = c(0.1, 0.9, 0.1, 0.3, 0.1), branch_id = c("main", "main", "lateral", "lateral", "small"),
+        id = c("M1", "M2", "L1", "L2", "S1"))
+    branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.7), small = list(down_id = "lateral", connect_to_part = 0.5))
+    catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+
+    get_attributes <- function(reser, attrs) {
+        sapply(attrs, function(attr) {
+            attr(reser, attr)
+        })
+    }
+    expect_true(all(get_attributes(catch1$C1_M1, c("id", "down_id", "branch_id")) == c("C1_M1", "C1_M2", "main")))
+    expect_true(all(get_attributes(catch1$C1_M2, c("id", "down_id", "branch_id")) == c("C1_M2", "C1_outlet", "main")))
+    expect_true(all(get_attributes(catch1$C1_L1, c("id", "down_id", "branch_id")) == c("C1_L1", "C1_L2", "lateral")))
+    expect_true(all(get_attributes(catch1$C1_L2, c("id", "down_id", "branch_id")) == c("C1_L2", "C1_M2", "lateral")))
+    expect_true(all(get_attributes(catch1$C1_S1, c("id", "down_id", "branch_id")) == c("C1_S1", "C1_M2", "small")))
+})
