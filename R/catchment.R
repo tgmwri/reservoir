@@ -25,11 +25,15 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'
 #' Creates an object of system of provided wateres reservoirs organized in a catchment.
 #'
-#' @param id
-#' @param down_id
-#' @param data
-#' @param area
-#' @param res_data
+#' @param id A catchment ID.
+#' @param down_id An ID of catchment located downwards.
+#' @param data A data frame containing time series for the catchment: dates as `DTM`, runoff in mm as `R`,
+#'   optionally precipitation in mm as `P` and potential evapotranspiration in mm as `PET`.
+#' @param area Whole catchment area in km2.
+#' @param res_data A data frame containing columns describing catchment reservoirs: `storage` means potential
+#'   storage in m3, `area` flooded area for the storage, `part` is area of the reservoir catchment relative
+#'   to the whole catchment area, `branch_id` an ID of the reservoir branch (they have to be provided in the
+#'   `branches` argument) and `id` an identifier of the reservoir.
 #' @param branches A list of individual branches with reservoirs; list names correspond to reservoir IDs.
 #'   Each branch is represented by a list consisting of an ID of the downstream branch (`down_id`; NA for
 #'   the main branch in the catchment) and a point where the branch is connected to the downstream branch
@@ -45,9 +49,11 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #' @export
 #' @md
 #' @examples
-#'
-# data - DTM, R, PET
-# area - in km2
+#' data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7), P = rep(1, 7))
+#' res_data = data.frame(
+#'     storage = c(1e7, 1e7, 1e7), area = c(1e4, 1e4, 1e4), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
+#' branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
+#' catch = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data, branches = branches, main_branch = "main")
 as.catchment <- function(id, down_id, data, area, res_data, branches, main_branch) {
     # TDD check data, res_data
     data$Q = data$R * 1e3 * area / (24 * 3600) # TDD general time step, dtto as.wateres
@@ -108,9 +114,14 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
             curr_res$id = paste0(id, "_", curr_res$id)
             curr_res_ts = data.frame(DTM = data$DTM, Q = data$Q * curr_res$part)
             reservoirs[[curr_res$id]] = as.wateres(curr_res_ts, curr_res$storage, curr_res$area, time_step = "day", id = curr_res$id, down_id = curr_res$down_id)
-            reservoirs[[curr_res$id]] = set_evaporation(reservoirs[[curr_res$id]], data$PET)
+            if (!is.null(data$PET)) {
+                reservoirs[[curr_res$id]] = set_evaporation(reservoirs[[curr_res$id]], data$PET)
+            }
+            if (!is.null(data$P)) {
+                reservoirs[[curr_res$id]] = set_precipitation(reservoirs[[curr_res$id]], data$P)
+            }
+            # TDD set_wateruse
             attr(reservoirs[[curr_res$id]], "branch_id") = branch
-            # TDD set wateruse etc.
         }
     }
     reservoirs[[paste0(id, "_outlet")]] = as.wateres(data.frame(DTM = data$DTM, Q = data$Q), 0, 0, time_step = "day")

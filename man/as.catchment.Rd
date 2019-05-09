@@ -7,11 +7,26 @@
 as.catchment(id, down_id, data, area, res_data, branches, main_branch)
 }
 \arguments{
+\item{id}{A catchment ID.}
+
+\item{down_id}{An ID of catchment located downwards.}
+
+\item{data}{A data frame containing time series for the catchment: dates as \code{DTM}, runoff in mm as \code{R},
+optionally precipitation in mm as \code{P} and potential evapotranspiration in mm as \code{PET}.}
+
+\item{area}{Whole catchment area in km2.}
+
+\item{res_data}{A data frame containing columns describing catchment reservoirs: \code{storage} means potential
+storage in m3, \code{area} flooded area for the storage, \code{part} is area of the reservoir catchment relative
+to the whole catchment area, \code{branch_id} an ID of the reservoir branch (they have to be provided in the
+\code{branches} argument) and \code{id} an identifier of the reservoir.}
+
 \item{branches}{A list of individual branches with reservoirs; list names correspond to reservoir IDs.
 Each branch is represented by a list consisting of an ID of the downstream branch (\code{down_id}; NA for
 the main branch in the catchment) and a point where the branch is connected to the downstream branch
 (\code{connect_to_part}; not relevant for the main branch). The connection point is given as a catchment
-area (relative to the whole catchment area) of the downstream branch before the junction with this branch.}
+area (relative to the whole catchment area) of the downstream branch after the junction with this branch,
+i.e. including the area of the connecting branch.}
 
 \item{main_branch}{An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.}
 }
@@ -22,9 +37,15 @@ A \code{catchment} object which is also of list class.
 Creates an object of system of provided wateres reservoirs organized in a catchment.
 }
 \details{
-An error occurs if there is a downstream branch which has not been provided in the \code{branches} list.
+An error occurs if there is a branch (downstream or in \code{res_data}) which has not been provided
+in the \code{branches} list or if branch connecting point does not comply with catchment parts (if sum of part
+of the connecting branch and part of the corresponding reservoir at the downstream branch is greater than
+part for the connecting point).
 }
 \examples{
-
-
+data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7), P = rep(1, 7))
+res_data = data.frame(
+    storage = c(1e7, 1e7, 1e7), area = c(1e4, 1e4, 1e4), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
+branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
+catch = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data, branches = branches, main_branch = "main")
 }
