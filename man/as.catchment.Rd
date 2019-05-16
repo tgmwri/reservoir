@@ -4,7 +4,8 @@
 \alias{as.catchment}
 \title{Catchment with water reservoirs creation}
 \usage{
-as.catchment(id, down_id, data, area, res_data, branches, main_branch)
+as.catchment(id, down_id, data, area, res_data, branches, main_branch,
+  res_wateruse = NULL)
 }
 \arguments{
 \item{id}{A catchment ID.}
@@ -31,6 +32,10 @@ area (relative to the whole catchment area) of the downstream branch after the j
 i.e. including the area of the connecting branch.}
 
 \item{main_branch}{An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.}
+
+\item{res_wateruse}{A list of time series of water use in m3 for individual reservoirs. The list names
+corresponds to reservoir IDs (for catchment outlet, use \code{outlet}). If not NULL, this overrides
+any water use data given in the \code{data} argument.}
 }
 \value{
 A \code{catchment} object which is also of list class.
@@ -39,8 +44,10 @@ A \code{catchment} object which is also of list class.
 Creates an object of system of provided wateres reservoirs organized in a catchment.
 }
 \details{
-Water use given for the catchment is divided to individual reservoirs (or to the outlet). By default,
-the division is done proportionally to the area of intercatchment belonging to the reservoir or outlet.
+Water use can be given directly as time series for reservoirs in m3 (as the \code{res_wateruse} argument) or
+for the whole catchment in mm (within the \code{data} argument). If the direct series are given, the water use in
+\code{data} is ignored. Water use for the whole catchment is divided to individual reservoirs (or to the outlet).
+By default, the division is done proportionally to the area of intercatchment belonging to the reservoir or outlet.
 However, the default divison can be overriden by setting the \code{part_wateruse} column of the \code{res_data}
 argument. Sum of the parts has to be lesser than 1, the rest to 1 represents the part for the outlet.
 

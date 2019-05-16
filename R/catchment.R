@@ -43,9 +43,14 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'   area (relative to the whole catchment area) of the downstream branch after the junction with this branch,
 #'   i.e. including the area of the connecting branch.
 #' @param main_branch An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.
+#' @param res_wateruse A list of time series of water use in m3 for individual reservoirs. The list names
+#'   corresponds to reservoir IDs (for catchment outlet, use `outlet`). If not NULL, this overrides
+#'   any water use data given in the `data` argument.
 #' @return A \code{catchment} object which is also of list class.
-#' @details Water use given for the catchment is divided to individual reservoirs (or to the outlet). By default,
-#'   the division is done proportionally to the area of intercatchment belonging to the reservoir or outlet.
+#' @details Water use can be given directly as time series for reservoirs in m3 (as the `res_wateruse` argument) or
+#'   for the whole catchment in mm (within the `data` argument). If the direct series are given, the water use in
+#'   `data` is ignored. Water use for the whole catchment is divided to individual reservoirs (or to the outlet).
+#'   By default, the division is done proportionally to the area of intercatchment belonging to the reservoir or outlet.
 #'   However, the default divison can be overriden by setting the `part_wateruse` column of the `res_data`
 #'   argument. Sum of the parts has to be lesser than 1, the rest to 1 represents the part for the outlet.
 #'
@@ -61,7 +66,7 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'     storage = c(1e7, 1e7, 1e7), area = c(1e4, 1e4, 1e4), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
 #' branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
 #' catch = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data, branches = branches, main_branch = "main")
-as.catchment <- function(id, down_id, data, area, res_data, branches, main_branch) {
+as.catchment <- function(id, down_id, data, area, res_data, branches, main_branch, res_wateruse = NULL) {
     # TDD check data, res_data
     data$Q = data$R * 1e3 * area / (24 * 3600) # TDD general time step, dtto as.wateres
     if (!is.null(data$WU)) {
@@ -138,7 +143,16 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
     attr(reservoirs[[paste0(id, "_outlet")]], "down_id") = NA
     attr(reservoirs[[paste0(id, "_outlet")]], "branch") = main_branch
 
-    if (!is.null(data$WU)) {
+    if (!is.null(res_wateruse)) {
+        for (res in 1:length(reservoirs)) {
+            curr_res_id = attr(reservoirs[[res]], "id")
+            id_without_catch = gsub(paste0(id, "_"), "", curr_res_id, fixed = TRUE)
+            if (!is.null(res_wateruse[[id_without_catch]])) {
+                reservoirs[[res]] = set_wateruse(reservoirs[[res]], res_wateruse[[id_without_catch]])
+            }
+        }
+    }
+    else if (!is.null(data$WU)) {
         if (!is.null(res_data$part_wateruse)) {
             if (sum(res_data$part_wateruse) > 1) {
                 stop("Sum of parts for water use cannot be greater than 1.")

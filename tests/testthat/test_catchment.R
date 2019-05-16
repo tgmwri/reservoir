@@ -88,8 +88,8 @@ test_that("structure of reservoirs is created correctly", {
 })
 
 test_that("water use is included to catchments", {
-    make_catchment <- function() {
-        as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+    make_catchment <- function(...) {
+        as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main", ...)
     }
     data_catch$WU = rep(4, 7)
     data_catch$WU[5:7] = -1 * data_catch$WU[5:7]
@@ -116,5 +116,16 @@ test_that("water use is included to catchments", {
     expect_equal(resul$C1$L1_wateruse, c(rep(4e4, 4), rep(-4e4, 3)))
     expect_equal(resul$C1$L2_wateruse, c(rep(6e4, 4), rep(-6e4, 3)))
     expect_equal(resul$C1$outlet_yield, c(rep(104.62980, 4), rep(98.14821, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
+
+    res_wateruse = list(M1 = c(rep(1e5, 4), rep(-1e5, 3)), L1 = c(rep(3e4, 4), rep(-3e4, 3)), L2 = c(rep(5e4, 4), rep(-5e4, 3)), outlet = c(rep(1e5, 4), rep(-1e5, 3)))
+    catch_system = as.catchment_system(make_catchment(res_wateruse = res_wateruse))
+    resul = calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield", "wateruse"))
+    expect_equal(resul$C1$M1_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
+    expect_equal(resul$C1$M1_storage, c(rep(1e7, 4), 9900005, 9800010, 9700015))
+    expect_equal(resul$C1$M1_yield, c(rep(26.15747, 4), rep(25, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$L1_wateruse, c(rep(3e4, 4), rep(-3e4, 3)))
+    expect_equal(resul$C1$L2_wateruse, c(rep(5e4, 4), rep(-5e4, 3)))
+    expect_equal(resul$C1$outlet_yield, c(rep(103.24091, 4), rep(98.26395, 3)), tolerance = 1e-5)
     expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
 })
