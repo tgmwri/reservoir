@@ -12,6 +12,9 @@ as.catchment_system(...)
 \description{
 Creates system of catchments with reservoirs.
 }
+\details{
+An error occurs if a given downstream catchment is not available.
+}
 \examples{
 data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7), P = rep(1, 7))
 res_data_c1 = data.frame(

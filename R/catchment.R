@@ -147,6 +147,7 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
 #' Creates system of catchments with reservoirs.
 #'
 #' @param ... Objects of `catchment` class.
+#' @details An error occurs if a given downstream catchment is not available.
 #' @export
 #' @md
 #' @examples
@@ -182,8 +183,11 @@ as.catchment_system <- function(...) {
                         catchments[[curr_catch_down_id]][[res_down]]$Q = catchments[[curr_catch_down_id]][[res_down]]$Q + curr_Q_outlet
                     }
                 }
-                if (!is.na(attr(catchments[[catch]], "down_id"))) {
-                    attr(catchments[[curr_catch_id]][[paste0(curr_catch_id, "_outlet")]], "down_id") = attr(catchments[[curr_catch_down_id]], "first_main_res")                
+                if (!is.na(curr_catch_down_id)) {
+                    if (!(curr_catch_down_id %in% names(catchments))) {
+                        stop("Catchment '", curr_catch_down_id, "' defined as downstream of '", curr_catch_id, "' is not available.")
+                    }
+                    attr(catchments[[curr_catch_id]][[paste0(curr_catch_id, "_outlet")]], "down_id") = attr(catchments[[curr_catch_down_id]], "first_main_res")
                 }
                 
                 down_ids_to_process = down_ids_to_process[-which(down_ids_to_process == curr_catch_down_id)[1]]

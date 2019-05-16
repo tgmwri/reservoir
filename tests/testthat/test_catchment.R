@@ -64,6 +64,8 @@ test_that("invalid inputs for catchment are recognized", {
     expect_error(make_catchment(), "cannot take larger part of catchment")
     branches$lateral$connect_to_part = 0.5
     expect_error(make_catchment(), "areas of reservoirs of these branches are invalid")
+    branches$lateral$connect_to_part = 0.8
+    expect_error(as.catchment_system(make_catchment()), "'C2' defined as downstream of 'C1' is not available")
 })
 
 test_that("structure of reservoirs is created correctly", {
