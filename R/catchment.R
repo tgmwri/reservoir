@@ -28,7 +28,8 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #' @param id A catchment ID.
 #' @param down_id An ID of catchment located downwards.
 #' @param data A data frame containing time series for the catchment: dates as `DTM`, runoff in mm as `R`,
-#'   optionally precipitation in mm as `P` and potential evapotranspiration in mm as `PET`.
+#'   optionally precipitation in mm as `P`, potential evapotranspiration in mm as `PET` and water use in mm
+#'   as `WU` (see details how the water use is handled).
 #' @param area Whole catchment area in km2.
 #' @param res_data A data frame containing columns describing catchment reservoirs: `storage` means potential
 #'   storage in m3, `area` flooded area for the storage, `part` is area of the reservoir catchment relative
@@ -42,7 +43,10 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'   i.e. including the area of the connecting branch.
 #' @param main_branch An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.
 #' @return A \code{catchment} object which is also of list class.
-#' @details An error occurs if there is a branch (downstream or in `res_data`) which has not been provided
+#' @details Water use given for the catchment is divided to individual reservoirs (or to the outlet) proportionally
+#'   to the area of intercatchment belonging to the reservoir or outlet.
+#'
+#'   An error occurs if there is a branch (downstream or in `res_data`) which has not been provided
 #'   in the `branches` list or if branch connecting point does not comply with catchment parts (if sum of part
 #'   of the connecting branch and part of the corresponding reservoir at the downstream branch is greater than
 #'   part for the connecting point).
@@ -57,6 +61,9 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 as.catchment <- function(id, down_id, data, area, res_data, branches, main_branch) {
     # TDD check data, res_data
     data$Q = data$R * 1e3 * area / (24 * 3600) # TDD general time step, dtto as.wateres
+    if (!is.null(data$WU)) {
+        data$WU = data$WU * 1e3 * area
+    }
     res_data$id = as.character(res_data$id)
 
     branches_from_res = unique(as.character(res_data$branch_id))
@@ -120,7 +127,6 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
             if (!is.null(data$P)) {
                 reservoirs[[curr_res$id]] = set_precipitation(reservoirs[[curr_res$id]], data$P)
             }
-            # TDD set_wateruse
             attr(reservoirs[[curr_res$id]], "branch_id") = branch
         }
     }
@@ -128,6 +134,22 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
     attr(reservoirs[[paste0(id, "_outlet")]], "id") = paste0(id, "_outlet")
     attr(reservoirs[[paste0(id, "_outlet")]], "down_id") = NA
     attr(reservoirs[[paste0(id, "_outlet")]], "branch") = main_branch
+
+    if (!is.null(data$WU)) {
+        part_inter = part_total = c(res_data$part, 1)
+        names(part_inter) = names(part_total) = paste0(id, "_", c(res_data$id, "outlet"))
+
+        for (reser in reservoirs) {
+            curr_down_id = attr(reser, "down_id")
+            if (!is.na(curr_down_id)) {
+                part_inter[curr_down_id] = part_inter[curr_down_id] - part_total[attr(reser, "id")]
+            }
+        }
+        for (res in 1:length(reservoirs)) {
+            reservoirs[[res]] = set_wateruse(reservoirs[[res]], data$WU * part_inter[attr(reser, "id")])
+        }
+    }
+
     attr(reservoirs, "id") = id
     attr(reservoirs, "down_id") = down_id
     if (length(res_branches[[main_branch]]) > 0) {

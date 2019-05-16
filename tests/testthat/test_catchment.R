@@ -86,3 +86,20 @@ test_that("structure of reservoirs is created correctly", {
     expect_true(all(get_attributes(catch1$C1_L2, c("id", "down_id", "branch_id")) == c("C1_L2", "C1_M2", "lateral")))
     expect_true(all(get_attributes(catch1$C1_S1, c("id", "down_id", "branch_id")) == c("C1_S1", "C1_M2", "small")))
 })
+
+test_that("water use is included to catchments", {
+    data_catch$WU = rep(4, 7)
+    data_catch$WU[5:7] = -1 * data_catch$WU[5:7]
+    catch1 = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+    catch_system = as.catchment_system(catch1)
+
+    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25)
+    resul = calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield", "wateruse"))
+    expect_equal(resul$C1$M1_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
+    expect_equal(resul$C1$M1_storage, c(rep(1e7, 4), 9900005, 9800010, 9700015))
+    expect_equal(resul$C1$M1_yield, c(rep(26.15747, 4), rep(25, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$L1_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
+    expect_equal(resul$C1$L2_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
+    expect_equal(resul$C1$outlet_yield, c(rep(104.62980, 4), rep(97.68524, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
+})

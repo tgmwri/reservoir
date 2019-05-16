@@ -12,7 +12,8 @@ as.catchment(id, down_id, data, area, res_data, branches, main_branch)
 \item{down_id}{An ID of catchment located downwards.}
 
 \item{data}{A data frame containing time series for the catchment: dates as \code{DTM}, runoff in mm as \code{R},
-optionally precipitation in mm as \code{P} and potential evapotranspiration in mm as \code{PET}.}
+optionally precipitation in mm as \code{P}, potential evapotranspiration in mm as \code{PET} and water use in mm
+as \code{WU} (see details how the water use is handled).}
 
 \item{area}{Whole catchment area in km2.}
 
@@ -37,6 +38,9 @@ A \code{catchment} object which is also of list class.
 Creates an object of system of provided wateres reservoirs organized in a catchment.
 }
 \details{
+Water use given for the catchment is divided to individual reservoirs (or to the outlet) proportionally
+to the area of intercatchment belonging to the reservoir or outlet.
+
 An error occurs if there is a branch (downstream or in \code{res_data}) which has not been provided
 in the \code{branches} list or if branch connecting point does not comply with catchment parts (if sum of part
 of the connecting branch and part of the corresponding reservoir at the downstream branch is greater than
