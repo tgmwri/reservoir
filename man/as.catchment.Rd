@@ -20,7 +20,8 @@ as \code{WU} (see details how the water use is handled).}
 \item{res_data}{A data frame containing columns describing catchment reservoirs: \code{storage} means potential
 storage in m3, \code{area} flooded area for the storage, \code{part} is area of the reservoir catchment relative
 to the whole catchment area, \code{branch_id} an ID of the reservoir branch (they have to be provided in the
-\code{branches} argument) and \code{id} an identifier of the reservoir.}
+\code{branches} argument) and \code{id} an identifier of the reservoir. Optional column \code{part_wateruse} contains
+parts of water use assigned to individual reservoirs (see also details).}
 
 \item{branches}{A list of individual branches with reservoirs; list names correspond to reservoir IDs.
 Each branch is represented by a list consisting of an ID of the downstream branch (\code{down_id}; NA for
@@ -38,8 +39,10 @@ A \code{catchment} object which is also of list class.
 Creates an object of system of provided wateres reservoirs organized in a catchment.
 }
 \details{
-Water use given for the catchment is divided to individual reservoirs (or to the outlet) proportionally
-to the area of intercatchment belonging to the reservoir or outlet.
+Water use given for the catchment is divided to individual reservoirs (or to the outlet). By default,
+the division is done proportionally to the area of intercatchment belonging to the reservoir or outlet.
+However, the default divison can be overriden by setting the \code{part_wateruse} column of the \code{res_data}
+argument. Sum of the parts has to be lesser than 1, the rest to 1 represents the part for the outlet.
 
 An error occurs if there is a branch (downstream or in \code{res_data}) which has not been provided
 in the \code{branches} list or if branch connecting point does not comply with catchment parts (if sum of part

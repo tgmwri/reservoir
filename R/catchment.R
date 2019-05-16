@@ -34,7 +34,8 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #' @param res_data A data frame containing columns describing catchment reservoirs: `storage` means potential
 #'   storage in m3, `area` flooded area for the storage, `part` is area of the reservoir catchment relative
 #'   to the whole catchment area, `branch_id` an ID of the reservoir branch (they have to be provided in the
-#'   `branches` argument) and `id` an identifier of the reservoir.
+#'   `branches` argument) and `id` an identifier of the reservoir. Optional column `part_wateruse` contains
+#'   parts of water use assigned to individual reservoirs (see also details).
 #' @param branches A list of individual branches with reservoirs; list names correspond to reservoir IDs.
 #'   Each branch is represented by a list consisting of an ID of the downstream branch (`down_id`; NA for
 #'   the main branch in the catchment) and a point where the branch is connected to the downstream branch
@@ -43,8 +44,10 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'   i.e. including the area of the connecting branch.
 #' @param main_branch An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.
 #' @return A \code{catchment} object which is also of list class.
-#' @details Water use given for the catchment is divided to individual reservoirs (or to the outlet) proportionally
-#'   to the area of intercatchment belonging to the reservoir or outlet.
+#' @details Water use given for the catchment is divided to individual reservoirs (or to the outlet). By default,
+#'   the division is done proportionally to the area of intercatchment belonging to the reservoir or outlet.
+#'   However, the default divison can be overriden by setting the `part_wateruse` column of the `res_data`
+#'   argument. Sum of the parts has to be lesser than 1, the rest to 1 represents the part for the outlet.
 #'
 #'   An error occurs if there is a branch (downstream or in `res_data`) which has not been provided
 #'   in the `branches` list or if branch connecting point does not comply with catchment parts (if sum of part
@@ -136,17 +139,26 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
     attr(reservoirs[[paste0(id, "_outlet")]], "branch") = main_branch
 
     if (!is.null(data$WU)) {
-        part_inter = part_total = c(res_data$part, 1)
-        names(part_inter) = names(part_total) = paste0(id, "_", c(res_data$id, "outlet"))
+        if (!is.null(res_data$part_wateruse)) {
+            if (sum(res_data$part_wateruse) > 1) {
+                stop("Sum of parts for water use cannot be greater than 1.")
+            }
+            part_inter = c(res_data$part_wateruse, 1 - sum(res_data$part_wateruse))
+            names(part_inter) = paste0(id, "_", c(res_data$id, "outlet"))
+        }
+        else {
+            part_inter = part_total = c(res_data$part, 1)
+            names(part_inter) = names(part_total) = paste0(id, "_", c(res_data$id, "outlet"))
 
-        for (reser in reservoirs) {
-            curr_down_id = attr(reser, "down_id")
-            if (!is.na(curr_down_id)) {
-                part_inter[curr_down_id] = part_inter[curr_down_id] - part_total[attr(reser, "id")]
+            for (reser in reservoirs) {
+                curr_down_id = attr(reser, "down_id")
+                if (!is.na(curr_down_id)) {
+                    part_inter[curr_down_id] = part_inter[curr_down_id] - part_total[attr(reser, "id")]
+                }
             }
         }
         for (res in 1:length(reservoirs)) {
-            reservoirs[[res]] = set_wateruse(reservoirs[[res]], data$WU * part_inter[attr(reser, "id")])
+            reservoirs[[res]] = set_wateruse(reservoirs[[res]], data$WU * part_inter[attr(reservoirs[[res]], "id")])
         }
     }
 

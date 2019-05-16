@@ -88,10 +88,12 @@ test_that("structure of reservoirs is created correctly", {
 })
 
 test_that("water use is included to catchments", {
+    make_catchment <- function() {
+        as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+    }
     data_catch$WU = rep(4, 7)
     data_catch$WU[5:7] = -1 * data_catch$WU[5:7]
-    catch1 = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
-    catch_system = as.catchment_system(catch1)
+    catch_system = as.catchment_system(make_catchment())
 
     yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25)
     resul = calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield", "wateruse"))
@@ -101,5 +103,18 @@ test_that("water use is included to catchments", {
     expect_equal(resul$C1$L1_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
     expect_equal(resul$C1$L2_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
     expect_equal(resul$C1$outlet_yield, c(rep(104.62980, 4), rep(97.68524, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
+
+    res_data_c1$part_wateruse = c(0.5, 0.4, 0.15)
+    expect_error(make_catchment(), "Sum of parts for water use cannot be greater than 1")
+    res_data_c1$part_wateruse = c(0.5, 0.1, 0.15)
+    catch_system = as.catchment_system(make_catchment())
+    resul = calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield", "wateruse"))
+    expect_equal(resul$C1$M1_wateruse, c(rep(2e5, 4), rep(-2e5, 3)))
+    expect_equal(resul$C1$M1_storage, c(rep(1e7, 4), 9800005, 9600010, 9400015))
+    expect_equal(resul$C1$M1_yield, c(rep(27.31487, 4), rep(25, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$L1_wateruse, c(rep(4e4, 4), rep(-4e4, 3)))
+    expect_equal(resul$C1$L2_wateruse, c(rep(6e4, 4), rep(-6e4, 3)))
+    expect_equal(resul$C1$outlet_yield, c(rep(104.62980, 4), rep(98.14821, 3)), tolerance = 1e-5)
     expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
 })
