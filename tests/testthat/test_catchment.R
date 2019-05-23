@@ -129,3 +129,22 @@ test_that("water use is included to catchments", {
     expect_equal(resul$C1$outlet_yield, c(rep(103.24091, 4), rep(98.26395, 3)), tolerance = 1e-5)
     expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
 })
+
+test_that("reservoir properties are applied", {
+    res_properties = list(storage_optim = list(M1 = 8e6, L1 = 8e6, L2 = 3e6), yield = list(M1 = 30, L1 = 30, L2 = 60), yield_max = list(M1 = 40, L1 = 40, L2 = 70))
+    catch1 = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main", res_properties = res_properties)
+    catch_system = as.catchment_system(catch1)
+    resul = calc_catchment_system(catch_system, output_vars = c("storage", "yield"))
+    expect_equal(resul$C1$M1_storage, c(8704005, 8000000, 7568005, 7136010, 6704015, 6272020, 5840025))
+    expect_equal(resul$C1$M1_yield, c(40, 33.14826, rep(30, 5)), tolerance = 1e-5)
+    expect_equal(resul$C1$L1_storage, resul$C1$M1_storage)
+    expect_equal(resul$C1$L1_yield, resul$C1$M1_yield)
+    expect_equal(resul$C1$L2_storage, c(9568005, 8544020, 7248025, 5952030, 4656035, 3360040, 2928045))
+    expect_equal(resul$C1$L2_yield, c(rep(70, 6), 60), tolerance = 1e-5)
+
+    # yields in property overriden by yields in argument
+    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25)
+    resul = expect_warning(calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield")), "Yield given as property of reservoir 'C1_M1' will be overriden")
+    expect_equal(resul$C1$M1_storage, c(8704005, rep(8e6, 6)))
+    expect_equal(resul$C1$M1_yield, c(40, 33.14826, rep(25.00006, 5)), tolerance = 1e-5)
+})
