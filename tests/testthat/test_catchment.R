@@ -34,6 +34,11 @@ test_that("simple system of catchment reservoirs is calculated", {
     expect_equal(resul_init$C2[, 8:21], resul$C2[, 8:21])
     expect_equal(as.data.frame(resul_init$C2[, 1:7]), data.frame(M1_inflow = rep(150.0002, 7), M1_storage = c(10800020, rep(2e7, 6)), M1_yield = c(25, 43.51898, rep(150.0002, 5)), M1_precipitation = rep(10, 7), M1_evaporation = rep(5, 7), M1_wateruse = rep(0, 7), M1_deficit = rep(0, 7)), tolerance = 1e-5)
     expect_equal(as.data.frame(resul_init$C2[, 22:28]), data.frame(outlet_inflow = c(275, 293.519, 331.4821, rep(300.0003, 4)), outlet_storage = rep(0, 7), outlet_yield = c(275, 293.519, 331.4821, rep(300.0003, 4)), outlet_precipitation = rep(0, 7), outlet_evaporation = rep(0, 7), outlet_wateruse = rep(0, 7), outlet_deficit = rep(0, 7)), tolerance = 1e-5)
+
+    # catchments given as a list
+    catch_system2 = as.catchment_system(list(catch1, catch2))
+    resul2 = calc_catchment_system(catch_system2, yields, output_vars = c("inflow", "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit"))
+    expect_equal(resul2, resul)
 })
 
 test_that("system with no main or lateral reservoir is calculated", {

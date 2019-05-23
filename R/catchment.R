@@ -211,7 +211,7 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
 #'
 #' Creates system of catchments with reservoirs.
 #'
-#' @param ... Objects of `catchment` class.
+#' @param ... Objects of `catchment` class or a list with objects of `catchment` class (its names does not matter).
 #' @details An error occurs if a given downstream catchment is not available.
 #' @export
 #' @md
@@ -227,7 +227,13 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
 #' catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2, branches = branches, main_branch = "main")
 #' catch_system = as.catchment_system(catch1, catch2)
 as.catchment_system <- function(...) {
-    catchments = list(...) # TDD check unique catchment ID, reservoir names
+    if ("catchment" %in% class(..1)) {
+        catchments = list(...)
+    }
+    else {
+        catchments = as.list(...)
+    }
+    # TDD check unique catchment ID, reservoir names
     down_ids_to_process = c()
     for (catch in 1:length(catchments)) {    
         names(catchments)[catch] = attr(catchments[[catch]], "id")

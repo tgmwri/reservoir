@@ -7,7 +7,7 @@
 as.catchment_system(...)
 }
 \arguments{
-\item{...}{Objects of \code{catchment} class.}
+\item{...}{Objects of \code{catchment} class or a list with objects of \code{catchment} class (its names does not matter).}
 }
 \description{
 Creates system of catchments with reservoirs.
