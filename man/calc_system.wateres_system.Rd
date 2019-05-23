@@ -13,7 +13,8 @@ calc_system(system, yields, initial_storages, types, yields_intercatch)
 \arguments{
 \item{system}{A \code{wateres_system} object.}
 
-\item{yields}{A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.}
+\item{yields}{A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system. If values
+for some reservoirs are not provided, they are taken from the \code{storage} property of that reservoirs (if the property is available).}
 
 \item{initial_storages}{A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing or NULL, all reservoirs
 are considered to be full initially.}
@@ -26,10 +27,10 @@ a sum of yields from upstream reservoirs.}
 }
 \value{
 A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
-  objects for individual reservoirs. The object contains the water balance variables returned by the \code{\link{calc_series}} functions.
-  Moreover, \code{transfer} variable is added for the system results if has non-zero value at least in one time step.
+objects for individual reservoirs. The object contains the water balance variables returned by the \code{\link{calc_series}} functions.
+Moreover, \code{transfer} variable is added for the system results if has non-zero value at least in one time step.
 
-  If the yields are given as \code{yields_intercatch}, the list contains also the \code{yields} item with total yields calculated for the reservoirs.
+If the yields are given as \code{yields_intercatch}, the list contains also the \code{yields} item with total yields calculated for the reservoirs.
 }
 \description{
 Calculates time series of variables for reservoirs organized in a system. Four types of calculation are available, depending on whether
@@ -38,12 +39,12 @@ inflows from upstream reservoirs and water transfer between reservoirs are consi
 \details{
 The types of calculation selected as the \code{types} argument are as follows:
 \itemize{
-  \item{\code{single_plain} - reservoirs are calculated independently of the system.}
-  \item{\code{single_transfer} - as above, and water transfer is added to decrease deficit volumes; a fictional scenario for testing purposes.}
-  \item{\code{system_plain} - reservoirs are calculated within the system, i.e. reservoir inflow consists of yield of corresponding upstream
-    reservoirs and runoff from the intercatchment (derived from the original inflow series to reservoirs or given by the \dQuote{QI} column when
-    creating a reservoir by the \code{\link{as.wateres}} function).}
-  \item{\code{system_transfer} - as above, and water transfer is added.}}
+\item{\code{single_plain} - reservoirs are calculated independently of the system.}
+\item{\code{single_transfer} - as above, and water transfer is added to decrease deficit volumes; a fictional scenario for testing purposes.}
+\item{\code{system_plain} - reservoirs are calculated within the system, i.e. reservoir inflow consists of yield of corresponding upstream
+reservoirs and runoff from the intercatchment (derived from the original inflow series to reservoirs or given by the \dQuote{QI} column when
+creating a reservoir by the \code{\link{as.wateres}} function).}
+\item{\code{system_transfer} - as above, and water transfer is added.}}
 
 The water transfer (redistribution) is carried out independently for the time steps when deficit in any of the reservoirs occurs. Future time steps are not
 considered, i.e. it is possible that deficit decrease in a time step will cause deficit increase in the next time step.
@@ -53,10 +54,10 @@ For a given time step, the following algorithm is applied:
 For each reservoir, the maximum water volume available to be transferred is determined (starting from top reservoirs and continuing with reservoirs
 whose upper reservoirs have been already processed).
 \itemize{
-  \item{If sum of current reservoir storage and potential transfer is greater than zero, this sum is equal to the potential transfer from
-        the current reservoir to the reservoir downwards.}
-  \item{Otherwise, there is a deficit which can be satisfied by the potential transfer from upper reservoirs; then the exceeding water is equal to the potential transfer
-        to the reservoir downwards. }}
+\item{If sum of current reservoir storage and potential transfer is greater than zero, this sum is equal to the potential transfer from
+the current reservoir to the reservoir downwards.}
+\item{Otherwise, there is a deficit which can be satisfied by the potential transfer from upper reservoirs; then the exceeding water is equal to the potential transfer
+to the reservoir downwards. }}
 Finally, volume resulting from all potential transfers is collected in the bottom reservoir. If it is greater than the bottom reservoir deficit,
 the exceeding part is redistributed back to the corresponding source reservoirs. The only criterion of the redistribution is volume of the transfer, distance
 between reservoirs is not taken into account. (The same redistribution method is applied when information about source reservoir is determined --

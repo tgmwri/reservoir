@@ -5,7 +5,7 @@
 \title{Catchment with water reservoirs creation}
 \usage{
 as.catchment(id, down_id, data, area, res_data, branches, main_branch,
-  res_wateruse = NULL)
+  res_wateruse = NULL, res_properties = NULL)
 }
 \arguments{
 \item{id}{A catchment ID.}
@@ -36,6 +36,9 @@ i.e. including the area of the connecting branch.}
 \item{res_wateruse}{A list of time series of water use in m3 for individual reservoirs. The list names
 corresponds to reservoir IDs (for catchment outlet, use \code{outlet}). If not NULL, this overrides
 any water use data given in the \code{data} argument.}
+
+\item{res_properties}{A list whose keys are property names (as used in \code{\link{set_property}}) containing lists
+whose keys are reservoir IDs and contain corresponding values.}
 }
 \value{
 A \code{catchment} object which is also of list class.

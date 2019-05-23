@@ -172,10 +172,10 @@ calc_single <- function(system, init_pos = 1, resul = NULL, only_part_ts = FALSE
             # therefore the next deficit which will stop the calculation (first_def_pos) cannot be in the same time
             init_pos_prev = if (init_pos == 1) 1 else init_pos - 1
             tmp_resul = calc_series(
-                system[[res]], yield = attr(system, "yields")[curr_id],
+                system[[res]], yield = attr(system, "yields")[[curr_id]],
                 initial_storage = if (init_pos > 2) resul[[curr_id]]$storage[init_pos - 2] else attr(system, "initial_storages")[curr_id],
                 initial_pos = init_pos_prev,
-                last_pos = min_last_pos, till_def = TRUE, first_def_pos = init_pos, complex_properties = FALSE)
+                last_pos = min_last_pos, till_def = TRUE, first_def_pos = init_pos)
 
             last_pos = init_pos_prev - 1 + nrow(tmp_resul)
             if (is.null(resul[[curr_id]])) {
@@ -199,7 +199,7 @@ calc_single <- function(system, init_pos = 1, resul = NULL, only_part_ts = FALSE
                 min_last_pos = last_pos
         }
         else {
-            resul[[curr_id]] = calc_series(system[[res]], yield = attr(system, "yields")[curr_id], initial_storage = attr(system, "initial_storages")[curr_id], complex_properties = FALSE)
+            resul[[curr_id]] = calc_series(system[[res]], yield = attr(system, "yields")[[curr_id]], initial_storage = attr(system, "initial_storages")[curr_id])
         }
     }
     return(resul)
@@ -271,7 +271,8 @@ calc_intercatchs_inner <- function(system, series, def_pos, curr_id, bottom_id, 
             system[[curr_id]]$QI = system[[curr_id]]$Q - sum_up_Q
         }
         if (attr(system, "yields_intercatch")) {
-            attr(system, "yields")[curr_id] = sum(attr(system, "yields")[curr_up]) + attr(system, "yields")[curr_id]
+            up_yields = rowSums(as.data.frame(lapply(curr_up, function(curr_up_res) { attr(system, "yields")[[curr_up_res]] })))
+            attr(system, "yields")[[curr_id]] = up_yields + attr(system, "yields")[[curr_id]]
         }
         if (anyNA(system[[curr_id]]$QI))
             stop("Missing inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(is.na(system[[curr_id]]$QI))[1], ") is not allowed.")
@@ -412,7 +413,8 @@ calc_system <- function(system, yields, initial_storages, types, yields_intercat
 #' The system structure is checked by the \code{\link{check}} function before the calculation starts.
 #'
 #' @param system A \code{wateres_system} object.
-#' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.
+#' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system. If values
+#'   for some reservoirs are not provided, they are taken from the `storage` property of that reservoirs (if the property is available).
 #' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing or NULL, all reservoirs
 #'   are considered to be full initially.
 #' @param types A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
@@ -426,6 +428,7 @@ calc_system <- function(system, yields, initial_storages, types, yields_intercat
 #'   If the yields are given as \code{yields_intercatch}, the list contains also the \code{yields} item with total yields calculated for the reservoirs.
 #' @seealso \code{\link{calc_series}} for calculating individual reservoirs
 #' @export
+#' @md
 #' @examples
 #' period = seq(as.Date("2000-01-01"), by = "months", length.out = 24)
 #' riv_data = data.frame(
@@ -447,10 +450,22 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
     if (missing(initial_storages) || is.null(initial_storages)) {
         initial_storages = sapply(names(system), function(res) { attr(system[[res]], "storage") })
     }
+    yields_property = sapply(names(system), function(res) { attr(system[[res]], "yield") })
+    for (res_name in names(yields_property)) {
+        if (!is.na(yields[res_name])) {
+            if (!is.null(yields_property[[res_name]])) {
+                warning("Yield given as property of reservoir '", res_name, "' will be overriden by value of argument of calc_system.")
+            }
+            yields_property[[res_name]] = as.numeric(yields[res_name])
+        }
+    }
+    yields = yields_property
+
     for (arg in c("yields", "initial_storages")) {
         values = get(arg)
         values = values[names(values) %in% names(system)]
-        if (anyNA(values) || length(values) < length(system))
+        if (any(sapply(values, function(values_for_res) { is.null(values_for_res) || anyNA(values_for_res) }))
+            || anyNA(values) || length(values) < length(system))
             stop("Argument '", arg, "' does not provide values for all reservoirs in the system.")
     }
     for (curr_attr in c("yields", "yields_intercatch", "initial_storages"))

@@ -7,13 +7,14 @@
 \usage{
 calc_catchment_system(system, yields, initial_storages, output_vars)
 
-\method{calc_catchment_system}{catchment_system}(system, yields,
+\method{calc_catchment_system}{catchment_system}(system, yields = NULL,
   initial_storages = NULL, output_vars = c("storage", "yield"))
 }
 \arguments{
 \item{system}{A \code{catchment_system} object.}
 
-\item{yields}{A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.}
+\item{yields}{A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.
+If not provided, their values are taken from the \code{yield} property of that reservoirs (if available).}
 
 \item{initial_storages}{A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If NULL, all reservoirs
 are considered to be full initially.}

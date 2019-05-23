@@ -46,7 +46,9 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #' @param res_wateruse A list of time series of water use in m3 for individual reservoirs. The list names
 #'   corresponds to reservoir IDs (for catchment outlet, use `outlet`). If not NULL, this overrides
 #'   any water use data given in the `data` argument.
-#' @return A \code{catchment} object which is also of list class.
+#' @param res_properties A list whose keys are property names (as used in [`set_property`]) containing lists
+#'   whose keys are reservoir IDs and contain corresponding values.
+#' @return A `catchment` object which is also of list class.
 #' @details Water use can be given directly as time series for reservoirs in m3 (as the `res_wateruse` argument) or
 #'   for the whole catchment in mm (within the `data` argument). If the direct series are given, the water use in
 #'   `data` is ignored. Water use for the whole catchment is divided to individual reservoirs (or to the outlet).
@@ -66,7 +68,7 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'     storage = c(1e7, 1e7, 1e7), area = c(1e4, 1e4, 1e4), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
 #' branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
 #' catch = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data, branches = branches, main_branch = "main")
-as.catchment <- function(id, down_id, data, area, res_data, branches, main_branch, res_wateruse = NULL) {
+as.catchment <- function(id, down_id, data, area, res_data, branches, main_branch, res_wateruse = NULL, res_properties = NULL) {
     # TDD check data, res_data
     data$Q = data$R * 1e3 * area / (24 * 3600) # TDD general time step, dtto as.wateres
     if (!is.null(data$WU)) {
@@ -134,6 +136,14 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
             }
             if (!is.null(data$P)) {
                 reservoirs[[curr_res$id]] = set_precipitation(reservoirs[[curr_res$id]], data$P)
+            }
+            if (!is.null(res_properties)) {
+                id_without_catch = gsub(paste0(id, "_"), "", curr_res$id, fixed = TRUE)
+                for (property in names(res_properties)) {
+                    if (!is.null(res_properties[[property]][[id_without_catch]])) {
+                        reservoirs[[curr_res$id]] = set_property(reservoirs[[curr_res$id]], property, res_properties[[property]][[id_without_catch]])
+                    }
+                }
             }
             attr(reservoirs[[curr_res$id]], "branch_id") = branch
         }
@@ -266,6 +276,7 @@ calc_catchment_system <- function(system, yields, initial_storages, output_vars)
 #'
 #' @param system A `catchment_system` object.
 #' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system.
+#'   If not provided, their values are taken from the `yield` property of that reservoirs (if available).
 #' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If NULL, all reservoirs
 #'   are considered to be full initially.
 #' @param output_vars A vector of variables whose time series are returned. Variable names are those returned by `calc_series`
@@ -289,7 +300,7 @@ calc_catchment_system <- function(system, yields, initial_storages, output_vars)
 #'
 #' yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
 #' resul = calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield", "precipitation"))
-calc_catchment_system.catchment_system <- function(system, yields, initial_storages = NULL, output_vars = c("storage", "yield")) {
+calc_catchment_system.catchment_system <- function(system, yields = NULL, initial_storages = NULL, output_vars = c("storage", "yield")) {
     catch_names = attr(system, "catchment_names")
     yields[paste0(catch_names, "_outlet")] = 0
     if (!is.null(initial_storages)) {
