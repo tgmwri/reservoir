@@ -36,6 +36,8 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'   to the whole catchment area, `branch_id` an ID of the reservoir branch (they have to be provided in the
 #'   `branches` argument) and `id` an identifier of the reservoir. Optional column `part_wateruse` contains
 #'   parts of water use assigned to individual reservoirs (see also details).
+#'
+#'   If the catchment contains no reservoir, this is NULL.
 #' @param branches A list of individual branches with reservoirs; list names correspond to reservoir IDs.
 #'   Each branch is represented by a list consisting of an ID of the downstream branch (`down_id`; NA for
 #'   the main branch in the catchment) and a point where the branch is connected to the downstream branch
@@ -93,7 +95,12 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
         branch = branches[[b]]
         branch_id = names(branches)[[b]]
 
-        res_dframe = res_data[res_data$branch_id == branch_id,]
+        if (is.null(res_data) || length(nrow(res_data)) == 0 || nrow(res_data) < 1) {
+            res_dframe = data.frame()
+        }
+        else {
+            res_dframe = res_data[res_data$branch_id == branch_id,]
+        }
         if (nrow(res_dframe) < 1) {
             warning("Branch '", branch_id, "' is not used for any reservoir.")
             next

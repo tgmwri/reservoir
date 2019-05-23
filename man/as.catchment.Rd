@@ -22,7 +22,9 @@ as \code{WU} (see details how the water use is handled).}
 storage in m3, \code{area} flooded area for the storage, \code{part} is area of the reservoir catchment relative
 to the whole catchment area, \code{branch_id} an ID of the reservoir branch (they have to be provided in the
 \code{branches} argument) and \code{id} an identifier of the reservoir. Optional column \code{part_wateruse} contains
-parts of water use assigned to individual reservoirs (see also details).}
+parts of water use assigned to individual reservoirs (see also details).
+
+If the catchment contains no reservoir, this is NULL.}
 
 \item{branches}{A list of individual branches with reservoirs; list names correspond to reservoir IDs.
 Each branch is represented by a list consisting of an ID of the downstream branch (\code{down_id}; NA for
