@@ -166,3 +166,11 @@ test_that("catchment with no reservoir is included", {
     expect_equal(resul$C1$M1_yield, rep(25.00006, 7), tolerance = 1e-5)
     expect_equal(resul$C2$outlet_yield, rep(300.0002, 7), tolerance = 1e-5)
 })
+
+test_that("catchment inputs in data.table produces no warning", {
+    library(data.table)
+    res_data_c1 = data.table(
+        storage = c(1e7), area = c(1e4), part = c(0.25), branch_id = c("main"), id = c("M1"))
+    branches = list(main = list(down_id = NA))
+    expect_warning(as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main"), regexp = NA)
+})

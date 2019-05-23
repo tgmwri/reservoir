@@ -115,7 +115,7 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
                 stop("Branch '", branch_id, "' is connected to branch '", branch$down_id, "' that way that areas of reservoirs of these branches are invalid.")
             }
         }
-        res_dframe$down_id = NA
+        res_dframe$down_id = NA_character_
         for (res in 1:nrow(res_dframe)) {
             if (res + 1 <= nrow(res_dframe)) {
                 res_dframe[res, "down_id"] = paste0(id, "_", res_dframe[res + 1, "id"])
