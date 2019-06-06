@@ -173,6 +173,9 @@ set_property <- function(reser, property_name, values) UseMethod("set_property")
 #'   of the particular month (e.g. the first of 12 values relates to the beginning of January, i.e. the end of December).
 #' @return A modified `wateres` object with the property added as its attribute.
 #' @details The reservoir properties are implemented as attributes of the `wateres` object.
+#'
+#'   If \dQuote{storage} is given, it replaces the value provided as the `storage` argument of the `as.wateres` function. However, \dQuote{yield}
+#'   given as a property is overriden by the `yield` argument of the `calc_series` function.
 #' @export
 #' @examples
 #' reser = data.frame(

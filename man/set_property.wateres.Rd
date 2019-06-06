@@ -27,6 +27,9 @@ Sets a value or time series of values of a reservoir property, i.e. characterist
 }
 \details{
 The reservoir properties are implemented as attributes of the \code{wateres} object.
+
+If \dQuote{storage} is given, it replaces the value provided as the \code{storage} argument of the \code{as.wateres} function. However, \dQuote{yield}
+given as a property is overriden by the \code{yield} argument of the \code{calc_series} function.
 }
 \examples{
 reser = data.frame(
