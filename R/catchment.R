@@ -247,7 +247,7 @@ as.catchment_system <- function(...) {
         for (catch in 1:length(catchments)) {
             curr_catch_id = attr(catchments[[catch]], "id")
             curr_catch_down_id = attr(catchments[[catch]], "down_id")
-            if (!(curr_catch_id %in% down_ids_to_process)) {
+            if (!(curr_catch_id %in% processed_catchs) && !(curr_catch_id %in% down_ids_to_process)) {
                 curr_Q_outlet = catchments[[curr_catch_id]][[paste0(curr_catch_id, "_outlet")]]$Q
                 for (res_down in names(catchments[[curr_catch_down_id]])) {
                     if (attr(catchments[[curr_catch_down_id]][[res_down]], "branch") == attr(catchments[[curr_catch_down_id]], "main_branch")) {
