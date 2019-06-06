@@ -110,7 +110,9 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
             res_dframe = res_data[res_data$branch_id == branch_id,]
         }
         if (nrow(res_dframe) < 1) {
-            warning("Branch '", branch_id, "' is not used for any reservoir.")
+            if (branch_id != main_branch || length(nrow(res_data)) != 0) {
+                warning("Branch '", branch_id, "' is not used for any reservoir.")
+            }
             next
         }
         res_dframe = res_dframe[order(res_dframe$part),]

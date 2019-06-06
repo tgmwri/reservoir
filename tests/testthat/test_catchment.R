@@ -154,11 +154,15 @@ test_that("reservoir properties are applied", {
     expect_equal(resul$C1$M1_yield, c(40, 33.14826, rep(25.00006, 5)), tolerance = 1e-5)
 })
 
+test_that("warning about unused branch is shown", {
+    catch = expect_warning(
+        as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = NULL, branches = branches, main_branch = "main"),
+        "Branch 'lateral' is not used for any reservoir")
+})
+
 test_that("catchment with no reservoir is included", {
     catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
-    catch2 = expect_warning(
-        as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = NULL, branches = list(main = list(down_id = NA)), main_branch = "main"),
-        "Branch 'main' is not used for any reservoir")
+    catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = NULL, branches = list(main = list(down_id = NA)), main_branch = "main")
     catch_system = as.catchment_system(catch1, catch2)
 
     yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
