@@ -186,3 +186,14 @@ test_that("catchment inflows are calculated correctly", {
     resul = calc_catchment_system(catch_system, output_vars = "yield")
     expect_equal(c(resul$C1$outlet_yield, resul$C2$outlet_yield, resul$C3$outlet_yield), c(rep(100, 14), rep(400, 7)))
 })
+
+test_that("branches are not needed to be given if only one is there", {
+    catch1 = as.catchment(id = "C1", down_id = "C3", data = data_catch, area = 100, res_data = NULL, branches = NULL, main_branch = "main")
+    catch2 = as.catchment(id = "C2", down_id = "C3", data = data_catch, area = 100, res_data = NULL, main_branch = "main")
+    catch3 = as.catchment(id = "C3", down_id = NA, data = data_catch, area = 200, res_data = NULL, main_branch = "main")
+
+    catch_system = as.catchment_system(catch1, catch3, catch2)
+
+    resul = calc_catchment_system(catch_system, output_vars = "yield")
+    expect_equal(c(resul$C1$outlet_yield, resul$C2$outlet_yield, resul$C3$outlet_yield), c(rep(100, 14), rep(400, 7)))
+})

@@ -31,7 +31,10 @@ Each branch is represented by a list consisting of an ID of the downstream branc
 the main branch in the catchment) and a point where the branch is connected to the downstream branch
 (\code{connect_to_part}; not relevant for the main branch). The connection point is given as a catchment
 area (relative to the whole catchment area) of the downstream branch after the junction with this branch,
-i.e. including the area of the connecting branch.}
+i.e. including the area of the connecting branch.
+
+If missing or NULL, the catchment is supposed to contain only one branch whose name is given as
+the \code{main_branch} argument.}
 
 \item{main_branch}{An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.}
 

@@ -44,6 +44,9 @@ get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_p
 #'   (`connect_to_part`; not relevant for the main branch). The connection point is given as a catchment
 #'   area (relative to the whole catchment area) of the downstream branch after the junction with this branch,
 #'   i.e. including the area of the connecting branch.
+#'
+#'   If missing or NULL, the catchment is supposed to contain only one branch whose name is given as
+#'   the `main_branch` argument.
 #' @param main_branch An ID of the main branch, i.e. inflow from upstream catchments goes to this branch.
 #' @param res_wateruse A list of time series of water use in m3 for individual reservoirs. The list names
 #'   corresponds to reservoir IDs (for catchment outlet, use `outlet`). If not NULL, this overrides
@@ -77,6 +80,11 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
         data$WU = data$WU * 1e3 * area
     }
     res_data$id = as.character(res_data$id)
+
+    if (missing(branches) || is.null(branches)) {
+        branches = list()
+        branches[[main_branch]] = list(down_id = NA)
+    }
 
     branches_from_res = unique(as.character(res_data$branch_id))
     if (!(main_branch %in% names(branches))) {
