@@ -448,7 +448,7 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
     system = set_up_ids(system)
 
     if (missing(initial_storages) || is.null(initial_storages)) {
-        initial_storages = sapply(names(system), function(res) { attr(system[[res]], "storage") })
+        initial_storages = sapply(names(system), function(res) { attr(system[[res]], "storage")[1] })
     }
     yields_property = sapply(names(system), function(res) { attr(system[[res]], "yield") })
     for (res_name in names(yields_property)) {
