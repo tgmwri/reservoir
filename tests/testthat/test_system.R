@@ -222,10 +222,11 @@ test_that("system of four reservoirs is calculated", {
         readRDS("system_4reser_defB.rds"))
 })
 
+reser_data = data.frame(Q =  rep(1, 6), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 6))
+reser_A = as.wateres(reser_data, 14.4e6, 754e3, id = "A", down_id = "B")
+reser_B = as.wateres(reser_data, 0, 754e3, id = "B")
+
 test_that("system with deficit in the first time is calculated", {
-    reser_data = data.frame(Q =  rep(1, 6), DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 6))
-    reser_A = as.wateres(reser_data, 14.4e6, 754e3, id = "A", down_id = "B")
-    reser_B = as.wateres(reser_data, 0, 754e3, id = "B")
     system = as.system(reser_A, reser_B)
     resul = calc_system(system, yields = c(A = 2, B = 2), types = c("single_plain", "system_plain", "single_transfer", "system_transfer"))
 
@@ -254,4 +255,11 @@ test_that("system with deficit in the first time is calculated", {
     resul$system_transfer$A$transfer = NULL
     resul$system_transfer$B$transfer = NULL
     expect_equivalent(resul$system_transfer, resul$system_plain)
+})
+
+test_that("system with storage as property is calculated", {
+    reser_A = set_property(reser_A, "storage", rep(1e7, 7))
+    system = as.system(reser_A, reser_B)
+    resul = calc_system(system, yields = c(A = 1, B = 1), types = c("single_plain"))
+    expect_equal(resul$single_plain$A$storage, rep(1e7, 6))
 })
