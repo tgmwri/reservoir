@@ -48,7 +48,7 @@ test_that("system with no main or lateral reservoir is calculated", {
     res_data_c2$branch_id = rep("lateral", 3)
 
     catch1 = expect_warning(as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main"), "'lateral' is not used for any reservoir")
-    catch2 = expect_warning(as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2, branches = branches, main_branch = "main"), "'main' is not used for any reservoir")
+    catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 200, res_data = res_data_c2, branches = branches, main_branch = "main")
     catch_system = as.catchment_system(catch1, catch2)
 
     yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
