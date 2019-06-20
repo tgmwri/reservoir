@@ -213,3 +213,7 @@ test_that("series for different time steps are calculated", {
     for (h in c(1, 2, 4, 8))
         expect_equal(resul_storage[[paste0(h, "h")]], calc_series(as.wateres(Q_df, 1e7, 1e2, time_step = paste(h, "hour", sep = "-")), yield = 7)$storage)
 })
+
+test_that("multiple initial storage is not allowed", {
+    expect_error(calc_series(reser, yield = 2, initial_storage = c(1e7, 1e7)), "Initial storage of a reservoir must be one value")
+})

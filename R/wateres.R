@@ -569,6 +569,9 @@ calc_series.wateres <- function(
         else
             initial_storage = approx(eas$elevation, eas$storage, initial_level, rule = 2)$y
     }
+    if (length(initial_storage) != 1) {
+        stop("Initial storage of a reservoir must be one value.")
+    }
 
     resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, yield_max, storage, storage_optim, initial_storage, initial_pos, last_pos, throw_exceed,
         till_def, first_def_pos)
