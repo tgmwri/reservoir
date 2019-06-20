@@ -201,3 +201,11 @@ test_that("branches are not needed to be given if only one is there", {
     resul = calc_catchment_system(catch_system, output_vars = "yield")
     expect_equal(c(resul$C1$outlet_yield, resul$C2$outlet_yield, resul$C3$outlet_yield), c(rep(100, 14), rep(400, 7)))
 })
+
+test_that("first main reservoir is correct if reservoir data are as data.table", {
+    catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+    res_data_c2 = data.table(storage = 1e7, area = 1e4, part = 0.25, branch_id = "lateral", id = "L1")
+    branches_c2 = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
+    catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 100, res_data = res_data_c2, branches = branches_c2, main_branch = "main")
+    expect_equal(attr(catch2, "first_main_res"), "C2_outlet")
+})

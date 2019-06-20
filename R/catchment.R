@@ -100,29 +100,29 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
 
     res_branches = list()
     for (b in 1:length(branches)) {
-        branch = branches[[b]]
-        branch_id = names(branches)[[b]]
+        curr_branch = branches[[b]]
+        curr_branch_id = names(branches)[[b]]
 
         if (is.null(res_data) || length(nrow(res_data)) == 0 || nrow(res_data) < 1) {
             res_dframe = data.frame()
         }
         else {
-            res_dframe = res_data[res_data$branch_id == branch_id,]
+            res_dframe = res_data[res_data$branch_id == curr_branch_id,]
         }
         if (nrow(res_dframe) < 1) {
-            if (branch_id != main_branch || length(nrow(res_data)) != 0) {
-                warning("Branch '", branch_id, "' is not used for any reservoir.")
+            if (curr_branch_id != main_branch || length(nrow(res_data)) != 0) {
+                warning("Branch '", curr_branch_id, "' is not used for any reservoir.")
             }
             next
         }
         res_dframe = res_dframe[order(res_dframe$part),]
-        if (!is.na(branch$down_id)) {
-            if (max(res_dframe$part) > branch$connect_to_part) {
-                stop("Branch '", branch_id, "' cannot take larger part of catchment than corresponding part of downstream branch.")
+        if (!is.na(curr_branch$down_id)) {
+            if (max(res_dframe$part) > curr_branch$connect_to_part) {
+                stop("Branch '", curr_branch_id, "' cannot take larger part of catchment than corresponding part of downstream branch.")
             }
-            res_dframe_down = res_data[res_data$branch_id == branch$down_id & res_data$part < branch$connect_to_part,]
-            if (nrow(res_dframe_down) > 0 && max(res_dframe_down$part) + max(res_dframe$part) > branch$connect_to_part) {
-                stop("Branch '", branch_id, "' is connected to branch '", branch$down_id, "' that way that areas of reservoirs of these branches are invalid.")
+            res_dframe_down = res_data[res_data$branch_id == curr_branch$down_id & res_data$part < curr_branch$connect_to_part,]
+            if (nrow(res_dframe_down) > 0 && max(res_dframe_down$part) + max(res_dframe$part) > curr_branch$connect_to_part) {
+                stop("Branch '", curr_branch_id, "' is connected to branch '", curr_branch$down_id, "' that way that areas of reservoirs of these branches are invalid.")
             }
         }
         res_dframe$down_id = NA_character_
@@ -131,10 +131,10 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
                 res_dframe[res, "down_id"] = paste0(id, "_", res_dframe[res + 1, "id"])
             }
             else {
-                res_dframe[res, "down_id"] = paste0(id, "_", get_first_down_reservoir(res_data, branches, branch_id, res_dframe$part + 1e-7)) # epsilon to get the next reservoir, not the same
+                res_dframe[res, "down_id"] = paste0(id, "_", get_first_down_reservoir(res_data, branches, curr_branch_id, res_dframe$part + 1e-7)) # epsilon to get the next reservoir, not the same
             }
         }
-        res_branches[[branch_id]] = res_dframe
+        res_branches[[curr_branch_id]] = res_dframe
     }
 
     reservoirs = list()
@@ -245,13 +245,13 @@ as.catchment_system <- function(...) {
     }
     # TDD check unique catchment ID, reservoir names
     down_ids_to_process = c()
-    for (catch in 1:length(catchments)) {    
+    for (catch in 1:length(catchments)) {
         names(catchments)[catch] = attr(catchments[[catch]], "id")
         if (!is.na(attr(catchments[[catch]], "down_id"))) {
             down_ids_to_process = c(down_ids_to_process, attr(catchments[[catch]], "down_id"))
         }
     }
-    
+
     processed_catchs = c()
     while (length(processed_catchs) < length(catchments)) {
         for (catch in 1:length(catchments)) {
@@ -270,18 +270,18 @@ as.catchment_system <- function(...) {
                     }
                     attr(catchments[[curr_catch_id]][[paste0(curr_catch_id, "_outlet")]], "down_id") = attr(catchments[[curr_catch_down_id]], "first_main_res")
                 }
-                
+
                 down_ids_to_process = down_ids_to_process[-which(down_ids_to_process == curr_catch_down_id)[1]]
                 processed_catchs = c(processed_catchs, curr_catch_id)
             }
         }
     }
     all_reservoirs = list()
-    for (catch in 1:length(catchments)) {    
+    for (catch in 1:length(catchments)) {
         for (res in 1:length(catchments[[catch]])) {
             all_reservoirs[[names(catchments[[catch]])[res]]] = catchments[[catch]][[res]]
         }
-    }  
+    }
     names(all_reservoirs) = NULL
     result = do.call(as.system, all_reservoirs)
     attr(result, "catchment_names") = names(catchments)
