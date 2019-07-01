@@ -1,19 +1,19 @@
 # finds ID of the first reservoir situated downstreams from the place at the branch of branch_id identifier and at the position given by connect_to_part
-get_first_down_reservoir <- function(res_data, branches, branch_id, connect_to_part) {
-    if (is.na(branch_id)) {
+get_first_down_reservoir <- function(res_data, branches, curr_branch_id, connect_to_part) {
+    if (is.na(curr_branch_id)) {
         return("outlet") # TDD check keyword
     }
 
-    res_data_branch = res_data[res_data$branch_id == branch_id,]
+    res_data_branch = res_data[res_data$branch_id == curr_branch_id,]
     if (nrow(res_data_branch) < 1) { # branch with no reservoir
-        return(get_first_down_reservoir(res_data, branches, branches[[branch_id]]$down_id, branches[[branch_id]]$connect_to_part))
+        return(get_first_down_reservoir(res_data, branches, branches[[curr_branch_id]]$down_id, branches[[curr_branch_id]]$connect_to_part))
     }
     else {
         res_data_branch = res_data_branch[order(res_data_branch$part),]
         pos = which(connect_to_part <= res_data_branch$part)
 
         if (length(pos) == 0) { # connected below the last reservoir of the branch
-            return(get_first_down_reservoir(res_data, branches, branches[[branch_id]]$down_id, branches[[branch_id]]$connect_to_part))
+            return(get_first_down_reservoir(res_data, branches, branches[[curr_branch_id]]$down_id, branches[[curr_branch_id]]$connect_to_part))
         }
         else {
             return(res_data_branch[pos, "id"])

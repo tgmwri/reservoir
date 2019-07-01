@@ -209,3 +209,8 @@ test_that("first main reservoir is correct if reservoir data are as data.table",
     catch2 = as.catchment(id = "C2", down_id = NA, data = data_catch, area = 100, res_data = res_data_c2, branches = branches_c2, main_branch = "main")
     expect_equal(attr(catch2, "first_main_res"), "C2_outlet")
 })
+
+test_that("downstream reservoirs are correct if reservoir data are as data.table", {
+    catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = data.table(res_data_c1), branches = branches, main_branch = "main")
+    expect_equal(attr(catch1$C1_L2, "down_id"), "C1_outlet")
+})
