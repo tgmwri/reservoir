@@ -217,3 +217,10 @@ test_that("series for different time steps are calculated", {
 test_that("multiple initial storage is not allowed", {
     expect_error(calc_series(reser, yield = 2, initial_storage = c(1e7, 1e7)), "Initial storage of a reservoir must be one value")
 })
+
+test_that("initial storage given as property is used", {
+    expect_error(set_property(reser, "storage_initial", rep(5e6, 2)), "storage_initial has to be set as only one value")
+    reser = set_property(reser, "storage_initial", 7e6)
+    resul = calc_series(reser, 14.4e6, 0.14, FALSE)
+    expect_equivalent(resul$storage[1:10], c(6833939.2, 6646019.2, 6721014.4, 8201046.4, 8238544, 8153008, 7960163.2, 7737856, 7556416, 8480464))
+})

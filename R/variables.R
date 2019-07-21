@@ -1,18 +1,22 @@
 # sets variable (water balance value stored in wateres object) or property (reservoir characteristics stored in attributes of the wateres object)
 # values of properties are not dependent on time step (no conversions needed)
 # is_storage_property set to TRUE will require and produce time series of length of reservoir variables plus one
-set_variable <- function(reser, values, variable, allow_one_value = FALSE, is_property = FALSE, is_storage_property = FALSE) {
-    if (allow_one_value && length(values) == 1) {
+# only_one_value only one constant value is required (e.g. for initial storage)
+set_variable <- function(reser, values, variable, allow_one_value = FALSE, is_property = FALSE, is_storage_property = FALSE, only_one_value = FALSE) {
+    if (allow_one_value && !only_one_value && length(values) == 1) {
         values = rep(values, 12)
     }
-    required_length = ifelse(is_storage_property, nrow(reser) + 1, nrow(reser))
+    required_length = ifelse(is_storage_property, nrow(reser) + 1, ifelse(only_one_value, 1, nrow(reser)))
     if (length(values) != required_length) {
         var_names = c(E = "evaporation", W = "wateruse", P = "precipitation")
         var_name = var_names[variable]
         if (is.na(var_name)) {
             var_name = variable
         }
-        if (length(values) == 12) {
+        if (only_one_value) {
+            stop("Property ", var_name, " has to be set as only one value.")
+        }
+        else if (length(values) == 12) {
             time_step = attr(reser, "time_step_unit")
             if (time_step == "hour")
                 stop("Variable ", var_name, " cannot be set by 12 values for hourly data.")
@@ -166,16 +170,16 @@ set_property <- function(reser, property_name, values) UseMethod("set_property")
 #' Sets a value or time series of values of a reservoir property, i.e. characteristics which affect water balance calculation.
 #'
 #' @param reser A `wateres` object.
-#' @param property_name One of \dQuote{storage} (maximum storage), \dQuote{storage_optim} (optimum storage), \dQuote{yield} (reservoir yield)
-#'   or \dQuote{yield_max} (maximum yield relevant if optimum, but not maximum storage is exceeded).
-#' @param values One constant value or a vector of property values (in m3 for storages or m3.s-1 for yields), either monthly or daily of length of reservoir time series
-#'   (or plus one in case of storages), or 12 monthly values starting by January (for monthly or daily data only). For storages, the values relate to the beginning
-#'   of the particular month (e.g. the first of 12 values relates to the beginning of January, i.e. the end of December).
+#' @param property_name One of \dQuote{storage} (maximum storage), \dQuote{storage_optim} (optimum storage), \dQuote{storage_initial} (initial storage),
+#'   \dQuote{yield} (reservoir yield) or \dQuote{yield_max} (maximum yield relevant if optimum, but not maximum storage is exceeded).
+#' @param values One constant value (mandatory for initial storage) or a vector of property values (in m3 for storages or m3.s-1 for yields), either monthly or daily
+#'   of length of reservoir time series (or plus one in case of storages), or 12 monthly values starting by January (for monthly or daily data only).
+#'   For storages, the values relate to the beginning of the particular month (e.g. the first of 12 values relates to the beginning of January, i.e. the end of December).
 #' @return A modified `wateres` object with the property added as its attribute.
 #' @details The reservoir properties are implemented as attributes of the `wateres` object.
 #'
-#'   If \dQuote{storage} is given, it replaces the value provided as the `storage` argument of the `as.wateres` function. However, \dQuote{yield}
-#'   given as a property is overriden by the `yield` argument of the `calc_series` function.
+#'   If \dQuote{storage} is given, it replaces the value provided as the `storage` argument of the `as.wateres` function. However, \dQuote{yield} or \dQuote{storage_initial}
+#'   given as a property is overriden by the `yield` or `initial_storage` argument of the `calc_series` function.
 #' @export
 #' @examples
 #' reser = data.frame(
@@ -187,9 +191,9 @@ set_property <- function(reser, property_name, values) UseMethod("set_property")
 #' resul = calc_series(reser, yield = 0.17)
 #' @md
 set_property.wateres <- function(reser, property_name, values) {
-    if (!property_name %in% c("storage", "storage_optim", "yield", "yield_max")) {
+    if (!property_name %in% c("storage", "storage_optim", "storage_initial", "yield", "yield_max")) {
         stop("Unknown property '", property_name, "'.")
     }
-    reser = set_variable(reser, values, property_name, TRUE, TRUE, property_name %in% c("storage", "storage_optim"))
+    reser = set_variable(reser, values, property_name, TRUE, TRUE, property_name %in% c("storage", "storage_optim"), property_name %in% c("storage_initial"))
     return(reser)
 }

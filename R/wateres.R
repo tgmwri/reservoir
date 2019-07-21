@@ -488,7 +488,8 @@ calc_series <- function(
 #'   of the length of the reservoir series plus one. If not given, taken from the \code{reser} object.
 #' @param yield A required yield in m3.s-1, either a value of fixed yield or a vector of the same length as the reservoir series.
 #' @param throw_exceed Whether volume exceeding storage will be thrown or added to yield.
-#' @param initial_storage A value of initial reservoir storage in m3. If not specified, the reservoir is considered to be full.
+#' @param initial_storage A value of initial reservoir storage in m3. If not specified, the value is given by the \dQuote{storage_initial} property,
+#'   if that is not given, the reservoir is considered to be full.
 #' @param initial_level A value of initial water level in m.a.s.l. If specified and elevation-area-storage relationship is not provided within the
 #'   \code{reser} object, it will be ignored; otherwise the \code{initial_storage} argument will be ignored.
 #' @param initial_pos An index of time series where the calculation starts. If greater than one, returned time series will be shorter than the input.
@@ -525,7 +526,7 @@ calc_series <- function(
 #' resul = calc_series(reser, 14.4e6, 0.14)
 #' @md
 calc_series.wateres <- function(
-    reser, storage = attr(reser, "storage"), yield = attr(reser, "yield"), throw_exceed = FALSE, initial_storage = storage[1], initial_level,
+    reser, storage = attr(reser, "storage"), yield = attr(reser, "yield"), throw_exceed = FALSE, initial_storage = attr(reser, "storage_initial"), initial_level,
     initial_pos = 1, last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos,
     storage_optim = attr(reser, "storage_optim"), yield_max = attr(reser, "yield_max"), complex_properties = TRUE) {
 
@@ -560,6 +561,10 @@ calc_series.wateres <- function(
         if (any(storage_optim > storage))  {
             stop("Optimum storage cannot be greater than maximum storage.")
         }
+    }
+
+    if (is.null(initial_storage)) {
+        initial_storage = storage[1]
     }
 
     eas = attr(reser, "eas")

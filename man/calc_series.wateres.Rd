@@ -11,11 +11,11 @@ calc_series(reser, storage, yield, throw_exceed, initial_storage,
 
 \method{calc_series}{wateres}(reser, storage = attr(reser, "storage"),
   yield = attr(reser, "yield"), throw_exceed = FALSE,
-  initial_storage = storage[1], initial_level, initial_pos = 1,
-  last_pos = nrow(reser), get_level = FALSE, till_def = FALSE,
-  first_def_pos = initial_pos, storage_optim = attr(reser,
-  "storage_optim"), yield_max = attr(reser, "yield_max"),
-  complex_properties = TRUE)
+  initial_storage = attr(reser, "storage_initial"), initial_level,
+  initial_pos = 1, last_pos = nrow(reser), get_level = FALSE,
+  till_def = FALSE, first_def_pos = initial_pos,
+  storage_optim = attr(reser, "storage_optim"), yield_max = attr(reser,
+  "yield_max"), complex_properties = TRUE)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
@@ -27,7 +27,8 @@ of the length of the reservoir series plus one. If not given, taken from the \co
 
 \item{throw_exceed}{Whether volume exceeding storage will be thrown or added to yield.}
 
-\item{initial_storage}{A value of initial reservoir storage in m3. If not specified, the reservoir is considered to be full.}
+\item{initial_storage}{A value of initial reservoir storage in m3. If not specified, the value is given by the \dQuote{storage_initial} property,
+if that is not given, the reservoir is considered to be full.}
 
 \item{initial_level}{A value of initial water level in m.a.s.l. If specified and elevation-area-storage relationship is not provided within the
 \code{reser} object, it will be ignored; otherwise the \code{initial_storage} argument will be ignored.}

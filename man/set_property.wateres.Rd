@@ -12,12 +12,12 @@ set_property(reser, property_name, values)
 \arguments{
 \item{reser}{A \code{wateres} object.}
 
-\item{property_name}{One of \dQuote{storage} (maximum storage), \dQuote{storage_optim} (optimum storage), \dQuote{yield} (reservoir yield)
-or \dQuote{yield_max} (maximum yield relevant if optimum, but not maximum storage is exceeded).}
+\item{property_name}{One of \dQuote{storage} (maximum storage), \dQuote{storage_optim} (optimum storage), \dQuote{storage_initial} (initial storage),
+\dQuote{yield} (reservoir yield) or \dQuote{yield_max} (maximum yield relevant if optimum, but not maximum storage is exceeded).}
 
-\item{values}{One constant value or a vector of property values (in m3 for storages or m3.s-1 for yields), either monthly or daily of length of reservoir time series
-(or plus one in case of storages), or 12 monthly values starting by January (for monthly or daily data only). For storages, the values relate to the beginning
-of the particular month (e.g. the first of 12 values relates to the beginning of January, i.e. the end of December).}
+\item{values}{One constant value (mandatory for initial storage) or a vector of property values (in m3 for storages or m3.s-1 for yields), either monthly or daily
+of length of reservoir time series (or plus one in case of storages), or 12 monthly values starting by January (for monthly or daily data only).
+For storages, the values relate to the beginning of the particular month (e.g. the first of 12 values relates to the beginning of January, i.e. the end of December).}
 }
 \value{
 A modified \code{wateres} object with the property added as its attribute.
@@ -28,8 +28,8 @@ Sets a value or time series of values of a reservoir property, i.e. characterist
 \details{
 The reservoir properties are implemented as attributes of the \code{wateres} object.
 
-If \dQuote{storage} is given, it replaces the value provided as the \code{storage} argument of the \code{as.wateres} function. However, \dQuote{yield}
-given as a property is overriden by the \code{yield} argument of the \code{calc_series} function.
+If \dQuote{storage} is given, it replaces the value provided as the \code{storage} argument of the \code{as.wateres} function. However, \dQuote{yield} or \dQuote{storage_initial}
+given as a property is overriden by the \code{yield} or \code{initial_storage} argument of the \code{calc_series} function.
 }
 \examples{
 reser = data.frame(
