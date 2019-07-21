@@ -154,6 +154,14 @@ test_that("reservoir properties are applied", {
     expect_equal(resul$C1$M1_yield, c(40, 33.14826, rep(25.00006, 5)), tolerance = 1e-5)
 })
 
+test_that("initial storage from properties is used", {
+    res_properties = list(storage_initial = list(M1 = 5e6, L1 = 5e6, L2 = 5e6))
+    catch1 = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main", res_properties = res_properties)
+    catch_system = as.catchment_system(catch1)
+    resul = calc_catchment_system(catch_system, yield = c(C1_M1 = 30, C1_L1 = 30, C1_L2 = 60), output_vars = c("storage"))
+    expect_equal(resul$C1$M1_storage, c(4568005, 4136010, 3704015, 3272020, 2840025, 2408030, 1976035))
+})
+
 test_that("warning about unused branch is shown", {
     catch = expect_warning(
         as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = NULL, branches = branches, main_branch = "main"),

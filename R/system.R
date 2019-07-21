@@ -415,8 +415,9 @@ calc_system <- function(system, yields, initial_storages, types, yields_intercat
 #' @param system A \code{wateres_system} object.
 #' @param yields A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system. If values
 #'   for some reservoirs are not provided, they are taken from the `storage` property of that reservoirs (if the property is available).
-#' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing or NULL, all reservoirs
-#'   are considered to be full initially.
+#' @param initial_storages A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing or NULL, value for each
+#'   reservoir is obtained from the \dQuote{storage_initial} property of reservoir; if that property is not available, the reservoir is considered
+#'   to be full initially.
 #' @param types A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
 #'   \dQuote{system_transfer} (see details).
 #' @param yields_intercatch Whether the vector of \code{yields} consists of values for intercatchment, i.e. whether total yields will be calculated as
@@ -448,7 +449,7 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
     system = set_up_ids(system)
 
     if (missing(initial_storages) || is.null(initial_storages)) {
-        initial_storages = sapply(names(system), function(res) { attr(system[[res]], "storage")[1] })
+        initial_storages = sapply(names(system), function(res) { ifelse(is.null(attr(system[[res]], "storage_initial")), attr(system[[res]], "storage")[1], attr(system[[res]], "storage_initial")) })
     }
     yields_property = sapply(names(system), function(res) { attr(system[[res]], "yield") })
     for (res_name in names(yields_property)) {

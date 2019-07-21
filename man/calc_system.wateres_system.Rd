@@ -16,8 +16,9 @@ calc_system(system, yields, initial_storages, types, yields_intercatch)
 \item{yields}{A vector of required fixed yield values in m3.s-1, its names have to correspond with the names of the reservoirs in the system. If values
 for some reservoirs are not provided, they are taken from the \code{storage} property of that reservoirs (if the property is available).}
 
-\item{initial_storages}{A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing or NULL, all reservoirs
-are considered to be full initially.}
+\item{initial_storages}{A vector of initial reservoir storages in m3 whose names correspond to the reservoirs names. If missing or NULL, value for each
+reservoir is obtained from the \dQuote{storage_initial} property of reservoir; if that property is not available, the reservoir is considered
+to be full initially.}
 
 \item{types}{A vector of types of calculation whose valid values are \dQuote{single_plain}, \dQuote{system_plain}, \dQuote{single_transfer} and
 \dQuote{system_transfer} (see details).}
