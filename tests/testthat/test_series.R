@@ -224,3 +224,16 @@ test_that("initial storage given as property is used", {
     resul = calc_series(reser, 14.4e6, 0.14, FALSE)
     expect_equivalent(resul$storage[1:10], c(6833939.2, 6646019.2, 6721014.4, 8201046.4, 8238544, 8153008, 7960163.2, 7737856, 7556416, 8480464))
 })
+
+test_that("yield routing is calculated", {
+    expect_error(set_routing(reser, "annihilation", list()), "Invalid routing method")
+    expect_error(set_routing(reser, "lag", list()), "setting 'lag_time' has to be specified")
+    reser = set_routing(reser, "none")
+    resul = calc_series(reser, 14.4e6, 0.14, FALSE)
+
+    reser = set_routing(reser, "lag", list(lag_time = 88000))
+    resul = calc_series(reser, 14.4e6, 0.14, FALSE)
+    expect_equivalent(resul$yield_unrouted[1:10], c(0.14, 0.14, 0.14, 0.603366666666666, 0.154, 0.14, 0.14, 0.14, 0.14, 0.230322580645161))
+    expect_equivalent(resul$yield[1:10], c(0, 0, 0.134982078853047, 0.14, 0.14, 0.60165049382716, 0.155610633213859, 0.14005017921147, 0.14, 0.14))
+})
+
