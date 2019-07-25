@@ -222,3 +222,12 @@ test_that("downstream reservoirs are correct if reservoir data are as data.table
     catch1 = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = data.table(res_data_c1), branches = branches, main_branch = "main")
     expect_equal(attr(catch1$C1_L2, "down_id"), "C1_outlet")
 })
+
+test_that("routing of catchment outflow is calculated", {
+    catch1 = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+    catch1 = set_routing(catch1, "lag", list(lag_time = 3200))
+    catch_system = as.catchment_system(catch1)
+    resul = calc_catchment_system(catch_system,  yield = c(C1_M1 = 30, C1_L1 = 30, C1_L2 = 60), output_vars = c("yield", "yield_unrouted"))
+    expect_equal(resul$C1$outlet_yield, c(0, 0, 89.444444, rep(115, 4)))
+    expect_equal(resul$C1$outlet_yield_unrouted, rep(115, 7))
+})

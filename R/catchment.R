@@ -217,6 +217,35 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
     return(reservoirs)
 }
 
+#' @rdname set_routing.catchment
+#' @export
+set_routing <- function(catchment, ...) UseMethod("set_routing")
+
+#' Routing of catchment outflow setting
+#'
+#' Sets method and parameters used for routing for the catchment.
+#'
+#' @param catchment A `catchment` object.
+#' @param ... Routing method and settings as passed to the [`set_routing.wateres`] function.
+#' @return A `catchment` object with the routing settings.
+#' @details  The catchment routing is implemented
+#'   as a routing for the outflow of the catchment, i.e. at its outlet (which is represented as a reservoir
+#'   with zero volume in the catchments).
+#' @export
+#' @md
+#' @examples
+#' data_catch = data.frame(DTM = seq(as.Date("1982-11-01"), length.out = 7, by = "day"), PET = rep(0.5, 7), R = rep(24 * 3.6, 7), P = rep(1, 7))
+#' res_data = data.frame(
+#'     storage = c(1e7, 1e7, 1e7), area = c(1e4, 1e4, 1e4), part = c(0.25, 0.25, 0.5), branch_id = c("main", "lateral", "lateral"), id = c("M1", "L1", "L2"))
+#' branches = list(main = list(down_id = NA), lateral = list(down_id = "main", connect_to_part = 0.8))
+#' catch = as.catchment(id = "C1", down_id = "C2", data = data_catch, area = 100, res_data = res_data, branches = branches, main_branch = "main")
+#' catch = set_routing(catch, "lag", list(lag_time = 2880))
+set_routing.catchment <- function(catchment, ...) {
+    outlet_reser = paste0(attr(catchment, "id"), "_outlet")
+    catchment[[outlet_reser]] = set_routing(catchment[[outlet_reser]], ...)
+    return(catchment)
+}
+
 #' Creation of system of catchments
 #'
 #' Creates system of catchments with reservoirs.
