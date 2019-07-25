@@ -506,11 +506,17 @@ calc_series <- function(
 #'   Either a value of fixed yield or a vector of the same length as the reservoir series.
 #' @param complex_properties If FALSE, constant values of `storage` and `yield` will be required and `storage_optim` and `yield_max` will not be considered.
 #'   This is needed for calculation with generated values, as it is done e.g. in the [sry.wateres] function.
-#' @return A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield (in m3.s-1),
-#'   precipitation, evaporation, water use, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
-#'   sum of yield and withdrawal demands. There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system.
-#'   Positive values of transfer mean additional inflow whereas negative represent additional withdrawal.
-#'   Additionally, water levels are included if the \code{get_level} argument is TRUE.
+#' @return A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield, unrouted yield (in m3.s-1),
+#'   precipitation, evaporation, water use, deficits and transfer (in m3).
+#'
+#'   The deficits represent the missing volume which would satisfy the remaining sum of yield and withdrawal demands.
+#'
+#'   There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system. Positive values of transfer mean
+#'   additional inflow whereas negative represent additional withdrawal.
+#'
+#'   Unrouted yield is available only if a routing has been set for the reservoir (by the [`set_routing`] function).
+#'
+#'   Additionally, water levels are included if the `get_level` argument is TRUE.
 #' @details When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted
 #'   to get a time series of the same length as for other variables.
 #'
@@ -578,8 +584,11 @@ calc_series.wateres <- function(
         stop("Initial storage of a reservoir must be one value.")
     }
 
+    routing_method = ifelse(!is.null(attr(reser, "routing_method")), attr(reser, "routing_method"), "none")
+    routing_settings = ifelse(!is.null(attr(reser, "routing_settings")), attr(reser, "routing_settings"), list())
+
     resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, yield_max, storage, storage_optim, initial_storage, initial_pos, last_pos, throw_exceed,
-        till_def, first_def_pos)
+        till_def, first_def_pos, routing_method, routing_settings)
     resul = as.data.table(resul)
     if (get_level && !is.null(eas)) {
         resul = cbind(resul, level = approx(eas$storage, eas$elevation, resul$storage, rule = 2)$y)

@@ -197,3 +197,40 @@ set_property.wateres <- function(reser, property_name, values) {
     reser = set_variable(reser, values, property_name, TRUE, TRUE, property_name %in% c("storage", "storage_optim"), property_name %in% c("storage_initial"))
     return(reser)
 }
+
+#' @rdname set_routing.wateres
+#' @export
+set_routing <- function(reser, method, settings) UseMethod("set_routing")
+
+#' Routing of reservoir yield setting
+#'
+#' Sets method and parameters used for routing of reservoir yield.
+#'
+#' @param reser A `wateres` object.
+#' @param method One of \dQuote{none} (no routing) or \dQuote{lag} (a simple shift of yield in time).
+#' @param settings A list of routing parameters specific for each method: for \dQuote{lag} one parameter named `lag_time` defining time lag in minutes.
+#' @return A modified `wateres` object with the routing method and settings added as its attribute.
+#' @details The routing settings are implemented as attributes of the `wateres` object.
+#' @export
+#' @examples
+#' reser = data.frame(
+#'     Q = c(0.078, 0.065, 0.168, 0.711, 0.154, 0.107, 0.068, 0.057, 0.07, 0.485, 0.252, 0.236,
+#'           0.498, 0.248, 0.547, 0.197, 0.283, 0.191, 0.104, 0.067, 0.046, 0.161, 0.16, 0.094),
+#'     DTM = seq(as.Date("2000-01-01"), by = "months", length.out = 24))
+#' reser = as.wateres(reser, storage = 14.4e6, area = 754e3)
+#' reser = set_routing(reser, "lag", list(lag_time = 88000))
+#' resul = calc_series(reser, yield = 0.17)
+#' @md
+set_routing.wateres <- function(reser, method = "none", settings = NULL) {
+    routing_methods = c("none", "lag")
+    method_matched = routing_methods[pmatch(method, routing_methods)]
+    if (is.na(method_matched)) {
+        stop("Invalid routing method '", method, "'.")
+    }
+    attr(reser, "routing_method") = method_matched
+    if (method == "lag" && is.null(settings[["lag_time"]])) {
+        stop("For routing method '", method_matched, "', setting '", "lag_time", "' has to be specified.")
+    }
+    attr(reser, "routing_settings") = settings
+    return(reser)
+}

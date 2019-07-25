@@ -60,7 +60,7 @@ double convert_mm(double value, double area)
 }
 
 //!variable names: inflow, evaporation, water use, precipitation, yield, deficit (not input variable), transfer
-const string wateres::var_names[wateres::var_count] = {"Q", "E", "W", "P", "Y", "D", "T"};
+const string wateres::var_names[wateres::var_count] = {"Q", "E", "W", "P", "Y", "D", "T", "YU"};
 
 /**
  * - creates water reservoir from given vectors of variables and options
@@ -301,6 +301,37 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
 }
 
 /**
+ * - calculates yield routing by lagging, modifies variable YIELD
+ * @param lag_time lag time in minutes
+ * @param initial_pos initial time step
+ * @param time_steps number of time steps
+ */
+void wateres::calc_routing_lag(double lag_time, unsigned initial_pos, unsigned time_steps)
+{
+  unsigned ts;
+  std::vector<unsigned> minutes_cumulative(minutes);
+  for (ts = initial_pos; ts < time_steps; ts++) {
+      if (ts > initial_pos) {
+        minutes_cumulative[ts] = minutes_cumulative[ts - 1] + minutes[ts];
+      }
+  }
+
+  for (ts = initial_pos; ts < time_steps; ts++) {
+    unsigned lagged_begin_time = (ts > 0 ? minutes_cumulative[ts - 1] : 0) + static_cast<unsigned>(lag_time);
+    unsigned lagged_end_time = lagged_begin_time + minutes[ts];
+    for (unsigned next_ts = ts; next_ts < time_steps; next_ts++) {
+      unsigned begin_time = next_ts > 0 ? minutes_cumulative[next_ts - 1] : 0;
+      unsigned end_time = minutes_cumulative[next_ts];
+      if (lagged_begin_time < end_time && lagged_end_time > begin_time) {
+        unsigned minutes_for_lagged = (lagged_end_time < end_time ? lagged_end_time : end_time)
+          - (lagged_begin_time > begin_time ? lagged_begin_time : begin_time);
+        var[wateres::YIELD][next_ts] += var[wateres::YIELD_UNROUTED][ts] * minutes_for_lagged / minutes[ts];
+      }
+    }
+  }
+}
+
+/**
   * - calculates monthly time series of reservoir storage and yield
   * @param Rreser reservoir object with time series of inflows (Q) in m3.s-1, precipitation (R) in mm, evaporation (E) in mm,
     water use in m3, number of minutes in time steps (minutes) and with attributes: area - flooded by reservoir in m2,
@@ -320,7 +351,7 @@ void wateres::calc_balance_var(unsigned ts, var_name var_n)
   */
 RcppExport SEXP calc_storage(
   SEXP Rreser, SEXP Ryield_req, SEXP Ryield_max, SEXP Rvolume, SEXP Rvolume_optim, SEXP Rinitial_storage, SEXP Rinitial_pos, SEXP Rlast_pos,
-  SEXP Rthrow_exceed, SEXP Rtill_deficit, SEXP Rfirst_deficit_pos)
+  SEXP Rthrow_exceed, SEXP Rtill_deficit, SEXP Rfirst_deficit_pos, SEXP Rrouting_method, SEXP Rrouting_settings)
 {
   DataFrame reser = as<DataFrame>(Rreser);
   vector<double> yield_req = as<vector<double> >(Ryield_req);
@@ -339,6 +370,10 @@ RcppExport SEXP calc_storage(
   bool throw_exceed = as<bool>(Rthrow_exceed);
   bool till_deficit = as<bool>(Rtill_deficit);
   unsigned first_deficit_pos = as<unsigned>(Rfirst_deficit_pos) - 1;
+
+  string routing_method = as<string>(Rrouting_method);
+  bool is_routing = routing_method != "none";
+  List routing_settings = as<List>(Rrouting_settings);
 
   unsigned ts;
   //reser.nrows() incorrect when subset of data.table used and its attributes are copied afterwards
@@ -374,19 +409,39 @@ RcppExport SEXP calc_storage(
       time_steps = ts + 1;
     }
   }
+
+  if (is_routing) {
+    for (ts = initial_pos; ts < time_steps; ts++) {
+      reservoir.var[wateres::YIELD_UNROUTED][ts] = reservoir.var[wateres::YIELD][ts];
+      reservoir.var[wateres::YIELD][ts] = 0;
+    }
+    reservoir.calc_routing_lag(as<double>(routing_settings[0]), initial_pos, time_steps);
+  }
+
   convert_m3(reservoir.var[wateres::YIELD], reservoir.minutes, false);
+  if (is_routing) {
+    convert_m3(reservoir.var[wateres::YIELD_UNROUTED], reservoir.minutes, false);
+  }
   convert_m3(reservoir.var[wateres::INFLOW], reservoir.minutes, false);
 
   vector<double> resul_var;
-  unsigned var_count = reservoir.var_count + is_transfer;
   resul_var.resize(time_steps - initial_pos);
 
-  string output_var_names[8] = { "inflow", "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit", "transfer" };
-  wateres::var_name output_vars[8] = {
+  vector<string> output_var_names = { "inflow", "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit" };
+  vector<wateres::var_name> output_vars = {
     wateres::INFLOW, wateres::YIELD, wateres::YIELD, wateres::PRECIPITATION, wateres::EVAPORATION,
-    wateres::WATERUSE, wateres::DEFICIT, wateres::TRANSFER };
+    wateres::WATERUSE, wateres::DEFICIT };
+  if (is_transfer) {
+    output_var_names.push_back("transfer");
+    output_vars.push_back(wateres::TRANSFER);
+  }
+  if (is_routing) {
+    output_var_names.push_back("yield_unrouted");
+    output_vars.push_back(wateres::YIELD_UNROUTED);
+  }
 
   List resul;
+  unsigned var_count = output_var_names.size();
   for (unsigned v = 0; v < var_count; v++) {
     for (ts = initial_pos; ts < time_steps; ts++) {
       if (v == 1)

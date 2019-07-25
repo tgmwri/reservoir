@@ -11,8 +11,8 @@ class wateres
         std::vector<double> volume, std::vector<double> volume_optim, std::vector<double> yield_max); //!< reservoir from given values
 
     //! water balance variables
-    enum var_name {INFLOW, EVAPORATION, WATERUSE, PRECIPITATION, YIELD, DEFICIT, TRANSFER};
-    static const unsigned var_count = 7; //!< number of time series of variables
+    enum var_name {INFLOW, EVAPORATION, WATERUSE, PRECIPITATION, YIELD, DEFICIT, TRANSFER, YIELD_UNROUTED};
+    static const unsigned var_count = 8; //!< number of time series of variables
     static const std::string var_names[]; //!< names of variables
     std::vector<double> plant_covers; //!< plant covers of area
     std::vector<double> plant_coeffs; //!< corresponding evaporation coefficients for plant covers
@@ -24,6 +24,7 @@ class wateres
     bool wateruse_add;
 
     void calc_balance_var(unsigned ts, var_name var); //!< calculates water balance for given variable and time step
+    void calc_routing_lag(double lag_time, unsigned initial_pos, unsigned time_steps); //!< calculates yield routing by lagging
 
   private:
     bool throw_exceed; //!< whether volume exceeding maximum storage will be thrown

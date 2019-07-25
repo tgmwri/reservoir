@@ -56,10 +56,16 @@ Either a value of fixed yield or a vector of the same length as the reservoir se
 This is needed for calculation with generated values, as it is done e.g. in the \link{sry.wateres} function.}
 }
 \value{
-A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield (in m3.s-1),
-precipitation, evaporation, water use, deficits and transfer (in m3). The deficits represent the missing volume which would satisfy the remaining
-sum of yield and withdrawal demands. There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system.
-Positive values of transfer mean additional inflow whereas negative represent additional withdrawal.
+A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield, unrouted yield (in m3.s-1),
+precipitation, evaporation, water use, deficits and transfer (in m3).
+
+The deficits represent the missing volume which would satisfy the remaining sum of yield and withdrawal demands.
+
+There is the water transfer only in case of non-zero values, resulting from calculations of a reservoir system. Positive values of transfer mean
+additional inflow whereas negative represent additional withdrawal.
+
+Unrouted yield is available only if a routing has been set for the reservoir (by the \code{\link{set_routing}} function).
+
 Additionally, water levels are included if the \code{get_level} argument is TRUE.
 }
 \description{
