@@ -207,8 +207,10 @@ set_routing <- function(reser, method, settings) UseMethod("set_routing")
 #' Sets method and parameters used for routing of reservoir yield.
 #'
 #' @param reser A `wateres` object.
-#' @param method One of \dQuote{none} (no routing) or \dQuote{lag} (a simple shift of yield in time).
-#' @param settings A list of routing parameters specific for each method: for \dQuote{lag} one parameter named `lag_time` defining time lag in minutes.
+#' @param method One of \dQuote{none} (no routing), \dQuote{lag} (a simple shift of yield in time) or \dQuote{linear_reservoir}
+#'   (transformation in linear reservoir).
+#' @param settings A list of routing parameters specific for each method: for \dQuote{lag} one parameter named `lag_time` defining time lag in minutes,
+#'   for \dQuote{linear_reservoir} one parameter named `storage_coeff` defining coefficient of the linear reservoir in minutes.
 #' @return A modified `wateres` object with the routing method and settings added as its attribute.
 #' @details The routing settings are implemented as attributes of the `wateres` object.
 #' @export
@@ -222,14 +224,27 @@ set_routing <- function(reser, method, settings) UseMethod("set_routing")
 #' resul = calc_series(reser, yield = 0.17)
 #' @md
 set_routing.wateres <- function(reser, method = "none", settings = NULL) {
-    routing_methods = c("none", "lag")
+    routing_methods = c("none", "lag", "linear_reservoir")
+    routing_params = list(none = c(), lag = c("lag_time"), linear_reservoir = c("storage_coeff"))
     method_matched = routing_methods[pmatch(method, routing_methods)]
     if (is.na(method_matched)) {
         stop("Invalid routing method '", method, "'.")
     }
     attr(reser, "routing_method") = method_matched
-    if (method == "lag" && is.null(settings[["lag_time"]])) {
-        stop("For routing method '", method_matched, "', setting '", "lag_time", "' has to be specified.")
+    params_available = c()
+    for (param in names(settings)) {
+        param_matched = routing_params[[method_matched]][pmatch(param, routing_params[[method_matched]])]
+        if (is.na(param_matched)) {
+            stop("Invalid routing parameter '", param, "' in settings for method '", method_matched, "'.")
+        }
+        else {
+            params_available = c(params_available, param_matched)
+        }
+    }
+    for (param in routing_params[[method_matched]]) {
+        if (!(param %in% params_available)) {
+            stop("Missing routing parameter '", param, "' in settings for method '", method_matched, "'.")
+        }
     }
     attr(reser, "routing_settings") = settings
     return(reser)

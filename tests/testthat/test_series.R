@@ -227,7 +227,8 @@ test_that("initial storage given as property is used", {
 
 test_that("yield routing is calculated", {
     expect_error(set_routing(reser, "annihilation", list()), "Invalid routing method")
-    expect_error(set_routing(reser, "lag", list()), "setting 'lag_time' has to be specified")
+    expect_error(set_routing(reser, "lag", list()), "Missing routing parameter 'lag_time' in settings for method 'lag'")
+    expect_error(set_routing(reser, "linear_reservoir", list(lag_time = 88000), "Invalid routing parameter 'lag_time' in settings for method 'linear_reservoir'"))
     reser = set_routing(reser, "none")
     resul = calc_series(reser, 14.4e6, 0.14, FALSE)
 
@@ -235,5 +236,9 @@ test_that("yield routing is calculated", {
     resul = calc_series(reser, 14.4e6, 0.14, FALSE)
     expect_equivalent(resul$yield_unrouted[1:10], c(0.14, 0.14, 0.14, 0.603366666666666, 0.154, 0.14, 0.14, 0.14, 0.14, 0.230322580645161))
     expect_equivalent(resul$yield[1:10], c(0, 0, 0.134982078853047, 0.14, 0.14, 0.60165049382716, 0.155610633213859, 0.14005017921147, 0.14, 0.14))
-})
 
+    reser = set_routing(reser, "linear_reservoir", list(storage_coeff = 88000))
+    resul = calc_series(reser, 14.4e6, 0.14, FALSE)
+    expect_equivalent(resul$yield_unrouted[1:10], c(0.14, 0.14, 0.14, 0.603366666666666, 0.154, 0.14, 0.14, 0.14, 0.14, 0.230322580645161))
+    expect_equivalent(resul$yield[1:10], c(0, 0.07101818, 0.10375319, 0.12214021, 0.35837865, 0.25470294, 0.19839422, 0.16877243, 0.15417696, 0.14721736))
+})

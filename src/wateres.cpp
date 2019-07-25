@@ -332,6 +332,24 @@ void wateres::calc_routing_lag(double lag_time, unsigned initial_pos, unsigned t
 }
 
 /**
+ * - calculates yield routing by transformation in linear reservoir, modifies variable YIELD
+ * @param storage_coeff storage coefficient in minutes
+ * @param initial_pos initial time step
+ * @param time_steps number of time steps
+ */
+void wateres::calc_routing_linear_reservoir(double storage_coeff, unsigned initial_pos, unsigned time_steps)
+{
+  double current_storage = 0;
+  for (unsigned ts = initial_pos; ts < time_steps; ts++) {
+    var[wateres::YIELD][ts] = current_storage / storage_coeff * minutes[ts];
+    current_storage += var[wateres::YIELD_UNROUTED][ts] - var[wateres::YIELD][ts];
+    if (current_storage < 0) {
+      current_storage = 0;
+    }
+  }
+}
+
+/**
   * - calculates monthly time series of reservoir storage and yield
   * @param Rreser reservoir object with time series of inflows (Q) in m3.s-1, precipitation (R) in mm, evaporation (E) in mm,
     water use in m3, number of minutes in time steps (minutes) and with attributes: area - flooded by reservoir in m2,
@@ -415,7 +433,12 @@ RcppExport SEXP calc_storage(
       reservoir.var[wateres::YIELD_UNROUTED][ts] = reservoir.var[wateres::YIELD][ts];
       reservoir.var[wateres::YIELD][ts] = 0;
     }
-    reservoir.calc_routing_lag(as<double>(routing_settings[0]), initial_pos, time_steps);
+    if (routing_method == "lag") {
+      reservoir.calc_routing_lag(as<double>(routing_settings[0]), initial_pos, time_steps);
+    }
+    else if (routing_method == "linear_reservoir") {
+      reservoir.calc_routing_linear_reservoir(as<double>(routing_settings[0]), initial_pos, time_steps);
+    }
   }
 
   convert_m3(reservoir.var[wateres::YIELD], reservoir.minutes, false);

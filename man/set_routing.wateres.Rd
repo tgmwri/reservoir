@@ -12,9 +12,11 @@ set_routing(reser, method, settings)
 \arguments{
 \item{reser}{A \code{wateres} object.}
 
-\item{method}{One of \dQuote{none} (no routing) or \dQuote{lag} (a simple shift of yield in time).}
+\item{method}{One of \dQuote{none} (no routing), \dQuote{lag} (a simple shift of yield in time) or \dQuote{linear_reservoir}
+(transformation in linear reservoir).}
 
-\item{settings}{A list of routing parameters specific for each method: for \dQuote{lag} one parameter named \code{lag_time} defining time lag in minutes.}
+\item{settings}{A list of routing parameters specific for each method: for \dQuote{lag} one parameter named \code{lag_time} defining time lag in minutes,
+for \dQuote{linear_reservoir} one parameter named \code{storage_coeff} defining coefficient of the linear reservoir in minutes.}
 }
 \value{
 A modified \code{wateres} object with the routing method and settings added as its attribute.
