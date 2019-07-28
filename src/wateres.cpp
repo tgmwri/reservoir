@@ -450,22 +450,31 @@ RcppExport SEXP calc_storage(
   vector<double> resul_var;
   resul_var.resize(time_steps - initial_pos);
 
-  vector<string> output_var_names = { "inflow", "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit" };
-  vector<wateres::var_name> output_vars = {
+  unsigned tmp_var_count = 7;
+  string tmp_output_var_names[7] = {"inflow", "storage", "yield", "precipitation", "evaporation", "wateruse", "deficit"};
+  wateres::var_name tmp_output_vars[7] = {
     wateres::INFLOW, wateres::YIELD, wateres::YIELD, wateres::PRECIPITATION, wateres::EVAPORATION,
     wateres::WATERUSE, wateres::DEFICIT };
+
+  unsigned v, var_count = tmp_var_count + is_transfer + is_routing;
+  vector<string> output_var_names(var_count);
+  vector<wateres::var_name> output_vars(var_count);
+  for (v = 0; v < tmp_var_count; v++) {
+      output_var_names[v] = tmp_output_var_names[v];
+      output_vars[v] = tmp_output_vars[v];
+  }
   if (is_transfer) {
-    output_var_names.push_back("transfer");
-    output_vars.push_back(wateres::TRANSFER);
+    output_var_names[v] = "transfer";
+    output_vars[v] = wateres::TRANSFER;
+    v++;
   }
   if (is_routing) {
-    output_var_names.push_back("yield_unrouted");
-    output_vars.push_back(wateres::YIELD_UNROUTED);
+    output_var_names[v] = "yield_unrouted";
+    output_vars[v] = wateres::YIELD_UNROUTED;
   }
 
   List resul;
-  unsigned var_count = output_var_names.size();
-  for (unsigned v = 0; v < var_count; v++) {
+  for (v = 0; v < var_count; v++) {
     for (ts = initial_pos; ts < time_steps; ts++) {
       if (v == 1)
         resul_var[ts - initial_pos] = reservoir.storage[ts + 1]; //initial storage not returned
