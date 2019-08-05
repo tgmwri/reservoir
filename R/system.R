@@ -276,7 +276,8 @@ calc_intercatchs_inner <- function(system, series, def_pos, curr_id, bottom_id, 
         }
         if (anyNA(system[[curr_id]]$QI))
             stop("Missing inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(is.na(system[[curr_id]]$QI))[1], ") is not allowed.")
-        else if (any(system[[curr_id]]$QI < 0)) {
+        # allow some negative value due to (probably) precision of calculation
+        else if (any(system[[curr_id]]$QI < -1e-10)) {
             stop("Negative inflow from an intercatchment for the reservoir '", curr_id, "' (time step ", which(system[[curr_id]]$QI < 0)[1], ") is not allowed.")
         }
     }
