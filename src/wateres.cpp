@@ -334,12 +334,13 @@ void wateres::calc_routing_lag(double lag_time, unsigned initial_pos, unsigned t
 /**
  * - calculates yield routing by transformation in linear reservoir, modifies variable YIELD
  * @param storage_coeff storage coefficient in minutes
+ * @param initial_storage initial storage of the linear resevoir for routing in m3
  * @param initial_pos initial time step
  * @param time_steps number of time steps
  */
-void wateres::calc_routing_linear_reservoir(double storage_coeff, unsigned initial_pos, unsigned time_steps)
+void wateres::calc_routing_linear_reservoir(double storage_coeff, double initial_storage, unsigned initial_pos, unsigned time_steps)
 {
-  double current_storage = 0;
+  double current_storage = initial_storage;
   for (unsigned ts = initial_pos; ts < time_steps; ts++) {
     var[wateres::YIELD][ts] = current_storage / storage_coeff * minutes[ts];
     current_storage += var[wateres::YIELD_UNROUTED][ts] - var[wateres::YIELD][ts];
@@ -365,6 +366,8 @@ void wateres::calc_routing_linear_reservoir(double storage_coeff, unsigned initi
   * @param Rthrow_exceed whether volume exceeding maximum storage will be thrown or added to yield
   * @param Rtill_deficit whether the calculation will end in the first time step with deficit
   * @param Rfirst_deficit_pos if enabled Rtill_deficit, also time step needs to be at least this one to stop the calculation
+  * @param Rrouting_method method for routing of yield, one of "none", "lag", "linear_reservoir"
+  * @param Rrouting_settings particular settings for each routing method
   * @return list consisting of storage (in m3), yield (m3.s-1), precipitation (m3), evaporation (m3) and water use (m3)
   */
 RcppExport SEXP calc_storage(
@@ -437,7 +440,7 @@ RcppExport SEXP calc_storage(
       reservoir.calc_routing_lag(as<double>(routing_settings[0]), initial_pos, time_steps);
     }
     else if (routing_method == "linear_reservoir") {
-      reservoir.calc_routing_linear_reservoir(as<double>(routing_settings[0]), initial_pos, time_steps);
+      reservoir.calc_routing_linear_reservoir(as<double>(routing_settings[0]), as<double>(routing_settings[1]), initial_pos, time_steps);
     }
   }
 

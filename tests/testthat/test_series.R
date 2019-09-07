@@ -241,4 +241,9 @@ test_that("yield routing is calculated", {
     resul = calc_series(reser, 14.4e6, 0.14, FALSE)
     expect_equivalent(resul$yield_unrouted[1:10], c(0.14, 0.14, 0.14, 0.603366666666666, 0.154, 0.14, 0.14, 0.14, 0.14, 0.230322580645161))
     expect_equivalent(resul$yield[1:10], c(0, 0.07101818, 0.10375319, 0.12214021, 0.35837865, 0.25470294, 0.19839422, 0.16877243, 0.15417696, 0.14721736))
+
+    # linear reservoir with initial storage
+    reser = set_routing(reser, "linear_reservoir", list(storage_coeff = 88000, initial_storage = 1e6))
+    resul = calc_series(reser, 14.4e6, 0.14, FALSE)
+    expect_equivalent(resul$yield[1:10], c(0.18939394, 0.16433774, 0.15278838, 0.14630118, 0.37067878, 0.26076355, 0.20147962, 0.17029269, 0.15492603, 0.14759871))
 })

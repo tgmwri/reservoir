@@ -16,7 +16,8 @@ set_routing(reser, method, settings)
 (transformation in linear reservoir).}
 
 \item{settings}{A list of routing parameters specific for each method: for \dQuote{lag} one parameter named \code{lag_time} defining time lag in minutes,
-for \dQuote{linear_reservoir} one parameter named \code{storage_coeff} defining coefficient of the linear reservoir in minutes.}
+for \dQuote{linear_reservoir} two parameters named \code{storage_coeff} defining coefficient of the linear reservoir in minutes
+and \code{initial_storage} defining storage (in m3) in the linear reservoir at the beginning of routing; the initial storage is 0 by default.}
 }
 \value{
 A modified \code{wateres} object with the routing method and settings added as its attribute.

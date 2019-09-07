@@ -585,7 +585,10 @@ calc_series.wateres <- function(
     }
 
     routing_method = ifelse(!is.null(attr(reser, "routing_method")), attr(reser, "routing_method"), "none")
-    routing_settings = ifelse(!is.null(attr(reser, "routing_settings")), attr(reser, "routing_settings"), list())
+    routing_settings = list()
+    if (!is.null(attr(reser, "routing_settings"))) {
+        routing_settings = attr(reser, "routing_settings")
+    }
 
     resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, yield_max, storage, storage_optim, initial_storage, initial_pos, last_pos, throw_exceed,
         till_def, first_def_pos, routing_method, routing_settings)

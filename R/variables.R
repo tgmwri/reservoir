@@ -210,7 +210,8 @@ set_routing <- function(reser, method, settings) UseMethod("set_routing")
 #' @param method One of \dQuote{none} (no routing), \dQuote{lag} (a simple shift of yield in time) or \dQuote{linear_reservoir}
 #'   (transformation in linear reservoir).
 #' @param settings A list of routing parameters specific for each method: for \dQuote{lag} one parameter named `lag_time` defining time lag in minutes,
-#'   for \dQuote{linear_reservoir} one parameter named `storage_coeff` defining coefficient of the linear reservoir in minutes.
+#'   for \dQuote{linear_reservoir} two parameters named `storage_coeff` defining coefficient of the linear reservoir in minutes
+#'   and `initial_storage` defining storage (in m3) in the linear reservoir at the beginning of routing; the initial storage is 0 by default.
 #' @return A modified `wateres` object with the routing method and settings added as its attribute.
 #' @details The routing settings are implemented as attributes of the `wateres` object.
 #' @export
@@ -225,7 +226,7 @@ set_routing <- function(reser, method, settings) UseMethod("set_routing")
 #' @md
 set_routing.wateres <- function(reser, method = "none", settings = NULL) {
     routing_methods = c("none", "lag", "linear_reservoir")
-    routing_params = list(none = c(), lag = c("lag_time"), linear_reservoir = c("storage_coeff"))
+    routing_params = list(none = c(), lag = c("lag_time"), linear_reservoir = c("storage_coeff", "initial_storage"))
     method_matched = routing_methods[pmatch(method, routing_methods)]
     if (is.na(method_matched)) {
         stop("Invalid routing method '", method, "'.")
@@ -243,7 +244,12 @@ set_routing.wateres <- function(reser, method = "none", settings = NULL) {
     }
     for (param in routing_params[[method_matched]]) {
         if (!(param %in% params_available)) {
-            stop("Missing routing parameter '", param, "' in settings for method '", method_matched, "'.")
+            if (method_matched == "linear_reservoir" && param == "initial_storage") {
+                settings[["initial_storage"]] = 0
+            }
+            else {
+                stop("Missing routing parameter '", param, "' in settings for method '", method_matched, "'.")
+            }
         }
     }
     attr(reser, "routing_settings") = settings
