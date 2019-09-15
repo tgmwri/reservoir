@@ -7,7 +7,7 @@
 \usage{
 calc_series(reser, storage, yield, throw_exceed, initial_storage,
   initial_level, initial_pos, last_pos, get_level, till_def, first_def_pos,
-  storage_optim, yield_max, complex_properties)
+  storage_optim, yield_max, complex_properties, get_routing_output)
 
 \method{calc_series}{wateres}(reser, storage = attr(reser, "storage"),
   yield = attr(reser, "yield"), throw_exceed = FALSE,
@@ -15,7 +15,7 @@ calc_series(reser, storage, yield, throw_exceed, initial_storage,
   initial_pos = 1, last_pos = nrow(reser), get_level = FALSE,
   till_def = FALSE, first_def_pos = initial_pos,
   storage_optim = attr(reser, "storage_optim"), yield_max = attr(reser,
-  "yield_max"), complex_properties = TRUE)
+  "yield_max"), complex_properties = TRUE, get_routing_output = FALSE)
 }
 \arguments{
 \item{reser}{A \code{wateres} object.}
@@ -54,6 +54,8 @@ Either a value of fixed yield or a vector of the same length as the reservoir se
 
 \item{complex_properties}{If FALSE, constant values of \code{storage} and \code{yield} will be required and \code{storage_optim} and \code{yield_max} will not be considered.
 This is needed for calculation with generated values, as it is done e.g. in the \link{sry.wateres} function.}
+
+\item{get_routing_output}{If TRUE, routing output will be provided as the \code{routing} attribute of the returned list.}
 }
 \value{
 A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield, unrouted yield (in m3.s-1),
@@ -67,6 +69,9 @@ additional inflow whereas negative represent additional withdrawal.
 Unrouted yield is available only if a routing has been set for the reservoir (by the \code{\link{set_routing}} function).
 
 Additionally, water levels are included if the \code{get_level} argument is TRUE.
+
+If the \code{get_routing_output} argument is TRUE, routing information is returned as the \code{routing} attribute. Data depends on the used routing method (set in the \code{\link{set_routing}} function):
+for \code{linear_reservoir}, time series of storage (in m3) in the transforming resevoir is obtained.
 }
 \description{
 Calculates time series of water balance variables for the reservoir. If provided in the \code{reser} object, the precipitation, evaporation,

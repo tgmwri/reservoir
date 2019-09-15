@@ -476,7 +476,7 @@ bisection <- function(func, interval, max_iter = 500, tolerance = 1e-5, ...) {
 #' @export
 calc_series <- function(
     reser, storage, yield, throw_exceed, initial_storage, initial_level, initial_pos, last_pos, get_level, till_def, first_def_pos,
-    storage_optim, yield_max, complex_properties) UseMethod("calc_series")
+    storage_optim, yield_max, complex_properties, get_routing_output) UseMethod("calc_series")
 
 #' Calculation of reservoir time series
 #'
@@ -506,6 +506,7 @@ calc_series <- function(
 #'   Either a value of fixed yield or a vector of the same length as the reservoir series.
 #' @param complex_properties If FALSE, constant values of `storage` and `yield` will be required and `storage_optim` and `yield_max` will not be considered.
 #'   This is needed for calculation with generated values, as it is done e.g. in the [sry.wateres] function.
+#' @param get_routing_output If TRUE, routing output will be provided as the `routing` attribute of the returned list.
 #' @return A \code{wateres_series} object which is a data table with water balance variables: inflow (in m3.s-1), storage (in m3), yield, unrouted yield (in m3.s-1),
 #'   precipitation, evaporation, water use, deficits and transfer (in m3).
 #'
@@ -517,6 +518,9 @@ calc_series <- function(
 #'   Unrouted yield is available only if a routing has been set for the reservoir (by the [`set_routing`] function).
 #'
 #'   Additionally, water levels are included if the `get_level` argument is TRUE.
+#'
+#'   If the `get_routing_output` argument is TRUE, routing information is returned as the `routing` attribute. Data depends on the used routing method (set in the [`set_routing`] function):
+#'   for `linear_reservoir`, time series of storage (in m3) in the transforming resevoir is obtained.
 #' @details When calculating water balance, a simple explicit method is applied. Finally, the initial time step of storage is omitted
 #'   to get a time series of the same length as for other variables.
 #'
@@ -534,7 +538,8 @@ calc_series <- function(
 calc_series.wateres <- function(
     reser, storage = attr(reser, "storage"), yield = attr(reser, "yield"), throw_exceed = FALSE, initial_storage = attr(reser, "storage_initial"), initial_level,
     initial_pos = 1, last_pos = nrow(reser), get_level = FALSE, till_def = FALSE, first_def_pos = initial_pos,
-    storage_optim = attr(reser, "storage_optim"), yield_max = attr(reser, "yield_max"), complex_properties = TRUE) {
+    storage_optim = attr(reser, "storage_optim"), yield_max = attr(reser, "yield_max"), complex_properties = TRUE,
+    get_routing_output = FALSE) {
 
     if (!complex_properties) {
         if (length(storage) != 1 || length(yield) != 1) {
@@ -591,8 +596,12 @@ calc_series.wateres <- function(
     }
 
     resul = .Call("calc_storage", PACKAGE = "wateres", reser, yield, yield_max, storage, storage_optim, initial_storage, initial_pos, last_pos, throw_exceed,
-        till_def, first_def_pos, routing_method, routing_settings)
+        till_def, first_def_pos, routing_method, routing_settings, get_routing_output)
+    routing_attr = attr(resul, "routing")
     resul = as.data.table(resul)
+    if (!is.null(routing_attr)) {
+        attr(resul, "routing") = routing_attr
+    }
     if (get_level && !is.null(eas)) {
         resul = cbind(resul, level = approx(eas$storage, eas$elevation, resul$storage, rule = 2)$y)
     }

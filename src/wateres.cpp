@@ -337,15 +337,21 @@ void wateres::calc_routing_lag(double lag_time, unsigned initial_pos, unsigned t
  * @param initial_storage initial storage of the linear resevoir for routing in m3
  * @param initial_pos initial time step
  * @param time_steps number of time steps
+ * @param get_routing_output whether routing output is saved
+ * @param routing_output time series of routing output (storages in linear reservoir)
  */
-void wateres::calc_routing_linear_reservoir(double storage_coeff, double initial_storage, unsigned initial_pos, unsigned time_steps)
+void wateres::calc_routing_linear_reservoir(double storage_coeff, double initial_storage, unsigned initial_pos, unsigned time_steps, bool get_routing_output, vector<double>& routing_output)
 {
+  routing_output.resize(get_routing_output ? time_steps - initial_pos : 0);
   double current_storage = initial_storage;
   for (unsigned ts = initial_pos; ts < time_steps; ts++) {
     var[wateres::YIELD][ts] = current_storage / storage_coeff * minutes[ts];
     current_storage += var[wateres::YIELD_UNROUTED][ts] - var[wateres::YIELD][ts];
     if (current_storage < 0) {
       current_storage = 0;
+    }
+    if (get_routing_output) {
+      routing_output[ts - initial_pos] = current_storage;
     }
   }
 }
@@ -368,11 +374,12 @@ void wateres::calc_routing_linear_reservoir(double storage_coeff, double initial
   * @param Rfirst_deficit_pos if enabled Rtill_deficit, also time step needs to be at least this one to stop the calculation
   * @param Rrouting_method method for routing of yield, one of "none", "lag", "linear_reservoir"
   * @param Rrouting_settings particular settings for each routing method
-  * @return list consisting of storage (in m3), yield (m3.s-1), precipitation (m3), evaporation (m3) and water use (m3)
+  * @param Rget_routing_output whether routing output is returned
+  * @return list consisting of storage (in m3), yield (m3.s-1), precipitation (m3), evaporation (m3) and water use (m3), optionally with routing output as "routing" attribute of this list
   */
 RcppExport SEXP calc_storage(
   SEXP Rreser, SEXP Ryield_req, SEXP Ryield_max, SEXP Rvolume, SEXP Rvolume_optim, SEXP Rinitial_storage, SEXP Rinitial_pos, SEXP Rlast_pos,
-  SEXP Rthrow_exceed, SEXP Rtill_deficit, SEXP Rfirst_deficit_pos, SEXP Rrouting_method, SEXP Rrouting_settings)
+  SEXP Rthrow_exceed, SEXP Rtill_deficit, SEXP Rfirst_deficit_pos, SEXP Rrouting_method, SEXP Rrouting_settings, SEXP Rget_routing_output)
 {
   DataFrame reser = as<DataFrame>(Rreser);
   vector<double> yield_req = as<vector<double> >(Ryield_req);
@@ -395,6 +402,8 @@ RcppExport SEXP calc_storage(
   string routing_method = as<string>(Rrouting_method);
   bool is_routing = routing_method != "none";
   List routing_settings = as<List>(Rrouting_settings);
+  bool get_routing_output = as<bool>(Rget_routing_output);
+  vector<double> routing_output;
 
   unsigned ts;
   //reser.nrows() incorrect when subset of data.table used and its attributes are copied afterwards
@@ -440,7 +449,7 @@ RcppExport SEXP calc_storage(
       reservoir.calc_routing_lag(as<double>(routing_settings[0]), initial_pos, time_steps);
     }
     else if (routing_method == "linear_reservoir") {
-      reservoir.calc_routing_linear_reservoir(as<double>(routing_settings[0]), as<double>(routing_settings[1]), initial_pos, time_steps);
+      reservoir.calc_routing_linear_reservoir(as<double>(routing_settings[0]), as<double>(routing_settings[1]), initial_pos, time_steps, get_routing_output, routing_output);
     }
   }
 
@@ -485,6 +494,9 @@ RcppExport SEXP calc_storage(
         resul_var[ts - initial_pos] = reservoir.var[output_vars[v]][ts];
     }
     resul[output_var_names[v]] = resul_var;
+  }
+  if (get_routing_output) {
+    resul.attr("routing") = routing_output;
   }
   return resul;
 }

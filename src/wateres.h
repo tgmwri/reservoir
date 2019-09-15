@@ -25,7 +25,7 @@ class wateres
 
     void calc_balance_var(unsigned ts, var_name var); //!< calculates water balance for given variable and time step
     void calc_routing_lag(double lag_time, unsigned initial_pos, unsigned time_steps); //!< calculates yield routing by lagging
-    void calc_routing_linear_reservoir(double storage_coeff, double initial_storage, unsigned initial_pos, unsigned time_steps); //!< calculates yield routing by linear reservoir
+    void calc_routing_linear_reservoir(double storage_coeff, double initial_storage, unsigned initial_pos, unsigned time_steps, bool get_routing_output, std::vector<double>& routing_output); //!< calculates yield routing by linear reservoir
 
   private:
     bool throw_exceed; //!< whether volume exceeding maximum storage will be thrown
