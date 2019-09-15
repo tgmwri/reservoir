@@ -161,7 +161,7 @@ check.wateres_system <- function(system) {
 }
 
 # calculates simply each reservoir in the system by using its input data
-calc_single <- function(system, init_pos = 1, resul = NULL, only_part_ts = FALSE, reser_names = names(system)) {
+calc_single <- function(system, init_pos = 1, resul = NULL, only_part_ts = FALSE, reser_names = names(system), get_routing_output = FALSE) {
     if (is.null(resul))
         resul = list()
     min_last_pos = nrow(system[[1]])
@@ -199,7 +199,7 @@ calc_single <- function(system, init_pos = 1, resul = NULL, only_part_ts = FALSE
                 min_last_pos = last_pos
         }
         else {
-            resul[[curr_id]] = calc_series(system[[res]], yield = attr(system, "yields")[[curr_id]], initial_storage = attr(system, "initial_storages")[curr_id])
+            resul[[curr_id]] = calc_series(system[[res]], yield = attr(system, "yields")[[curr_id]], initial_storage = attr(system, "initial_storages")[curr_id], get_routing_output = get_routing_output)
         }
     }
     return(resul)
@@ -375,7 +375,7 @@ set_transfers_from_pos <- function(system, init_pos, series = NULL) {
 
 #' @rdname calc_system.wateres_system
 #' @export
-calc_system <- function(system, yields, initial_storages, types, yields_intercatch) UseMethod("calc_system")
+calc_system <- function(system, yields, initial_storages, types, yields_intercatch, get_routing_output) UseMethod("calc_system")
 
 #' Calculation of system of reservoirs
 #'
@@ -423,6 +423,7 @@ calc_system <- function(system, yields, initial_storages, types, yields_intercat
 #'   \dQuote{system_transfer} (see details).
 #' @param yields_intercatch Whether the vector of \code{yields} consists of values for intercatchment, i.e. whether total yields will be calculated as
 #'   a sum of yields from upstream reservoirs.
+#' @param get_routing_output Whether routing output for each reservoir will be provided as the `routing` attribute of their results (only for the \dQuote{system_plain} type).
 #' @return A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
 #'   objects for individual reservoirs. The object contains the water balance variables returned by the \code{\link{calc_series}} functions.
 #'   Moreover, \code{transfer} variable is added for the system results if has non-zero value at least in one time step.
@@ -445,7 +446,7 @@ calc_system <- function(system, yields, initial_storages, types, yields_intercat
 #' thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
 #' sys = as.system(riv, thar)
 #' resul = calc_system(sys, c(riv = 0.14, thar = 8))
-calc_system.wateres_system <- function(system, yields, initial_storages, types = c("single_plain", "system_plain"), yields_intercatch = FALSE) {
+calc_system.wateres_system <- function(system, yields, initial_storages, types = c("single_plain", "system_plain"), yields_intercatch = FALSE, get_routing_output = FALSE) {
     system = check(system)
     system = set_up_ids(system)
 
@@ -503,13 +504,13 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
         }
 
         if (ct == "system_plain") {
-            series = calc_single(system)
+            series = calc_single(system, get_routing_output = get_routing_output)
             system = calc_inflows(system, c(), series, 1, FALSE)
         }
         else if (grepl("transfer", ct)) {
             system = set_transfers_from_pos(system, 1)
         }
-        resul[[ct]] = calc_single(system)
+        resul[[ct]] = calc_single(system, get_routing_output = ifelse(ct == "system_plain", get_routing_output, FALSE))
     }
     if (yields_intercatch)
         resul$yields = attr(system, "yields")

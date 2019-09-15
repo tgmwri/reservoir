@@ -5,10 +5,12 @@
 \alias{calc_catchment_system.catchment_system}
 \title{Calculation of system of catchments with reservoirs}
 \usage{
-calc_catchment_system(system, yields, initial_storages, output_vars)
+calc_catchment_system(system, yields, initial_storages, output_vars,
+  get_routing_output)
 
 \method{calc_catchment_system}{catchment_system}(system, yields = NULL,
-  initial_storages = NULL, output_vars = c("storage", "yield"))
+  initial_storages = NULL, output_vars = c("storage", "yield"),
+  get_routing_output = FALSE)
 }
 \arguments{
 \item{system}{A \code{catchment_system} object.}
@@ -21,9 +23,12 @@ are considered to be full initially.}
 
 \item{output_vars}{A vector of variables whose time series are returned. Variable names are those returned by \code{calc_series}
 (\code{inflow}, \code{storage}, \code{yield}, \code{precipitation}, \code{evaporation}, \code{wateruse} and \code{deficit}).}
+
+\item{get_routing_output}{If TRUE, routing output will be obtained for each outlet as the \code{routing} attribute of the returned value.}
 }
 \value{
-A list of data frames with time series for individual reservoirs.
+A list of data frames with time series for individual catchments, columns of the data frames are combinations of reservoirs and variables.
+If \code{get_routing_output} is given, the returned list has the \code{routing} attribute containing output for routing in each catchment outlet (as provided by \code{\link{calc_series.wateres}}).
 }
 \description{
 Calculates time series of variables for reservoirs organized in a system of catchments.

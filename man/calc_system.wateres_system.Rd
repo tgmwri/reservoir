@@ -5,10 +5,12 @@
 \alias{calc_system.wateres_system}
 \title{Calculation of system of reservoirs}
 \usage{
-calc_system(system, yields, initial_storages, types, yields_intercatch)
+calc_system(system, yields, initial_storages, types, yields_intercatch,
+  get_routing_output)
 
 \method{calc_system}{wateres_system}(system, yields, initial_storages,
-  types = c("single_plain", "system_plain"), yields_intercatch = FALSE)
+  types = c("single_plain", "system_plain"), yields_intercatch = FALSE,
+  get_routing_output = FALSE)
 }
 \arguments{
 \item{system}{A \code{wateres_system} object.}
@@ -25,6 +27,8 @@ to be full initially.}
 
 \item{yields_intercatch}{Whether the vector of \code{yields} consists of values for intercatchment, i.e. whether total yields will be calculated as
 a sum of yields from upstream reservoirs.}
+
+\item{get_routing_output}{Whether routing output for each reservoir will be provided as the \code{routing} attribute of each reservoir results (only for the \dQuote{system_plain} type).}
 }
 \value{
 A list consisting of items corresponding with the values of the \code{types} argument. Each of the items is a list of the \code{wateres_series}
