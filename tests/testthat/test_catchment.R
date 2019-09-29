@@ -135,6 +135,44 @@ test_that("water use is included to catchments", {
     expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-1e5, 3)))
 })
 
+test_that("water use and yield for outlet as argument is applied", {
+    res_wateruse = list(M1 = c(rep(1e5, 4), rep(-1e5, 3)), L1 = c(rep(3e4, 4), rep(-3e4, 3)), L2 = c(rep(5e4, 4), rep(-5e4, 3)), outlet = c(rep(1e5, 4), rep(-1e5, 3)))
+    catchment = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main", res_wateruse = res_wateruse)
+    catch_system = as.catchment_system(catchment)
+
+    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C1_outlet = 99)
+    resul = calc_catchment_system(catch_system, yields, output_vars = c("yield", "wateruse"))
+
+    expect_equal(resul$C1$outlet_yield, c(rep(103.2409, 4), rep(99, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-36405, 3)))
+})
+
+test_that("water use and yield for outlet as property is applied", {
+    res_properties = list(yield = list(outlet = 99))
+    res_wateruse = list(M1 = c(rep(1e5, 4), rep(-1e5, 3)), L1 = c(rep(3e4, 4), rep(-3e4, 3)), L2 = c(rep(5e4, 4), rep(-5e4, 3)), outlet = c(rep(1e5, 4), rep(-1e5, 3)))
+    catchment = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main", res_wateruse = res_wateruse, res_properties = res_properties)
+    catch_system = as.catchment_system(catchment)
+
+    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25)
+    resul = calc_catchment_system(catch_system, yields, output_vars = c("yield", "wateruse"))
+
+    expect_equal(resul$C1$outlet_yield, c(rep(103.2409, 4), rep(99, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-36405, 3)))
+})
+
+test_that("water use for parts and yield for outlet is applied", {
+    data_catch = cbind(data_catch, WU = c(rep(1, 4), rep(-1, 3)))
+    res_data_c1 = cbind(res_data_c1, part_wateruse = c(0, 0, 0))
+    catchment = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main")
+    catch_system = as.catchment_system(catchment)
+
+    yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C1_outlet = 99)
+    resul = calc_catchment_system(catch_system, yields, output_vars = c("yield", "wateruse"))
+
+    expect_equal(resul$C1$outlet_yield, c(rep(101.157581, 4), rep(99, 3)), tolerance = 1e-5)
+    expect_equal(resul$C1$outlet_wateruse, c(rep(1e5, 4), rep(-86415, 3)))
+})
+
 test_that("reservoir properties are applied", {
     res_properties = list(storage_optim = list(M1 = 8e6, L1 = 8e6, L2 = 3e6), yield = list(M1 = 30, L1 = 30, L2 = 60), yield_max = list(M1 = 40, L1 = 40, L2 = 70))
     catch1 = as.catchment(id = "C1", down_id = NA, data = data_catch, area = 100, res_data = res_data_c1, branches = branches, main_branch = "main", res_properties = res_properties)
@@ -230,10 +268,4 @@ test_that("routing of catchment outflow is calculated", {
     resul = calc_catchment_system(catch_system,  yield = c(C1_M1 = 30, C1_L1 = 30, C1_L2 = 60), output_vars = c("yield", "yield_unrouted"))
     expect_equal(resul$C1$outlet_yield, c(0, 0, 89.444444, rep(115, 4)))
     expect_equal(resul$C1$outlet_yield_unrouted, rep(115, 7))
-
-    # routing by linear reservoir
-    catch1 = set_routing(catch1, "linear_reservoir", list(storage_coeff = 88000, initial_storage = 1e6))
-    catch_system = as.catchment_system(catch1)
-    resul = calc_catchment_system(catch_system,  yield = c(C1_M1 = 30, C1_L1 = 30, C1_L2 = 60), output_vars = c("storage"), get_routing_output = TRUE)
-    expect_equal(attr(resul, "routing")$C1$outlet, c(10919636, 20676951, 30274601, 39715199, 49001314, 58135474, 67120166))
 })

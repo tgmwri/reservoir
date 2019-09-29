@@ -154,22 +154,25 @@ as.catchment <- function(id, down_id, data, area, res_data, branches, main_branc
             if (!is.null(data$P)) {
                 reservoirs[[curr_res$id]] = set_precipitation(reservoirs[[curr_res$id]], data$P)
             }
-            if (!is.null(res_properties)) {
-                id_without_catch = gsub(paste0(id, "_"), "", curr_res$id, fixed = TRUE)
-                for (property in names(res_properties)) {
-                    if (!is.null(res_properties[[property]][[id_without_catch]])) {
-                        reservoirs[[curr_res$id]] = set_property(reservoirs[[curr_res$id]], property, res_properties[[property]][[id_without_catch]])
-                    }
-                }
-            }
             attr(reservoirs[[curr_res$id]], "branch_id") = branch
         }
     }
+
     reservoirs[[paste0(id, "_outlet")]] = as.wateres(data.frame(DTM = data$DTM, Q = data$Q), 0, 0, time_step = "day")
     attr(reservoirs[[paste0(id, "_outlet")]], "id") = paste0(id, "_outlet")
     attr(reservoirs[[paste0(id, "_outlet")]], "down_id") = NA
     attr(reservoirs[[paste0(id, "_outlet")]], "branch") = main_branch
 
+    if (!is.null(res_properties)) {
+        for (res in 1:length(reservoirs)) {
+            id_without_catch = gsub(paste0(id, "_"), "", attr(reservoirs[[res]], "id"), fixed = TRUE)
+            for (property in names(res_properties)) {
+                if (!is.null(res_properties[[property]][[id_without_catch]])) {
+                    reservoirs[[res]] = set_property(reservoirs[[res]], property, res_properties[[property]][[id_without_catch]])
+                }
+            }
+        }
+    }
     if (!is.null(res_wateruse)) {
         for (res in 1:length(reservoirs)) {
             curr_res_id = attr(reservoirs[[res]], "id")
@@ -320,7 +323,7 @@ as.catchment_system <- function(...) {
 
 #' @rdname calc_catchment_system.catchment_system
 #' @export
-calc_catchment_system <- function(system, yields, initial_storages, output_vars, get_routing_output) UseMethod("calc_catchment_system")
+calc_catchment_system <- function(system, yields, initial_storages, output_vars) UseMethod("calc_catchment_system")
 
 #' Calculation of system of catchments with reservoirs
 #'
@@ -333,9 +336,7 @@ calc_catchment_system <- function(system, yields, initial_storages, output_vars,
 #'   are considered to be full initially.
 #' @param output_vars A vector of variables whose time series are returned. Variable names are those returned by `calc_series`
 #'   (`inflow`, `storage`, `yield`, `precipitation`, `evaporation`, `wateruse` and `deficit`).
-#' @param get_routing_output If TRUE, routing output will be obtained for each outlet as the `routing` attribute of the returned value.
-#' @return A list of data frames with time series for individual catchments, columns of the data frames are combinations of reservoirs and variables.
-#' If `get_routing_output` is given, the returned list has the `routing` attribute containing output for routing in each catchment outlet (as provided by [`calc_series.wateres`]).
+#' @return A list of data frames with time series for individual reservoirs.
 #' @details No transfers between reservoirs are considered (`system_plain` option of [`calc_system`] is used).
 #' @seealso [`calc_system`] for inner function calculating the reservoir system, [`calc_series`] for returned time series
 #' @export
@@ -354,17 +355,23 @@ calc_catchment_system <- function(system, yields, initial_storages, output_vars,
 #'
 #' yields = c(C1_M1 = 25, C1_L1 = 25, C1_L2 = 25, C2_M1 = 25, C2_L1 = 25, C2_L2 = 200)
 #' resul = calc_catchment_system(catch_system, yields, output_vars = c("storage", "yield", "precipitation"))
-calc_catchment_system.catchment_system <- function(system, yields = NULL, initial_storages = NULL, output_vars = c("storage", "yield"), get_routing_output = FALSE) {
+calc_catchment_system.catchment_system <- function(system, yields = NULL, initial_storages = NULL, output_vars = c("storage", "yield")) {
     catch_names = attr(system, "catchment_names")
-    yields[paste0(catch_names, "_outlet")] = 0
+    # set outlet yield to zero if not specified otherwise
+    for (catch_name in catch_names) {
+        catch_outlet_name = paste0(catch_name, "_outlet")
+        if ((is.null(yields) || (!is.null(yields) && is.na(yields[catch_outlet_name]))) && is.null(attr(system[[catch_outlet_name]], "yield"))) {
+            if (is.null(yields)) {
+                yields = c()
+            }
+            yields[catch_outlet_name] = 0
+        }
+    }
     if (!is.null(initial_storages)) {
         initial_storages[paste0(catch_names, "_outlet")] = 0
     }
-    resul = calc_system(system, yields, initial_storages, types = "system_plain", get_routing_output = get_routing_output)$system_plain
+    resul = calc_system(system, yields, initial_storages, types = "system_plain")$system_plain
     resul_by_catchs = list()
-    if (get_routing_output) {
-        attr(resul_by_catchs, "routing") = list()
-    }
     for (r in 1:length(resul)) {
         res = resul[[r]]
         catch_res_id = names(resul)[r]
@@ -380,15 +387,6 @@ calc_catchment_system.catchment_system <- function(system, yields = NULL, initia
                 }
                 names(resul_by_catchs[[catch_id]])[length(resul_by_catchs[[catch_id]])] = paste0(res_id, "_", out_var)
             }
-        }
-        if (get_routing_output && res_id == "outlet") {
-            if (is.null(attr(resul_by_catchs, "routing")[[catch_id]])) {
-                attr(resul_by_catchs, "routing")[[catch_id]] = data.frame(res_id = attr(resul[[catch_res_id]], "routing"))
-            }
-            else {
-                attr(resul_by_catchs, "routing")[[catch_id]] = cbind(attr(resul_by_catchs, "routing")[[catch_id]], attr(resul[[catch_res_id]], "routing"))
-            }
-            names(attr(resul_by_catchs, "routing")[[catch_id]])[length(attr(resul_by_catchs, "routing")[[catch_id]])] = res_id
         }
     }
     return(resul_by_catchs)
