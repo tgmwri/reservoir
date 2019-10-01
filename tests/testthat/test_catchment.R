@@ -268,4 +268,10 @@ test_that("routing of catchment outflow is calculated", {
     resul = calc_catchment_system(catch_system,  yield = c(C1_M1 = 30, C1_L1 = 30, C1_L2 = 60), output_vars = c("yield", "yield_unrouted"))
     expect_equal(resul$C1$outlet_yield, c(0, 0, 89.444444, rep(115, 4)))
     expect_equal(resul$C1$outlet_yield_unrouted, rep(115, 7))
+
+    # routing by linear reservoir
+    catch1 = set_routing(catch1, "linear_reservoir", list(storage_coeff = 88000, initial_storage = 1e6))
+    catch_system = as.catchment_system(catch1)
+    resul = calc_catchment_system(catch_system,  yield = c(C1_M1 = 30, C1_L1 = 30, C1_L2 = 60), output_vars = c("storage"), get_routing_output = TRUE)
+    expect_equal(attr(resul, "routing")$C1$outlet, c(10919636, 20676951, 30274601, 39715199, 49001314, 58135474, 67120166))
 })
