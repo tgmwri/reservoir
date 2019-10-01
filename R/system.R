@@ -446,16 +446,17 @@ calc_system <- function(system, yields, initial_storages, types, yields_intercat
 #' thar = as.wateres(thar_data, 41.3e6, 2672e3, id = "thar")
 #' sys = as.system(riv, thar)
 #' resul = calc_system(sys, c(riv = 0.14, thar = 8))
-calc_system.wateres_system <- function(system, yields, initial_storages, types = c("single_plain", "system_plain"), yields_intercatch = FALSE, get_routing_output = FALSE) {
+calc_system.wateres_system <- function(system, yields = NULL, initial_storages, types = c("single_plain", "system_plain"), yields_intercatch = FALSE, get_routing_output = FALSE) {
     system = check(system)
     system = set_up_ids(system)
 
     if (missing(initial_storages) || is.null(initial_storages)) {
         initial_storages = sapply(names(system), function(res) { ifelse(is.null(attr(system[[res]], "storage_initial")), attr(system[[res]], "storage")[1], attr(system[[res]], "storage_initial")) })
     }
-    yields_property = sapply(names(system), function(res) { attr(system[[res]], "yield") })
+    yields_property = lapply(names(system), function(res) { attr(system[[res]], "yield") })
+    names(yields_property) = names(system)
     for (res_name in names(yields_property)) {
-        if (!is.na(yields[res_name])) {
+        if (!is.null(yields) && !is.na(yields[res_name])) {
             if (!is.null(yields_property[[res_name]])) {
                 warning("Yield given as property of reservoir '", res_name, "' will be overriden by value of argument of calc_system.")
             }
@@ -468,8 +469,9 @@ calc_system.wateres_system <- function(system, yields, initial_storages, types =
         values = get(arg)
         values = values[names(values) %in% names(system)]
         if (any(sapply(values, function(values_for_res) { is.null(values_for_res) || anyNA(values_for_res) }))
-            || anyNA(values) || length(values) < length(system))
+            || anyNA(values) || length(values) < length(system)) {
             stop("Argument '", arg, "' does not provide values for all reservoirs in the system.")
+        }
     }
     for (curr_attr in c("yields", "yields_intercatch", "initial_storages"))
         attr(system, curr_attr) = get(curr_attr)

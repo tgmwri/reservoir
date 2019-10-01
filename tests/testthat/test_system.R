@@ -263,3 +263,13 @@ test_that("system with storage as property is calculated", {
     resul = calc_system(system, yields = c(A = 1, B = 1), types = c("single_plain"))
     expect_equal(resul$single_plain$A$storage, rep(1e7, 6))
 })
+
+test_that("system with only one reservoir and properties is calculated", {
+    reser_A = as.wateres(reser_data, 14.4e6, 754e3, id = "A", down_id = NA)
+    reser_A = set_property(reser_A, "yield", 0.5)
+    reser_A = set_property(reser_A, "storage_initial", 1e6)
+    system = as.system(reser_A)
+    resul = calc_system(system, types = c("single_plain"))
+    expect_equal(resul$single_plain$A$storage, c(2339200, 3592000, 4931200, 6227200, 7566400, 8862400))
+    expect_equal(resul$single_plain$A$yield, rep(0.5, 6))
+})
