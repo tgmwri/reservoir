@@ -345,11 +345,10 @@ void wateres::calc_routing_linear_reservoir(double storage_coeff, double initial
   routing_output.resize(get_routing_output ? time_steps - initial_pos : 0);
   double current_storage = initial_storage;
   for (unsigned ts = initial_pos; ts < time_steps; ts++) {
-    var[wateres::YIELD][ts] = current_storage / storage_coeff * minutes[ts];
-    current_storage += var[wateres::YIELD_UNROUTED][ts] - var[wateres::YIELD][ts];
-    if (current_storage < 0) {
-      current_storage = 0;
-    }
+    current_storage += var[wateres::YIELD_UNROUTED][ts];
+    double outflow = current_storage / storage_coeff * minutes[ts];
+    var[wateres::YIELD][ts] = outflow > current_storage ? current_storage : outflow;
+    current_storage -= var[wateres::YIELD][ts];
     if (get_routing_output) {
       routing_output[ts - initial_pos] = current_storage;
     }

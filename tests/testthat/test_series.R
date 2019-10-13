@@ -235,19 +235,34 @@ test_that("yield routing is calculated", {
     reser = set_routing(reser, "lag", list(lag_time = 88000))
     resul = calc_series(reser, 14.4e6, 0.14, FALSE)
     expect_equivalent(resul$yield_unrouted[1:10], c(0.14, 0.14, 0.14, 0.603366666666666, 0.154, 0.14, 0.14, 0.14, 0.14, 0.230322580645161))
-    expect_equivalent(resul$yield[1:10], c(0, 0, 0.134982078853047, 0.14, 0.14, 0.60165049382716, 0.155610633213859, 0.14005017921147, 0.14, 0.14))
+    expect_equal(resul$yield[1:10], c(0, 0, 0.134982078853047, 0.14, 0.14, 0.60165049382716, 0.155610633213859, 0.14005017921147, 0.14, 0.14), tol = 1e-5)
 
     reser = set_routing(reser, "linear_reservoir", list(storage_coeff = 88000))
     resul = calc_series(reser, 14.4e6, 0.14, FALSE)
     expect_equivalent(resul$yield_unrouted[1:10], c(0.14, 0.14, 0.14, 0.603366666666666, 0.154, 0.14, 0.14, 0.14, 0.14, 0.230322580645161))
-    expect_equivalent(resul$yield[1:10], c(0, 0.07101818, 0.10375319, 0.12214021, 0.35837865, 0.25470294, 0.19839422, 0.16877243, 0.15417696, 0.14721736))
+    expect_equal(resul$yield[1:10], c(0.0710182, 0.101429, 0.1243145, 0.3574513, 0.2600952, 0.1968833, 0.1712497, 0.1553976, 0.1452959, 0.1908052), tol = 1e-5)
 
     # linear reservoir with initial storage
     reser = set_routing(reser, "linear_reservoir", list(storage_coeff = 88000, initial_storage = 1e6))
     resul = calc_series(reser, 14.4e6, 0.14, FALSE)
-    expect_equivalent(resul$yield[1:10], c(0.18939394, 0.16433774, 0.15278838, 0.14630118, 0.37067878, 0.26076355, 0.20147962, 0.17029269, 0.15492603, 0.14759871))
+    expect_equal(resul$yield[1:10], c(0.2604121, 0.1947485, 0.1733497, 0.3816123, 0.2723954, 0.2029439, 0.1743351, 0.1569178, 0.146045, 0.1911865), tol = 1e-5)
 
     # routing output
     resul = calc_series(reser, 14.4e6, 0.14, FALSE, get_routing_output = TRUE)
-    expect_equivalent(attr(resul, "routing")[1:10], c(867703.272727273, 806722.628760331, 772470.240716454, 1957183.97709201, 1376831.52325806, 1063812.41184047, 899145.388379576, 818009.455001573, 779321.17709171, 1000888.79816701))
+    expect_equal(attr(resul, "routing")[1:10], c(677488.1745455, 540310.2880793, 450986.51649, 1025773.8483949, 708663.7427546, 545513.1781296, 453550.1223148, 408237.4166315, 392568.8666487, 497390.8706578), tol = 1e-5)
+})
+
+test_that("yield routing is calculated for reservoir with zero storage", {
+    reser = data.frame(Q = c(1, 1, 3, 3, 5), DTM = seq(as.Date("2000-01-01"), by = "days", length.out = 5))
+    reser = as.wateres(reser, storage = 0, area = 0, time_step = "day")
+
+    reser = set_routing(reser, "linear_reservoir", list(storage_coeff = 720, initial_storage = 0))
+    resul = calc_series(reser, 0, 2, FALSE, get_routing_output = TRUE)
+    expect_equivalent(resul$yield_unrouted, c(1, 1, 3, 3, 5))
+    expect_equivalent(resul$yield, c(1, 1, 3, 3, 5))
+
+    reser = set_routing(reser, "linear_reservoir", list(storage_coeff = 2880, initial_storage = 0))
+    resul = calc_series(reser, 0, 2, FALSE, get_routing_output = TRUE)
+    expect_equivalent(resul$yield_unrouted, c(1, 1, 3, 3, 5))
+    expect_equivalent(resul$yield, c(0.5, 0.75, 1.875, 2.4375, 3.71875))
 })
