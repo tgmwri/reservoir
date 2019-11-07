@@ -195,7 +195,9 @@ thar_mrf = 2.718
 test_that("system is not calculated without yields", {
     system = as.system(riv, riv_paralel, riv2, thar)
     yields = c(A1 = riv_mrf, A2 = riv_mrf, B3 = riv2_mrf, C = thar_mrf)
-    expect_error(calc_system(system, yields), "Argument 'yields' does not provide values")
+    expect_error(
+        calc_system(system, yields),
+        "^Argument 'yields' does not provide values for the following reservoirs in the system: B$")
 })
 
 test_that("system is not calculated if wrong calculation type is given", {

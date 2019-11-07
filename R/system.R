@@ -468,9 +468,17 @@ calc_system.wateres_system <- function(system, yields = NULL, initial_storages, 
     for (arg in c("yields", "initial_storages")) {
         values = get(arg)
         values = values[names(values) %in% names(system)]
-        if (any(sapply(values, function(values_for_res) { is.null(values_for_res) || anyNA(values_for_res) }))
-            || anyNA(values) || length(values) < length(system)) {
-            stop("Argument '", arg, "' does not provide values for all reservoirs in the system.")
+        missing_res_in_list = names(which(sapply(values, function(values_for_res) { is.null(values_for_res) || anyNA(values_for_res) })))
+        if (length(missing_res_in_list) > 0 || anyNA(values) || length(values) < length(system)) {
+            missing_res_names = c()
+            if (anyNA(values)) {
+                missing_res_names = c(missing_res_names, names(which(is.na(values))))
+            }
+            if (length(missing_res_in_list) > 0) {
+                missing_res_names = c(missing_res_names, missing_res_in_list)
+            }
+            stop("Argument '", arg, "' does not provide values for the following reservoirs in the system: ",
+                paste(missing_res_names, collapse = ", "))
         }
     }
     for (curr_attr in c("yields", "yields_intercatch", "initial_storages"))
