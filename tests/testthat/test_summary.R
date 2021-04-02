@@ -63,6 +63,9 @@ test_that("characteristics and time series are calculated for vector of reliabil
 test_that("fill times are calculated", {
     set.seed(446)
     fill = fill_time(riv, yield = 0.14, samples = 10)
+    expect_equal(fill$begin, c(1, 97, 275, 286, 314, 315, 449, 622, 1020, 1058, 1301))
+    expect_equal(fill$months, c(87, 110, 695, 684, 656, 655, 521, 348, 208, 229, NA))
+    fill = fill_time(riv, yield = 0.14, begins = c(1, 78, 104, 117, 133, 526, 731, 914, 1099, 1116, 1244))
     expect_equal(fill$begin, c(1, 78, 104, 117, 133, 526, 731, 914, 1099, 1116, 1244))
     expect_equal(fill$months, c(87, 128, 104, 91, 109, 444, 244, 217, NA, NA, NA))
 })
