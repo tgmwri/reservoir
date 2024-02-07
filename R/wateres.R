@@ -180,11 +180,7 @@ as.wateres <- function(dframe, storage, area, eas = NULL, observed = FALSE, time
 # converts input (date or index) to index of the given time series of dates
 value_to_position <- function(value, DTM, time_step_len, time_step_unit, type, value_type) {
     if (is.null(value_type)) {
-        value_date = try(as.Date(value), silent = TRUE)
-        value_type = if (class(value_date) == "try-error") "index" else "date"
-    }
-    else if (value_type == "date") {
-        value_date = as.Date(value)
+        value_type = if (is.numeric(value)) "index" else "date"
     }
     if (value_type == "index") {
         value_pos = suppressWarnings(as.integer(value))
@@ -192,6 +188,9 @@ value_to_position <- function(value, DTM, time_step_len, time_step_unit, type, v
             stop("Invalid ", type, " '", value, "' (date or index needed).")
     }
     else {
+        value_date = try(as.Date(value), silent = TRUE)
+        if (class(value_date) == "try-error")
+            stop("Invalid ", type, " '", value, "' (date or index needed).")
         if (is.null(DTM))
             stop(
                 toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), " '", value,
